@@ -50,7 +50,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       title: 'DDAI Community',
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
-        selectedItemColor: primaryTextColor,
+        selectedItemColor: primaryColor,
         selectedFontSize: 12.0,
         unselectedFontSize: 12.0,
         type: BottomNavigationBarType.fixed,
