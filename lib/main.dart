@@ -1,4 +1,6 @@
+import 'package:ddai_community/common/router/router.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   runApp(
@@ -11,15 +13,19 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('ddai 커뮤니티'),
-        ),
-        body: const Center(
-          child: Text('Hello World'),
-        ),
+    final router = GoRouter(
+      routes: routes,
+      initialLocation: '/',
+    );
+
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'NotoSans',
       ),
+      routerDelegate: router.routerDelegate,
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
     );
   }
 }
