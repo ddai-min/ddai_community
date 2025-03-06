@@ -1,7 +1,8 @@
+import 'package:ddai_community/common/component/default_avatar.dart';
 import 'package:flutter/material.dart';
 
 class OtherChatBubble extends StatelessWidget {
-  final String? imageUrl;
+  final Image? image;
   final String userName;
   final String message;
 
@@ -9,20 +10,15 @@ class OtherChatBubble extends StatelessWidget {
     super.key,
     required this.userName,
     required this.message,
-    this.imageUrl,
+    this.image,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundImage: imageUrl != null
-              ? NetworkImage(
-                  imageUrl!,
-                )
-              : null,
+        DefaultAvatar(
+          image: image,
         ),
         const SizedBox(width: 8.0),
         Column(

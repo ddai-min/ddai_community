@@ -47,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             const _Title(),
             const SizedBox(height: 30),
-            _TextFields(
+            _Inputs(
               idTextController: idTextController,
               passwordTextController: passwordTextController,
               onIdChanged: (String value) {
@@ -98,13 +98,13 @@ class _Title extends StatelessWidget {
   }
 }
 
-class _TextFields extends StatelessWidget {
+class _Inputs extends StatelessWidget {
   final TextEditingController idTextController;
   final TextEditingController passwordTextController;
   final ValueChanged<String> onIdChanged;
   final ValueChanged<String> onPasswordChanged;
 
-  const _TextFields({
+  const _Inputs({
     required this.idTextController,
     required this.passwordTextController,
     required this.onIdChanged,

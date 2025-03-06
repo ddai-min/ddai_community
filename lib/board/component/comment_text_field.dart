@@ -2,12 +2,12 @@ import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/const/colors.dart';
 import 'package:flutter/material.dart';
 
-class ChatTextField extends StatelessWidget {
+class CommentTextField extends StatelessWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final VoidCallback onPressed;
 
-  const ChatTextField({
+  const CommentTextField({
     super.key,
     this.controller,
     this.onChanged,
@@ -26,7 +26,7 @@ class ChatTextField extends StatelessWidget {
           color: primaryColor,
         ),
       ),
-      hintText: '메시지를 입력하세요.',
+      hintText: '댓글 작성',
       suffixIcon: IconButton(
         onPressed: onPressed,
         icon: const Icon(

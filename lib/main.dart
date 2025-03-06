@@ -15,7 +15,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final router = GoRouter(
       routes: routes,
-      initialLocation: '/splash',
+      initialLocation: '/',
     );
 
     return MaterialApp.router(

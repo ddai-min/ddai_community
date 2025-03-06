@@ -25,6 +25,7 @@ class LoginTextField extends StatelessWidget {
       labelText: labelText,
       hintText: hintText,
       obscureText: obscureText,
+      filled: false,
     );
   }
 }

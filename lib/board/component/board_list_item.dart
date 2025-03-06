@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class BoardListItem extends StatelessWidget {
   final String title;
   final String content;
+  final GestureTapCallback onTap;
 
   const BoardListItem({
     super.key,
     required this.title,
     required this.content,
+    required this.onTap,
   });
 
   @override
@@ -30,9 +32,7 @@ class BoardListItem extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          print('tap');
-        },
+        onTap: onTap,
       ),
     );
   }
