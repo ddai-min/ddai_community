@@ -25,6 +25,9 @@ class BoardListItem extends StatelessWidget {
       child: ListTile(
         title: Text(
           title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
