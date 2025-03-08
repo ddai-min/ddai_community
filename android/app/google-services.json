@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709883883276",
+    "project_id": "ddai-community",
+    "storage_bucket": "ddai-community.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709883883276:android:33bfdf6ff93463528fe329",
+        "android_client_info": {
+          "package_name": "com.example.ddai_community"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEbFzXYJfbNXHVziZ6DwbO6fFJKwzhvyw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

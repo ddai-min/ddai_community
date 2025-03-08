@@ -8,3 +8,4 @@ Community App
 - [json_annotation](https://pub.dev/packages/json_annotation)
 - [build_runner](https://pub.dev/packages/build_runner)
 - [json_serializable](https://pub.dev/packages/json_serializable)
+- [firebase_core](https://pub.dev/packages/firebase_core)
