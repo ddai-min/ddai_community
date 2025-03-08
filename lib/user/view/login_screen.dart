@@ -1,8 +1,10 @@
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/component/login_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   static get routeName => '/login';
@@ -68,11 +70,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _onLogin() {}
+  void _onLogin() {
+    context.goNamed(
+      HomeTab.routeName,
+    );
+  }
 
   void _onSignUp() {}
 
-  void _onAnonymous() {}
+  void _onAnonymous() {
+    context.goNamed(
+      HomeTab.routeName,
+    );
+  }
 }
 
 class _Title extends StatelessWidget {
