@@ -9,3 +9,5 @@ Community App
 - [build_runner](https://pub.dev/packages/build_runner)
 - [json_serializable](https://pub.dev/packages/json_serializable)
 - [firebase_core](https://pub.dev/packages/firebase_core)
+- [cloud_firestore](https://pub.dev/packages/cloud_firestore)
+- [logger](https://pub.dev/packages/logger)

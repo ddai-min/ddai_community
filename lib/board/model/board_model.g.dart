@@ -9,6 +9,6 @@ part of 'board_model.dart';
 BoardModel _$BoardModelFromJson(Map<String, dynamic> json) => BoardModel(
       title: json['title'] as String,
       content: json['content'] as String,
-      writer: json['writer'] as String,
-      date: json['date'] as String,
+      userName: json['userName'] as String,
+      date: const TimestampConverter().fromJson(json['date'] as Timestamp),
     );
