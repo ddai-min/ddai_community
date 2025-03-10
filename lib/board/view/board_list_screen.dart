@@ -6,15 +6,8 @@ import 'package:ddai_community/main.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class BoardListScreen extends StatefulWidget {
+class BoardListScreen extends StatelessWidget {
   const BoardListScreen({super.key});
-
-  @override
-  State<BoardListScreen> createState() => _BoardListScreenState();
-}
-
-class _BoardListScreenState extends State<BoardListScreen> {
-  FirebaseFirestore db = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +33,9 @@ class _BoardListScreenState extends State<BoardListScreen> {
                 onTap: () {
                   context.goNamed(
                     BoardDetailScreen.routeName,
+                    pathParameters: {
+                      'rid': snapshot.data![index].id,
+                    },
                   );
                 },
               );
@@ -52,8 +48,8 @@ class _BoardListScreenState extends State<BoardListScreen> {
     try {
       List<BoardModel> boardList = [];
 
-      await db.collection('board').get().then((event) {
-        for (var doc in event.docs) {
+      await firestore.collection('board').get().then((event) {
+        for (QueryDocumentSnapshot<Map<String, dynamic>> doc in event.docs) {
           logger.d('${doc.data()}');
 
           boardList.add(

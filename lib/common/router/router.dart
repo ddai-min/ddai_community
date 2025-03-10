@@ -23,9 +23,11 @@ List<GoRoute> routes = [
     builder: (_, __) => const HomeTab(),
     routes: [
       GoRoute(
-        path: 'board_detail',
+        path: 'board_detail/:rid',
         name: BoardDetailScreen.routeName,
-        builder: (_, __) => const BoardDetailScreen(),
+        builder: (_, state) => BoardDetailScreen(
+          id: state.pathParameters['rid']!,
+        ),
       ),
       GoRoute(
         path: 'board_create',

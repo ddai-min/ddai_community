@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 
 Logger logger = Logger();
+
+FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

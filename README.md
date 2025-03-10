@@ -11,3 +11,4 @@ Community App
 - [firebase_core](https://pub.dev/packages/firebase_core)
 - [cloud_firestore](https://pub.dev/packages/cloud_firestore)
 - [logger](https://pub.dev/packages/logger)
+- [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
