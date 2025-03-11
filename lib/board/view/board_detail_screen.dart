@@ -1,11 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/component/comment_list_item.dart';
 import 'package:ddai_community/board/component/comment_text_field.dart';
 import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/layout/future_layout.dart';
-import 'package:ddai_community/main.dart';
 import 'package:flutter/material.dart';
 
 class BoardDetailScreen extends StatefulWidget {
@@ -23,13 +22,21 @@ class BoardDetailScreen extends StatefulWidget {
 }
 
 class _BoardDetailScreenState extends State<BoardDetailScreen> {
-  List<String> userNames = ['user1', 'user2', 'user3'];
-  List<String> contents = ['content1', 'content2', 'content3'];
+  late TextEditingController commentTextController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    commentTextController = TextEditingController();
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureLayout<BoardModel?>(
-      future: _getBoard(),
+      future: BoardProvider.getBoard(
+        searchId: widget.id,
+      ),
       loadingDataWidget: const DefaultLayout(
         title: '',
         child: Center(
@@ -55,7 +62,21 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
                 ),
                 const SizedBox(height: 16.0),
                 CommentTextField(
-                  onPressed: () {},
+                  controller: commentTextController,
+                  onChanged: (value) {
+                    commentTextController.text = value;
+                  },
+                  onPressed: () async {
+                    final isSuccess = await BoardProvider.addComment(
+                      searchId: widget.id,
+                      userName: 'userName',
+                      content: commentTextController.text,
+                    );
+
+                    if (isSuccess) {
+                      commentTextController.text = '';
+                    }
+                  },
                 ),
                 _CommentList(
                   commentList: snapshot.data!.commentList,
@@ -67,36 +88,6 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
       ),
     );
   }
-
-  Future<BoardModel?> _getBoard() async {
-    BoardModel? boardModel;
-
-    try {
-      await firestore.collection('board').where(widget.id).get().then((event) {
-        Timestamp timestamp = event.docs.first['date'];
-        DateTime date = timestamp.toDate();
-
-        boardModel = BoardModel(
-          id: event.docs.first['id'],
-          title: event.docs.first['title'],
-          content: event.docs.first['content'],
-          userName: event.docs.first['userName'],
-          date: date,
-          commentList: (event.docs.first['commentList'] as List<dynamic>)
-              .map((e) => CommentModel.fromJson(e))
-              .toList(),
-        );
-      });
-
-      return boardModel;
-    } catch (e) {
-      logger.e(e);
-
-      return null;
-    }
-  }
-
-  Future<void> _createComment() async {}
 }
 
 class _Writing extends StatelessWidget {

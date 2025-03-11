@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/component/board_list_item.dart';
-import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/board/view/board_detail_screen.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/layout/future_layout.dart';
-import 'package:ddai_community/main.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,7 +12,7 @@ class BoardListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureLayout(
-      future: _getBoardList(),
+      future: BoardProvider.getBoardList(),
       loadingDataWidget: const Center(
         child: DefaultCircularProgressIndicator(),
       ),
@@ -37,29 +35,5 @@ class BoardListScreen extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Future<List<BoardModel>> _getBoardList() async {
-    try {
-      List<BoardModel> boardList = [];
-
-      await firestore.collection('board').get().then((event) {
-        for (QueryDocumentSnapshot<Map<String, dynamic>> doc in event.docs) {
-          logger.d('${doc.data()}');
-
-          boardList.add(
-            BoardModel.fromJson(
-              doc.data(),
-            ),
-          );
-        }
-      });
-
-      return boardList;
-    } catch (e) {
-      logger.e(e);
-
-      return [];
-    }
   }
 }

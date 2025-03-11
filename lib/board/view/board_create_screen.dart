@@ -1,7 +1,6 @@
-import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
-import 'package:ddai_community/main.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,7 +32,11 @@ class _BoardCreateScreenState extends State<BoardCreateScreen> {
       actions: [
         TextButton(
           onPressed: () async {
-            final isCreateSuccess = await _createBoard();
+            final isCreateSuccess = await BoardProvider.addBoard(
+              title: titleTextController.text,
+              content: contentTextController.text,
+              userName: 'userName',
+            );
 
             if (isCreateSuccess) {
               context.pop();
@@ -70,27 +73,5 @@ class _BoardCreateScreenState extends State<BoardCreateScreen> {
         ),
       ),
     );
-  }
-
-  Future<bool> _createBoard() async {
-    try {
-      final boardRef = firestore.collection('board').doc();
-
-      Map<String, dynamic> boardData = BoardModel(
-        id: boardRef.id,
-        title: titleTextController.text,
-        content: contentTextController.text,
-        userName: 'userName',
-        date: DateTime.now(),
-      ).toJson();
-
-      await firestore.collection('board').add(boardData);
-
-      return true;
-    } catch (e) {
-      logger.e(e);
-
-      return false;
-    }
   }
 }
