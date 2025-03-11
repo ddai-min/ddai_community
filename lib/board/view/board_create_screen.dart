@@ -33,7 +33,7 @@ class _BoardCreateScreenState extends State<BoardCreateScreen> {
       actions: [
         TextButton(
           onPressed: () async {
-            final isCreateSuccess = await _fetchData();
+            final isCreateSuccess = await _createBoard();
 
             if (isCreateSuccess) {
               context.pop();
@@ -72,7 +72,7 @@ class _BoardCreateScreenState extends State<BoardCreateScreen> {
     );
   }
 
-  Future<bool> _fetchData() async {
+  Future<bool> _createBoard() async {
     try {
       final boardRef = firestore.collection('board').doc();
 

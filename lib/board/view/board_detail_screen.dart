@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/component/comment_list_item.dart';
 import 'package:ddai_community/board/component/comment_text_field.dart';
 import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/common/layout/future_layout.dart';
 import 'package:ddai_community/main.dart';
 import 'package:flutter/material.dart';
 
@@ -26,55 +28,47 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<BoardModel?>(
-        future: _fetchData(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const DefaultLayout(
-              title: '',
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          if (snapshot.data == null) {
-            return const DefaultLayout(
-              title: '',
-              child: Center(
-                child: Text('로딩 중에 오류가 발생하였습니다.'),
-              ),
-            );
-          }
-
-          return DefaultLayout(
-            title: snapshot.data!.title,
-            child: SingleChildScrollView(
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16.0),
-                    _Writing(
-                      title: snapshot.data!.title,
-                      content: snapshot.data!.content,
-                    ),
-                    const SizedBox(height: 16.0),
-                    CommentTextField(
-                      onPressed: () {},
-                    ),
-                    _CommentList(
-                      userNames: userNames,
-                      contents: contents,
-                    ),
-                  ],
+    return FutureLayout<BoardModel?>(
+      future: _getBoard(),
+      loadingDataWidget: const DefaultLayout(
+        title: '',
+        child: Center(
+          child: DefaultCircularProgressIndicator(),
+        ),
+      ),
+      nullDataWidget: const DefaultLayout(
+        title: '',
+        child: Center(
+          child: Text('로딩 중에 오류가 발생하였습니다.'),
+        ),
+      ),
+      widget: (snapshot) => DefaultLayout(
+        title: snapshot.data!.title,
+        child: SingleChildScrollView(
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 16.0),
+                _Writing(
+                  title: snapshot.data!.title,
+                  content: snapshot.data!.content,
                 ),
-              ),
+                const SizedBox(height: 16.0),
+                CommentTextField(
+                  onPressed: () {},
+                ),
+                _CommentList(
+                  commentList: snapshot.data!.commentList,
+                ),
+              ],
             ),
-          );
-        });
+          ),
+        ),
+      ),
+    );
   }
 
-  Future<BoardModel?> _fetchData() async {
+  Future<BoardModel?> _getBoard() async {
     BoardModel? boardModel;
 
     try {
@@ -88,6 +82,9 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
           content: event.docs.first['content'],
           userName: event.docs.first['userName'],
           date: date,
+          commentList: (event.docs.first['commentList'] as List<dynamic>)
+              .map((e) => CommentModel.fromJson(e))
+              .toList(),
         );
       });
 
@@ -98,6 +95,8 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
       return null;
     }
   }
+
+  Future<void> _createComment() async {}
 }
 
 class _Writing extends StatelessWidget {
@@ -143,28 +142,33 @@ class _Writing extends StatelessWidget {
   }
 }
 
-/// TODO: 추후 Model 변경
 class _CommentList extends StatelessWidget {
-  final List<String> userNames;
-  final List<String> contents;
+  final List<CommentModel>? commentList;
 
   const _CommentList({
-    required this.userNames,
-    required this.contents,
+    required this.commentList,
   });
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> commentList = List.generate(
-      userNames.length,
-      (int index) => CommentListItem(
-        userName: userNames[index],
-        content: contents[index],
-      ),
-    );
+    if (commentList == null || commentList!.isEmpty) {
+      return const SizedBox(
+        height: 100,
+        child: Center(
+          child: Text('댓글이 없습니다.'),
+        ),
+      );
+    } else {
+      final List<Widget> list = List.generate(
+        commentList!.length,
+        (int index) => CommentListItem(
+          commentModel: commentList![index],
+        ),
+      );
 
-    return Column(
-      children: commentList,
-    );
+      return Column(
+        children: list,
+      );
+    }
   }
 }
