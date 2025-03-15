@@ -78,6 +78,9 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
 
                     if (isSuccess) {
                       commentTextController.text = '';
+
+                      ref.invalidate(getBoardProvider(widget.id));
+                      ref.read(getBoardProvider(widget.id));
                     }
                   },
                 ),

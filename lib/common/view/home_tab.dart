@@ -1,11 +1,10 @@
-import 'package:ddai_community/board/view/board_create_screen.dart';
+import 'package:ddai_community/board/component/add_board_floating_action_button.dart';
 import 'package:ddai_community/board/view/board_list_screen.dart';
 import 'package:ddai_community/chat/view/chat_screen.dart';
 import 'package:ddai_community/common/const/colors.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/user/view/profile_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class HomeTab extends StatefulWidget {
   static get routeName => 'home';
@@ -91,20 +90,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   Widget? renderFloatingActionButton() {
     if (index == 0) {
-      return FloatingActionButton(
-        foregroundColor: Colors.white,
-        backgroundColor: primaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(36),
-        ),
-        elevation: 0,
-        onPressed: () {
-          context.goNamed(
-            BoardCreateScreen.routeName,
-          );
-        },
-        child: const Icon(Icons.add),
-      );
+      return const AddBoardFloatingActionButton();
     } else {
       return null;
     }

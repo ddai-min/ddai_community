@@ -44,6 +44,9 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
             );
 
             if (isCreateSuccess) {
+              ref.invalidate(getBoardListProvider);
+              ref.read(getBoardListProvider);
+
               context.pop();
             }
           },

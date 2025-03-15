@@ -26,6 +26,7 @@ class AddCommentParams {
   });
 }
 
+// 게시글 목록 GET
 final getBoardListProvider =
     FutureProvider.autoDispose<List<BoardModel>>((ref) async {
   final result = await BoardRepository.getBoardList();
@@ -33,6 +34,7 @@ final getBoardListProvider =
   return result;
 });
 
+// 게시글 GET
 final getBoardProvider = FutureProvider.family
     .autoDispose<BoardModel?, String>((ref, searchId) async {
   final result = await BoardRepository.getBoard(
@@ -42,6 +44,7 @@ final getBoardProvider = FutureProvider.family
   return result;
 });
 
+// 게시글 ADD
 final addBoardProvider = FutureProvider.family
     .autoDispose<bool, AddBoardParams>((ref, params) async {
   final result = await BoardRepository.addBoard(
@@ -53,6 +56,7 @@ final addBoardProvider = FutureProvider.family
   return result;
 });
 
+// 댓글 ADD
 final addCommentProvider = FutureProvider.family
     .autoDispose<bool, AddCommentParams>((ref, params) async {
   final result = await BoardRepository.addComment(

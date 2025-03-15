@@ -7,7 +7,14 @@ class BoardRepository {
     try {
       List<BoardModel> boardList = [];
 
-      await firestore.collection('board').get().then((event) {
+      await firestore
+          .collection('board')
+          .orderBy(
+            'date',
+            descending: true,
+          )
+          .get()
+          .then((event) {
         for (QueryDocumentSnapshot<Map<String, dynamic>> doc in event.docs) {
           boardList.add(
             BoardModel.fromJson(
@@ -39,6 +46,10 @@ class BoardRepository {
           .collection('board')
           .doc(searchId)
           .collection('comment')
+          .orderBy(
+            'date',
+            descending: false,
+          )
           .get();
 
       commentList = commentSnapshot.docs
