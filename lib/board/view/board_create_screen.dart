@@ -2,18 +2,19 @@ import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class BoardCreateScreen extends StatefulWidget {
+class BoardCreateScreen extends ConsumerStatefulWidget {
   static get routeName => '/board_create';
 
   const BoardCreateScreen({super.key});
 
   @override
-  State<BoardCreateScreen> createState() => _BoardCreateScreenState();
+  ConsumerState<BoardCreateScreen> createState() => _BoardCreateScreenState();
 }
 
-class _BoardCreateScreenState extends State<BoardCreateScreen> {
+class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
   late TextEditingController titleTextController;
   late TextEditingController contentTextController;
 
@@ -32,10 +33,14 @@ class _BoardCreateScreenState extends State<BoardCreateScreen> {
       actions: [
         TextButton(
           onPressed: () async {
-            final isCreateSuccess = await BoardProvider.addBoard(
-              title: titleTextController.text,
-              content: contentTextController.text,
-              userName: 'userName',
+            final isCreateSuccess = await ref.read(
+              addBoardProvider(
+                AddBoardParams(
+                  title: titleTextController.text,
+                  content: contentTextController.text,
+                  userName: 'userName',
+                ),
+              ).future,
             );
 
             if (isCreateSuccess) {

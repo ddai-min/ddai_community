@@ -1,122 +1,65 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/board_model.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/board/repository/board_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BoardProvider {
-  static Future<List<BoardModel>> getBoardList() async {
-    try {
-      List<BoardModel> boardList = [];
+class AddBoardParams {
+  final String title;
+  final String content;
+  final String userName;
 
-      await firestore.collection('board').get().then((event) {
-        for (QueryDocumentSnapshot<Map<String, dynamic>> doc in event.docs) {
-          boardList.add(
-            BoardModel.fromJson(
-              doc.data(),
-            ),
-          );
-        }
-      });
-
-      return boardList;
-    } catch (e) {
-      logger.e(e);
-
-      return [];
-    }
-  }
-
-  static Future<BoardModel?> getBoard({
-    required String searchId,
-  }) async {
-    BoardModel? boardModel;
-    List<CommentModel>? commentList;
-
-    try {
-      final boardSnapshot =
-          await firestore.collection('board').doc(searchId).get();
-
-      final commentSnapshot = await firestore
-          .collection('board')
-          .doc(searchId)
-          .collection('comment')
-          .get();
-
-      commentList = commentSnapshot.docs
-          .map((e) => CommentModel.fromJson(e.data()))
-          .toList();
-
-      Timestamp timestamp = boardSnapshot['date'];
-      DateTime date = timestamp.toDate();
-
-      boardModel = BoardModel(
-        id: boardSnapshot['id'],
-        title: boardSnapshot['title'],
-        content: boardSnapshot['content'],
-        userName: boardSnapshot['userName'],
-        date: date,
-        commentList: commentList,
-      );
-
-      return boardModel;
-    } catch (e) {
-      logger.e(e);
-
-      return null;
-    }
-  }
-
-  static Future<bool> addBoard({
-    required String title,
-    required String content,
-    required String userName,
-  }) async {
-    try {
-      final boardRef = firestore.collection('board').doc();
-
-      Map<String, dynamic> boardData = BoardModel(
-        id: boardRef.id,
-        title: title,
-        content: content,
-        userName: userName,
-        date: DateTime.now(),
-      ).toJson();
-
-      await boardRef.set(boardData);
-
-      return true;
-    } catch (e) {
-      logger.e(e);
-
-      return false;
-    }
-  }
-
-  static Future<bool> addComment({
-    required String searchId,
-    required String userName,
-    required String content,
-  }) async {
-    try {
-      final commentRef = firestore
-          .collection('board')
-          .doc(searchId)
-          .collection('comment')
-          .doc();
-
-      Map<String, dynamic> commentData = CommentModel(
-        id: commentRef.id,
-        userName: userName,
-        content: content,
-        date: DateTime.now(),
-      ).toJson();
-
-      await commentRef.set(commentData);
-
-      return true;
-    } catch (e) {
-      logger.e(e);
-
-      return false;
-    }
-  }
+  AddBoardParams({
+    required this.title,
+    required this.content,
+    required this.userName,
+  });
 }
+
+class AddCommentParams {
+  final String searchId;
+  final String userName;
+  final String content;
+
+  AddCommentParams({
+    required this.searchId,
+    required this.userName,
+    required this.content,
+  });
+}
+
+final getBoardListProvider =
+    FutureProvider.autoDispose<List<BoardModel>>((ref) async {
+  final result = await BoardRepository.getBoardList();
+
+  return result;
+});
+
+final getBoardProvider = FutureProvider.family
+    .autoDispose<BoardModel?, String>((ref, searchId) async {
+  final result = await BoardRepository.getBoard(
+    searchId: searchId,
+  );
+
+  return result;
+});
+
+final addBoardProvider = FutureProvider.family
+    .autoDispose<bool, AddBoardParams>((ref, params) async {
+  final result = await BoardRepository.addBoard(
+    title: params.title,
+    content: params.content,
+    userName: params.userName,
+  );
+
+  return result;
+});
+
+final addCommentProvider = FutureProvider.family
+    .autoDispose<bool, AddCommentParams>((ref, params) async {
+  final result = await BoardRepository.addComment(
+    searchId: params.searchId,
+    userName: params.userName,
+    content: params.content,
+  );
+
+  return result;
+});

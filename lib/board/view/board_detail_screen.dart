@@ -4,10 +4,10 @@ import 'package:ddai_community/board/model/board_model.dart';
 import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
-import 'package:ddai_community/common/layout/future_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BoardDetailScreen extends StatefulWidget {
+class BoardDetailScreen extends ConsumerStatefulWidget {
   static get routeName => '/board_detail';
 
   final String id;
@@ -18,10 +18,10 @@ class BoardDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<BoardDetailScreen> createState() => _BoardDetailScreenState();
+  ConsumerState<BoardDetailScreen> createState() => _BoardDetailScreenState();
 }
 
-class _BoardDetailScreenState extends State<BoardDetailScreen> {
+class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   late TextEditingController commentTextController;
 
   @override
@@ -33,32 +33,31 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureLayout<BoardModel?>(
-      future: BoardProvider.getBoard(
-        searchId: widget.id,
-      ),
-      loadingDataWidget: const DefaultLayout(
+    final board = ref.watch(getBoardProvider(widget.id));
+
+    return board.when(
+      loading: () => const DefaultLayout(
         title: '',
         child: Center(
           child: DefaultCircularProgressIndicator(),
         ),
       ),
-      nullDataWidget: const DefaultLayout(
+      error: (error, stack) => const DefaultLayout(
         title: '',
         child: Center(
           child: Text('로딩 중에 오류가 발생하였습니다.'),
         ),
       ),
-      widget: (snapshot) => DefaultLayout(
-        title: snapshot.data!.title,
+      data: (data) => DefaultLayout(
+        title: data!.title,
         child: SingleChildScrollView(
           child: SafeArea(
             child: Column(
               children: [
                 const SizedBox(height: 16.0),
                 _Writing(
-                  title: snapshot.data!.title,
-                  content: snapshot.data!.content,
+                  title: data.title,
+                  content: data.content,
                 ),
                 const SizedBox(height: 16.0),
                 CommentTextField(
@@ -67,10 +66,14 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
                     commentTextController.text = value;
                   },
                   onPressed: () async {
-                    final isSuccess = await BoardProvider.addComment(
-                      searchId: widget.id,
-                      userName: 'userName',
-                      content: commentTextController.text,
+                    final isSuccess = await ref.read(
+                      addCommentProvider(
+                        AddCommentParams(
+                          searchId: widget.id,
+                          userName: 'userName',
+                          content: commentTextController.text,
+                        ),
+                      ).future,
                     );
 
                     if (isSuccess) {
@@ -79,7 +82,7 @@ class _BoardDetailScreenState extends State<BoardDetailScreen> {
                   },
                 ),
                 _CommentList(
-                  commentList: snapshot.data!.commentList,
+                  commentList: data.commentList,
                 ),
               ],
             ),
