@@ -32,7 +32,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final router = GoRouter(
       routes: routes,
-      initialLocation: '/',
+      initialLocation: '/splash',
     );
 
     return MaterialApp.router(

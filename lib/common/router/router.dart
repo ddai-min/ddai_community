@@ -4,6 +4,7 @@ import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
 import 'package:ddai_community/common/view/splash_screen.dart';
 import 'package:ddai_community/user/view/login_screen.dart';
+import 'package:ddai_community/user/view/sign_up_screen.dart';
 import 'package:go_router/go_router.dart';
 
 List<GoRoute> routes = [
@@ -16,6 +17,13 @@ List<GoRoute> routes = [
     path: '/login',
     name: LoginScreen.routeName,
     builder: (_, __) => const LoginScreen(),
+    routes: [
+      GoRoute(
+        path: '/sign_up',
+        name: SignUpScreen.routeName,
+        builder: (_, __) => const SignUpScreen(),
+      ),
+    ],
   ),
   GoRoute(
     path: '/',

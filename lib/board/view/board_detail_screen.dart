@@ -4,11 +4,12 @@ import 'package:ddai_community/board/model/board_model.dart';
 import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class BoardDetailScreen extends ConsumerStatefulWidget {
-  static get routeName => '/board_detail';
+  static get routeName => 'board_detail';
 
   final String id;
 
@@ -57,6 +58,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                 const SizedBox(height: 16.0),
                 _Writing(
                   title: data.title,
+                  userName: data.userName,
                   content: data.content,
                 ),
                 const SizedBox(height: 16.0),
@@ -65,24 +67,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                   onChanged: (value) {
                     commentTextController.text = value;
                   },
-                  onPressed: () async {
-                    final isSuccess = await ref.read(
-                      addCommentProvider(
-                        AddCommentParams(
-                          searchId: widget.id,
-                          userName: 'userName',
-                          content: commentTextController.text,
-                        ),
-                      ).future,
-                    );
-
-                    if (isSuccess) {
-                      commentTextController.text = '';
-
-                      ref.invalidate(getBoardProvider(widget.id));
-                      ref.read(getBoardProvider(widget.id));
-                    }
-                  },
+                  onPressed: _addComment,
                 ),
                 _CommentList(
                   commentList: data.commentList,
@@ -94,14 +79,35 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
       ),
     );
   }
+
+  Future<void> _addComment() async {
+    final isSuccess = await ref.read(
+      addCommentProvider(
+        AddCommentParams(
+          searchId: widget.id,
+          userName: ref.read(userMeProvider).userName,
+          content: commentTextController.text,
+        ),
+      ).future,
+    );
+
+    if (isSuccess) {
+      commentTextController.text = '';
+
+      ref.invalidate(getBoardProvider(widget.id));
+      ref.read(getBoardProvider(widget.id));
+    }
+  }
 }
 
 class _Writing extends StatelessWidget {
   final String title;
+  final String userName;
   final String content;
 
   const _Writing({
     required this.title,
+    required this.userName,
     required this.content,
   });
 
@@ -117,6 +123,12 @@ class _Writing extends StatelessWidget {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            '작성자: $userName',
+            style: TextStyle(
+              color: Colors.grey[700],
             ),
           ),
           const SizedBox(height: 16.0),

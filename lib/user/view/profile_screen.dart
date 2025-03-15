@@ -1,21 +1,27 @@
 import 'package:ddai_community/common/component/default_avatar.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userMe = ref.read(userMeProvider);
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Profile(
-            userName: 'UserName',
-            image: null,
+            userName: userMe.userName,
+            image: userMe.imageUrl != null
+                ? Image.network(userMe.imageUrl!)
+                : null,
           ),
           const SizedBox(height: 20),
           const Divider(),

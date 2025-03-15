@@ -1,21 +1,28 @@
 import 'package:ddai_community/common/component/default_elevated_button.dart';
+import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/main.dart';
 import 'package:ddai_community/user/component/login_text_field.dart';
+import 'package:ddai_community/user/model/user_model.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/view/sign_up_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
-  static get routeName => '/login';
+class LoginScreen extends ConsumerStatefulWidget {
+  static get routeName => 'login';
 
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController idTextController;
   late TextEditingController passwordTextController;
 
@@ -71,17 +78,40 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onLogin() {
+    // context.goNamed(
+    //   HomeTab.routeName,
+    // );
+  }
+
+  void _onSignUp() {
     context.goNamed(
-      HomeTab.routeName,
+      SignUpScreen.routeName,
     );
   }
 
-  void _onSignUp() {}
+  void _onAnonymous() async {
+    try {
+      DefaultLoadingOverlay.showLoading(context);
 
-  void _onAnonymous() {
-    context.goNamed(
-      HomeTab.routeName,
-    );
+      final userCredential = await FirebaseAuth.instance.signInAnonymously();
+
+      ref.read(userMeProvider.notifier).update(
+            (user) => UserModel(
+              id: userCredential.user!.uid,
+              userName: '익명${userCredential.user!.uid.substring(0, 6)}',
+            ),
+          );
+
+      DefaultLoadingOverlay.hideLoading(context);
+
+      context.goNamed(
+        HomeTab.routeName,
+      );
+    } catch (e) {
+      DefaultLoadingOverlay.hideLoading(context);
+
+      logger.e(e);
+    }
   }
 }
 
