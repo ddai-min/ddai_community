@@ -81,7 +81,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   }
 
   Future<void> _addComment() async {
-    final isSuccess = await ref.read(
+    final isSuccessed = await ref.read(
       addCommentProvider(
         AddCommentParams(
           searchId: widget.id,
@@ -91,7 +91,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
       ).future,
     );
 
-    if (isSuccess) {
+    if (isSuccessed) {
       commentTextController.text = '';
 
       ref.invalidate(getBoardProvider(widget.id));
