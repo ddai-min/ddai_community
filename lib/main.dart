@@ -3,6 +3,7 @@ import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,11 +12,15 @@ Logger logger = Logger();
 
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await dotenv.load(
+    fileName: '.env',
   );
 
   runApp(
@@ -32,7 +37,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final router = GoRouter(
       routes: routes,
-      initialLocation: '/splash',
+      initialLocation: '/login',
     );
 
     return MaterialApp.router(

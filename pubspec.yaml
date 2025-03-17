@@ -43,6 +43,7 @@ dependencies:
   logger: ^2.5.0
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.4
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +75,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - asset/img/avatar_default.png
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
