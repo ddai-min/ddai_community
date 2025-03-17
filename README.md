@@ -4,12 +4,10 @@ Community App
 
 ## Client
 
-# Flutter
 <img src="https://img.shields.io/badge/flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white">
 
 ## Backend
 
-# Firebase
 <img src="https://img.shields.io/badge/firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white">
 
 ## Using Packages
