@@ -16,12 +16,14 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  late ScrollController scrollController;
   late TextEditingController chatTextController;
 
   @override
   void initState() {
     super.initState();
 
+    scrollController = ScrollController();
     chatTextController = TextEditingController();
   }
 
@@ -40,6 +42,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           Expanded(
             child: _Body(
+              scrollController: scrollController,
               chatList: data,
             ),
           ),
@@ -66,19 +69,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     chatTextController.text = '';
+
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(0);
+    }
   }
 }
 
 class _Body extends ConsumerWidget {
+  final ScrollController scrollController;
   final List<ChatModel> chatList;
 
   const _Body({
+    required this.scrollController,
     required this.chatList,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
+      controller: scrollController,
+      reverse: true,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
