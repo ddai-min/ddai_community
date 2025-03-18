@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class DefaultTextField extends StatelessWidget {
   final TextEditingController? controller;
+  final String? forceErrorText;
   final ValueChanged<String>? onChanged;
   final double? padding;
   final int? maxLines;
@@ -19,6 +20,7 @@ class DefaultTextField extends StatelessWidget {
   const DefaultTextField({
     super.key,
     this.controller,
+    this.forceErrorText,
     this.onChanged,
     this.padding = 8.0,
     this.maxLines = 1,
@@ -43,6 +45,7 @@ class DefaultTextField extends StatelessWidget {
       padding: EdgeInsets.all(padding!),
       child: TextFormField(
         controller: controller,
+        forceErrorText: forceErrorText,
         onChanged: onChanged,
         onTapOutside: (event) {
           FocusManager.instance.primaryFocus?.unfocus();
