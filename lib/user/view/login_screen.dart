@@ -2,6 +2,7 @@ import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/common/util/data_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/main.dart';
 import 'package:ddai_community/user/component/login_text_field.dart';
@@ -25,6 +26,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController idTextController;
   late TextEditingController passwordTextController;
+
+  bool isLoginError = false;
 
   @override
   void initState() {
@@ -55,7 +58,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const _Title(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 15),
+            if (isLoginError) const _ErrorText(),
+            const SizedBox(height: 15),
             _Inputs(
               idTextController: idTextController,
               passwordTextController: passwordTextController,
@@ -77,10 +82,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _onLogin() {
-    // context.goNamed(
-    //   HomeTab.routeName,
-    // );
+  void _onLogin() async {
+    try {
+      DefaultLoadingOverlay.showLoading(context);
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: idTextController.text,
+        password: passwordTextController.text,
+      );
+
+      if (userCredential.user != null) {
+        setState(() {
+          isLoginError = false;
+        });
+
+        ref.read(userMeProvider.notifier).update(
+              (model) => UserModel(
+                id: userCredential.user!.email!,
+                userName: userCredential.user!.displayName ??
+                    userCredential.user!.email!,
+                email: userCredential.user!.email,
+                imageUrl: userCredential.user!.photoURL,
+              ),
+            );
+
+        context.goNamed(
+          HomeTab.routeName,
+        );
+      } else {
+        throw FirebaseAuthException;
+      }
+
+      DefaultLoadingOverlay.hideLoading(context);
+    } on FirebaseAuthException {
+      DefaultLoadingOverlay.hideLoading(context);
+
+      setState(() {
+        isLoginError = true;
+      });
+    } catch (error) {
+      DefaultLoadingOverlay.hideLoading(context);
+
+      logger.e(error);
+    }
   }
 
   void _onSignUp() {
@@ -98,7 +143,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(userMeProvider.notifier).update(
             (user) => UserModel(
               id: userCredential.user!.uid,
-              userName: '익명${userCredential.user!.uid.substring(0, 6)}',
+              userName: DataUtils.setAnonymousName(
+                uid: userCredential.user!.uid,
+              ),
             ),
           );
 
@@ -134,6 +181,23 @@ class _Title extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ErrorText extends StatelessWidget {
+  const _ErrorText();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      '아이디 또는 패스워드가 일치하지 않습니다.',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: Colors.red,
+        fontSize: 16.0,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }

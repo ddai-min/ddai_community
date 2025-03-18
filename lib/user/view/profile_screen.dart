@@ -1,6 +1,9 @@
 import 'package:ddai_community/common/component/default_avatar.dart';
+import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/view/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +32,16 @@ class ProfileScreen extends ConsumerWidget {
           _License(
             onTap: () => _pushLicenseScreen(context),
           ),
+          const Expanded(
+            child: SizedBox(),
+          ),
+          _LogoutButton(
+            onPressed: () {
+              _logout(
+                context: context,
+              );
+            },
+          ),
         ],
       ),
     );
@@ -37,6 +50,16 @@ class ProfileScreen extends ConsumerWidget {
   void _pushLicenseScreen(BuildContext context) {
     context.goNamed(
       LicenseScreen.routeName,
+    );
+  }
+
+  void _logout({
+    required BuildContext context,
+  }) async {
+    await FirebaseAuth.instance.signOut();
+
+    context.goNamed(
+      LoginScreen.routeName,
     );
   }
 }
@@ -92,6 +115,22 @@ class _License extends StatelessWidget {
       ),
       trailing: const Icon(Icons.arrow_forward_ios),
       onTap: onTap,
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _LogoutButton({
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTextButton(
+      onPressed: onPressed,
+      text: '로그아웃',
     );
   }
 }
