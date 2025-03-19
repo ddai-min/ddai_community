@@ -3,8 +3,12 @@ import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/common/util/reg_utils.dart';
+import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/auth_provider.dart';
-import 'package:ddai_community/user/view/login_screen.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/repository/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,35 +26,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   String? emailErrorText;
   String? passwordErrorText;
   String? passwordVerifyErrorText;
-  String? nicknameErrorText;
 
-  late TextEditingController emailTextController;
-  late TextEditingController passwordTextController;
-  late TextEditingController passwordVerifyTextController;
-  late TextEditingController nicknameTextController;
+  final formKey = GlobalKey<FormState>();
+
+  TextEditingController emailTextController = TextEditingController();
+  TextEditingController passwordTextController = TextEditingController();
+  TextEditingController passwordVerifyTextController = TextEditingController();
+  TextEditingController nicknameTextController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
-    emailTextController = TextEditingController();
-    passwordTextController = TextEditingController();
-    passwordVerifyTextController = TextEditingController();
-    nicknameTextController = TextEditingController();
-
-    emailTextController.addListener(_emailTextControllerListener);
     passwordTextController.addListener(_passwordTextControllerListener);
     passwordVerifyTextController.addListener(_passwordTextControllerListener);
-    nicknameTextController.addListener(_nicknameTextControllerListener);
   }
 
   @override
   void dispose() {
-    emailTextController.removeListener(_emailTextControllerListener);
     passwordTextController.removeListener(_passwordTextControllerListener);
     passwordVerifyTextController
         .removeListener(_passwordTextControllerListener);
-    nicknameTextController.removeListener(_nicknameTextControllerListener);
 
     emailTextController.dispose();
     passwordTextController.dispose();
@@ -67,70 +63,104 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _GuideText(),
-              const SizedBox(height: 20),
-              _Input(
-                text: '이메일',
-                controller: emailTextController,
-                forceErrorText: emailErrorText,
-              ),
-              _Input(
-                text: '비밀번호',
-                controller: passwordTextController,
-                obscureText: true,
-                forceErrorText: passwordErrorText,
-              ),
-              _Input(
-                text: '비밀번호 확인',
-                controller: passwordVerifyTextController,
-                obscureText: true,
-                forceErrorText: passwordVerifyErrorText,
-              ),
-              _Input(
-                text: '닉네임',
-                controller: nicknameTextController,
-                forceErrorText: nicknameErrorText,
-              ),
-              _BottomButton(
-                onPressed: _onSignUp,
-              ),
-            ],
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _GuideText(),
+                const SizedBox(height: 20),
+                _Input(
+                  text: '이메일',
+                  controller: emailTextController,
+                  validator: _emailValidator,
+                  forceErrorText: emailErrorText,
+                ),
+                _Input(
+                  text: '비밀번호',
+                  controller: passwordTextController,
+                  validator: _passwordValidator,
+                  obscureText: true,
+                  forceErrorText: passwordErrorText,
+                ),
+                _Input(
+                  text: '비밀번호 확인',
+                  controller: passwordVerifyTextController,
+                  validator: _passwordValidator,
+                  obscureText: true,
+                  forceErrorText: passwordVerifyErrorText,
+                ),
+                _Input(
+                  text: '닉네임',
+                  controller: nicknameTextController,
+                  validator: _nicknameValidator,
+                ),
+                _BottomButton(
+                  onPressed: _onSignUp,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _onSignUp() {
-    final result = ref.read(
+  void _onSignUp() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (passwordErrorText != null || passwordVerifyErrorText != null) {
+      return;
+    }
+
+    DefaultLoadingOverlay.showLoading(context);
+
+    final result = await ref.read(
       signUpWithEmailProvider(
         SignUpWithEmailParams(
           email: emailTextController.text,
           password: passwordTextController.text,
           userName: nicknameTextController.text,
         ),
-      ),
+      ).future,
     );
 
-    result.when(
-      loading: () => DefaultLoadingOverlay.showLoading(context),
-      error: (error, stack) {},
-      data: (user) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return DefaultDialog(
-              contentText: '성공적으로\n회원가입하였습니다.',
-              buttonText: '확인',
-              onPressed: () {
-                context.goNamed(
-                  LoginScreen.routeName,
-                );
-              },
+    DefaultLoadingOverlay.hideLoading(context);
+
+    if (!result.isSuccess) {
+      if (result.errorCode == FirebaseAuthExceptionCode.emailAlreadyInUse) {
+        setState(() {
+          emailErrorText = '이미 사용 중인 이메일입니다.';
+        });
+      } else if (result.errorCode == FirebaseAuthExceptionCode.weakPassword) {
+        setState(() {
+          passwordErrorText = '비밀번호를 6글자 이상 사용해주세요.';
+        });
+      }
+
+      return;
+    }
+
+    ref.read(userMeProvider.notifier).update(
+          (model) => UserModel(
+            id: emailTextController.text,
+            userName: nicknameTextController.text,
+            email: emailTextController.text,
+          ),
+        );
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return DefaultDialog(
+          contentText: '성공적으로\n회원가입하였습니다.',
+          buttonText: '확인',
+          onPressed: () {
+            context.goNamed(
+              HomeTab.routeName,
             );
           },
         );
@@ -138,7 +168,33 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     );
   }
 
-  void _emailTextControllerListener() {}
+  String? _emailValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '이메일을 입력해주세요.';
+    } else if (!RegUtils.isValidEmail(email: value)) {
+      return '올바른 이메일 형식이 아닙니다.';
+    }
+
+    return null;
+  }
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '비밀번호를 입력해주세요.';
+    }
+
+    return null;
+  }
+
+  String? _nicknameValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '닉네임을 입력해주세요.';
+    } else if (value.length < 2) {
+      return '닉네임은 두 글자 이상 입력해주세요.';
+    }
+
+    return null;
+  }
 
   void _passwordTextControllerListener() {
     if (passwordTextController.text.isNotEmpty &&
@@ -151,14 +207,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       setState(() {
         passwordErrorText = null;
         passwordVerifyErrorText = null;
-      });
-    }
-  }
-
-  void _nicknameTextControllerListener() {
-    if (nicknameTextController.text.length < 2) {
-      setState(() {
-        nicknameErrorText = '닉네임은 두 글자 이상 입력해주세요.';
       });
     }
   }
@@ -183,12 +231,14 @@ class _GuideText extends StatelessWidget {
 class _Input extends StatelessWidget {
   final String text;
   final TextEditingController controller;
+  final FormFieldValidator<String>? validator;
   final bool obscureText;
   final String? forceErrorText;
 
   const _Input({
     required this.text,
     required this.controller,
+    this.validator,
     this.obscureText = false,
     this.forceErrorText,
   });
@@ -201,6 +251,7 @@ class _Input extends StatelessWidget {
         Text(text),
         DefaultTextField(
           controller: controller,
+          validator: validator,
           obscureText: obscureText,
           forceErrorText: forceErrorText,
         ),

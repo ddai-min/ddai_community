@@ -1,5 +1,4 @@
 import 'package:ddai_community/user/repository/auth_repository.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SignUpWithEmailParams {
@@ -15,8 +14,8 @@ class SignUpWithEmailParams {
 }
 
 // 이메일 회원가입
-final signUpWithEmailProvider =
-    FutureProvider.family<User?, SignUpWithEmailParams>((ref, params) async {
+final signUpWithEmailProvider = FutureProvider.family
+    .autoDispose<AuthResult, SignUpWithEmailParams>((ref, params) async {
   final result = await AuthRepository.signUp(
     email: params.email,
     password: params.password,

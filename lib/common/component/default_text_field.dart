@@ -5,6 +5,7 @@ class DefaultTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String? forceErrorText;
   final ValueChanged<String>? onChanged;
+  final FormFieldValidator<String>? validator;
   final double? padding;
   final int? maxLines;
   final bool? obscureText;
@@ -22,6 +23,7 @@ class DefaultTextField extends StatelessWidget {
     this.controller,
     this.forceErrorText,
     this.onChanged,
+    this.validator,
     this.padding = 8.0,
     this.maxLines = 1,
     this.obscureText = false,
@@ -47,6 +49,7 @@ class DefaultTextField extends StatelessWidget {
         controller: controller,
         forceErrorText: forceErrorText,
         onChanged: onChanged,
+        validator: validator,
         onTapOutside: (event) {
           FocusManager.instance.primaryFocus?.unfocus();
         },

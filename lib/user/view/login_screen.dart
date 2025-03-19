@@ -1,3 +1,4 @@
+import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
@@ -28,6 +29,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   TextEditingController passwordTextController = TextEditingController();
 
   bool isLoginError = false;
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    idTextController.dispose();
+    passwordTextController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,25 +127,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _onAnonymous() async {
+  void _onAnonymous() {
     try {
-      DefaultLoadingOverlay.showLoading(context);
-
-      final userCredential = await FirebaseAuth.instance.signInAnonymously();
-
-      ref.read(userMeProvider.notifier).update(
-            (user) => UserModel(
-              id: userCredential.user!.uid,
-              userName: DataUtils.setAnonymousName(
-                uid: userCredential.user!.uid,
-              ),
+      showDialog(
+        context: context,
+        builder: (context) {
+          return DefaultDialog(
+            contentText:
+                '익명이더라도 법률에 위반되는 행위를 할 시, 법적 책임이 발생할 수 있습니다.\n\n원활한 이용을 위해 규정을 준수해주세요.',
+            contentTextStyle: const TextStyle(
+              fontSize: 16.0,
+              fontWeight: FontWeight.bold,
             ),
+            buttonText: '확인',
+            onPressed: () async {
+              DefaultLoadingOverlay.showLoading(context);
+
+              final userCredential =
+                  await FirebaseAuth.instance.signInAnonymously();
+
+              ref.read(userMeProvider.notifier).update(
+                    (user) => UserModel(
+                      id: userCredential.user!.uid,
+                      userName: DataUtils.setAnonymousName(
+                        uid: userCredential.user!.uid,
+                      ),
+                    ),
+                  );
+
+              DefaultLoadingOverlay.hideLoading(context);
+
+              context.goNamed(
+                HomeTab.routeName,
+              );
+            },
           );
-
-      DefaultLoadingOverlay.hideLoading(context);
-
-      context.goNamed(
-        HomeTab.routeName,
+        },
       );
     } catch (e) {
       DefaultLoadingOverlay.hideLoading(context);
