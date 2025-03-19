@@ -42,7 +42,6 @@ dependencies:
   cloud_firestore: ^5.6.5
   logger: ^2.5.0
   flutter_riverpod: ^2.6.1
-  flutter_secure_storage: ^9.2.4
   flutter_dotenv: ^5.2.1
 
 dev_dependencies:

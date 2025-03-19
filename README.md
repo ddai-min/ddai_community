@@ -43,5 +43,4 @@ Community App
 - [cloud_firestore](https://pub.dev/packages/cloud_firestore)
 - [logger](https://pub.dev/packages/logger)
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
-- [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
