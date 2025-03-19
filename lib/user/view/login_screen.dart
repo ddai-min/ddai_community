@@ -24,26 +24,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  late TextEditingController idTextController;
-  late TextEditingController passwordTextController;
+  TextEditingController idTextController = TextEditingController();
+  TextEditingController passwordTextController = TextEditingController();
 
   bool isLoginError = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    idTextController = TextEditingController();
-    passwordTextController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    idTextController.dispose();
-    passwordTextController.dispose();
-
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

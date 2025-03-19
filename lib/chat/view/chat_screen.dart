@@ -16,16 +16,8 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  late ScrollController scrollController;
-  late TextEditingController chatTextController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    scrollController = ScrollController();
-    chatTextController = TextEditingController();
-  }
+  ScrollController scrollController = ScrollController();
+  TextEditingController chatTextController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {

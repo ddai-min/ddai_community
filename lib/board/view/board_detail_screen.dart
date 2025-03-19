@@ -23,14 +23,7 @@ class BoardDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
-  late TextEditingController commentTextController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    commentTextController = TextEditingController();
-  }
+  TextEditingController commentTextController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {

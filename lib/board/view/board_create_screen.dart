@@ -16,16 +16,8 @@ class BoardCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
-  late TextEditingController titleTextController;
-  late TextEditingController contentTextController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    titleTextController = TextEditingController();
-    contentTextController = TextEditingController();
-  }
+  TextEditingController titleTextController = TextEditingController();
+  TextEditingController contentTextController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
