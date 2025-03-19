@@ -12,22 +12,22 @@ Community App
 
 ## Architecture
 
-/ddai_community
-│── 📁 lib
-│   ├── 📁 board        # 게시글 관련 소스 코드
-│   ├── 📁 chat         # 채팅 관련 소스 코드
-│   ├── 📁 common       # 공통 사용 소스 코드
+/ddai_community  
+│── 📁 lib  
+│   ├── 📁 board        # 게시글 관련 소스 코드  
+│   ├── 📁 chat         # 채팅 관련 소스 코드  
+│   ├── 📁 common       # 공통 사용 소스 코드  
 │   ├── 📁 user         # 회원가입, 로그인 등 유저 관련 소스 코드
 
-📁 component        # 재사용 widget
-📁 model            # api용 json 모델
-📁 provider         # 상태관리를 위한 riverpod provider
+📁 component        # 재사용 widget  
+📁 model            # api용 json 모델  
+📁 provider         # 상태관리를 위한 riverpod provider  
 📁 repository       # firebase 송수신
 
-📁 const            # 상수 집합
-📁 converter        # json 타입 변환
-📁 layout           # 공통 layout widget
-📁 router           # 라우팅
+📁 const            # 상수 집합  
+📁 converter        # json 타입 변환  
+📁 layout           # 공통 layout widget  
+📁 router           # 라우팅  
 📁 util             # 데이터 변환
 
 📁 view             # 실제 보여지는 widget
