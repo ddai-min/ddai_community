@@ -20,6 +20,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   TextEditingController chatTextController = TextEditingController();
 
   @override
+  void dispose() {
+    super.dispose();
+
+    scrollController.dispose();
+    chatTextController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final chatList = ref.watch(getChatListProvider);
 

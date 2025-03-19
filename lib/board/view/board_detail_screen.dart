@@ -26,6 +26,13 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   TextEditingController commentTextController = TextEditingController();
 
   @override
+  void dispose() {
+    super.dispose();
+
+    commentTextController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final board = ref.watch(getBoardProvider(widget.id));
 

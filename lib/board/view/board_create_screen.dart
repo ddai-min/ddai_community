@@ -20,6 +20,14 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
   TextEditingController contentTextController = TextEditingController();
 
   @override
+  void dispose() {
+    super.dispose();
+
+    titleTextController.dispose();
+    contentTextController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '게시글 작성',
