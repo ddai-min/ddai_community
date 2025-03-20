@@ -51,19 +51,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDEbFzXYJfbNXHVziZ6DwbO6fFJKwzhvyw',
-    appId: '1:709883883276:android:33bfdf6ff93463528fe329',
+    appId: '1:709883883276:android:231988df36c998c08fe329',
     messagingSenderId: '709883883276',
     projectId: 'ddai-community',
+    databaseURL: 'https://ddai-community-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'ddai-community.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCdZQk5t-l9nE_3fqtHp6mTZ7P7A2s3LRs',
-    appId: '1:709883883276:ios:4171059dbaa78cba8fe329',
+    appId: '1:709883883276:ios:a9eeebf2fd5ea8588fe329',
     messagingSenderId: '709883883276',
     projectId: 'ddai-community',
+    databaseURL: 'https://ddai-community-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'ddai-community.firebasestorage.app',
-    iosBundleId: 'com.example.ddaiCommunity',
+    iosBundleId: 'com.ddai.ddaiCommunity',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -72,7 +74,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '709883883276',
     projectId: 'ddai-community',
     storageBucket: 'ddai-community.firebasestorage.app',
-    iosBundleId: 'com.example.ddaiCommunity',
+    iosBundleId: 'com.ddai.ddaiCommunity',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

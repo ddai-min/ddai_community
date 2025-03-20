@@ -1,4 +1,4 @@
-package com.example.ddai_community
+package com.ddai.ddai_community
 
 import io.flutter.embedding.android.FlutterActivity
 
