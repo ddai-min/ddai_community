@@ -16,6 +16,8 @@ class BoardCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
+  final formKey = GlobalKey<FormState>();
+
   TextEditingController titleTextController = TextEditingController();
   TextEditingController contentTextController = TextEditingController();
 
@@ -44,21 +46,46 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
         ),
       ],
       child: SingleChildScrollView(
-        child: _Body(
-          titleTextController: titleTextController,
-          contentTextController: contentTextController,
-          titleTextOnChanged: (value) {
-            titleTextController.text = value;
-          },
-          contentTextOnChanged: (value) {
-            contentTextController.text = value;
-          },
+        child: Form(
+          key: formKey,
+          child: _Body(
+            titleValidator: _boardCreateTitleValidator,
+            contentValidator: _boardCreateContentValidator,
+            titleTextController: titleTextController,
+            contentTextController: contentTextController,
+            titleTextOnChanged: (value) {
+              titleTextController.text = value;
+            },
+            contentTextOnChanged: (value) {
+              contentTextController.text = value;
+            },
+          ),
         ),
       ),
     );
   }
 
+  String? _boardCreateTitleValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '제목을 입력해주세요.';
+    }
+
+    return null;
+  }
+
+  String? _boardCreateContentValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '내용을 입력해주세요.';
+    }
+
+    return null;
+  }
+
   Future<void> _addBoard() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
     final isCreateSuccess = await ref.read(
       addBoardProvider(
         AddBoardParams(
@@ -79,12 +106,16 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
 }
 
 class _Body extends StatelessWidget {
+  final FormFieldValidator<String> titleValidator;
+  final FormFieldValidator<String> contentValidator;
   final TextEditingController titleTextController;
   final TextEditingController contentTextController;
   final ValueChanged<String> titleTextOnChanged;
   final ValueChanged<String> contentTextOnChanged;
 
   const _Body({
+    required this.titleValidator,
+    required this.contentValidator,
     required this.titleTextController,
     required this.contentTextController,
     required this.titleTextOnChanged,
@@ -97,11 +128,13 @@ class _Body extends StatelessWidget {
       children: [
         DefaultTextField(
           controller: titleTextController,
+          validator: titleValidator,
           hintText: '제목을 입력해주세요.',
           onChanged: titleTextOnChanged,
         ),
         DefaultTextField(
           controller: contentTextController,
+          validator: contentValidator,
           hintText: '내용을 입력해주세요.',
           maxLines: 20,
           onChanged: contentTextOnChanged,
