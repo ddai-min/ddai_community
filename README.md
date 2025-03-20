@@ -34,13 +34,18 @@ Community App
 
 ## Using Packages
 
+- [cupertino_icons](https://pub.dev/packages/cupertino_icons)
 - [go_router](https://pub.dev/packages/go_router)
 - [json_annotation](https://pub.dev/packages/json_annotation)
-- [build_runner](https://pub.dev/packages/build_runner)
-- [json_serializable](https://pub.dev/packages/json_serializable)
 - [firebase_core](https://pub.dev/packages/firebase_core)
 - [firebase_auth](https://pub.dev/packages/firebase_auth)
 - [cloud_firestore](https://pub.dev/packages/cloud_firestore)
 - [logger](https://pub.dev/packages/logger)
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
+
+## Using Dev Packages
+
+- [flutter_lints](https://pub.dev/packages/flutter_lints)
+- [build_runner](https://pub.dev/packages/build_runner)
+- [json_serializable](https://pub.dev/packages/json_serializable)
