@@ -36,8 +36,8 @@ class ChatRepository {
       ).toJson();
 
       await chatRef.set(chatData);
-    } catch (e) {
-      logger.e(e);
+    } catch (error) {
+      logger.e(error);
     }
   }
 }

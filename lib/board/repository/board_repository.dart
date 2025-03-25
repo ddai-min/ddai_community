@@ -25,8 +25,8 @@ class BoardRepository {
       });
 
       return boardList;
-    } catch (e) {
-      logger.e(e);
+    } catch (error) {
+      logger.e(error);
 
       return [];
     }
@@ -69,8 +69,8 @@ class BoardRepository {
       );
 
       return boardModel;
-    } catch (e) {
-      logger.e(e);
+    } catch (error) {
+      logger.e(error);
 
       return null;
     }
@@ -95,8 +95,8 @@ class BoardRepository {
       await boardRef.set(boardData);
 
       return true;
-    } catch (e) {
-      logger.e(e);
+    } catch (error) {
+      logger.e(error);
 
       return false;
     }
@@ -124,8 +124,8 @@ class BoardRepository {
       await commentRef.set(commentData);
 
       return true;
-    } catch (e) {
-      logger.e(e);
+    } catch (error) {
+      logger.e(error);
 
       return false;
     }

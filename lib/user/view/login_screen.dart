@@ -164,10 +164,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
         },
       );
-    } catch (e) {
+    } catch (error) {
       DefaultLoadingOverlay.hideLoading(context);
 
-      logger.e(e);
+      logger.e(error);
     }
   }
 }
