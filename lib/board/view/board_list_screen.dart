@@ -7,39 +7,83 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class BoardListScreen extends ConsumerWidget {
+class BoardListScreen extends ConsumerStatefulWidget {
   const BoardListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoardListScreen> createState() => _BoardListScreenState();
+}
+
+class _BoardListScreenState extends ConsumerState<BoardListScreen> {
+  final ScrollController scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      ref.read(getBoardListProvider.notifier).fetchData();
+    });
+
+    scrollController.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_listener);
+    scrollController.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final boardList = ref.watch(getBoardListProvider);
 
-    return boardList.when(
-      loading: () => const Center(
+    if (boardList.items.isEmpty && boardList.isLoading) {
+      return const Center(
         child: DefaultCircularProgressIndicator(),
-      ),
-      error: (error, stack) => Container(),
-      data: (data) => RefreshIndicator(
-        color: primaryColor,
-        backgroundColor: Colors.white,
-        onRefresh: () => ref.refresh(getBoardListProvider.future),
-        child: ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              return BoardListItem(
-                title: data[index].title,
-                content: data[index].content,
-                onTap: () {
-                  context.goNamed(
-                    BoardDetailScreen.routeName,
-                    pathParameters: {
-                      'rid': data[index].id,
-                    },
-                  );
-                },
+      );
+    }
+
+    return RefreshIndicator(
+      color: primaryColor,
+      backgroundColor: Colors.white,
+      onRefresh: () async {
+        ref.read(getBoardListProvider.notifier).refresh();
+      },
+      child: ListView.builder(
+          controller: scrollController,
+          itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == boardList.items.length) {
+              return const Center(
+                child: DefaultCircularProgressIndicator(),
               );
-            }),
-      ),
+            }
+
+            final board = boardList.items[index];
+
+            return BoardListItem(
+              title: board.title,
+              content: board.content,
+              onTap: () {
+                context.goNamed(
+                  BoardDetailScreen.routeName,
+                  pathParameters: {
+                    'rid': board.id,
+                  },
+                );
+              },
+            );
+          }),
     );
+  }
+
+  void _listener() {
+    if (scrollController.offset >
+        scrollController.position.maxScrollExtent - 200) {
+      ref.read(getBoardListProvider.notifier).fetchData();
+    }
   }
 }

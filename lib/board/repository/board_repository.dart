@@ -1,36 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
 
-class BoardRepository {
-  static Future<List<BoardModel>> getBoardList() async {
-    try {
-      List<BoardModel> boardList = [];
-
-      await firestore
-          .collection('board')
-          .orderBy(
-            'date',
-            descending: true,
-          )
-          .get()
-          .then((event) {
-        for (QueryDocumentSnapshot<Map<String, dynamic>> doc in event.docs) {
-          boardList.add(
-            BoardModel.fromJson(
-              doc.data(),
-            ),
-          );
-        }
-      });
-
-      return boardList;
-    } catch (error) {
-      logger.e(error);
-
-      return [];
-    }
-  }
+class BoardRepository extends PaginationRepository<BoardModel> {
+  BoardRepository()
+      : super(
+          collectionPath: CollectionPath.board,
+          fromJson: (data) => BoardModel.fromJson(data),
+        );
 
   static Future<BoardModel?> getBoard({
     required String searchId,

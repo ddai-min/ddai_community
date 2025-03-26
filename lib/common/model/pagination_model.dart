@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class PaginationModel {
-  final List<DocumentSnapshot> items;
+class PaginationModel<T> {
+  final List<T> items;
   final bool isLoading;
   final bool hasMore;
   final DocumentSnapshot? lastDocument;
@@ -13,13 +13,13 @@ class PaginationModel {
     this.lastDocument,
   });
 
-  PaginationModel copyWith({
-    List<DocumentSnapshot>? items,
+  PaginationModel<T> copyWith({
+    List<T>? items,
     bool? isLoading,
     bool? hasMore,
     DocumentSnapshot? lastDocument,
   }) {
-    return PaginationModel(
+    return PaginationModel<T>(
       items: items ?? this.items,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,

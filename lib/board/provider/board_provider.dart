@@ -1,5 +1,8 @@
 import 'package:ddai_community/board/model/board_model.dart';
 import 'package:ddai_community/board/repository/board_repository.dart';
+import 'package:ddai_community/common/model/pagination_model.dart';
+import 'package:ddai_community/common/provider/pagination_provider.dart';
+import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AddBoardParams {
@@ -26,12 +29,19 @@ class AddCommentParams {
   });
 }
 
-// 게시글 목록 GET
-final getBoardListProvider =
-    FutureProvider.autoDispose<List<BoardModel>>((ref) async {
-  final result = await BoardRepository.getBoardList();
+final boardRepositoryProvider = Provider(
+  (ref) => BoardRepository(),
+);
 
-  return result;
+// 게시글 목록 GET
+final getBoardListProvider = StateNotifierProvider<
+    PaginationProvider<BoardModel>, PaginationModel<BoardModel>>((ref) {
+  final repository = ref.watch(boardRepositoryProvider);
+
+  return PaginationProvider<BoardModel>(
+    paginationRepository: repository,
+    collectionPath: CollectionPath.board,
+  );
 });
 
 // 게시글 GET
