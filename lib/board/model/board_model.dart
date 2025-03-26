@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/common/converter/timestamp_converter.dart';
+import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'board_model.g.dart';
 
 @JsonSerializable()
-class BoardModel {
+class BoardModel implements ModelWithId {
+  @override
   final String id;
   final String title;
   final String content;
@@ -32,7 +34,8 @@ class BoardModel {
 }
 
 @JsonSerializable()
-class CommentModel {
+class CommentModel implements ModelWithId {
+  @override
   final String id;
   final String userName;
   final String content;
