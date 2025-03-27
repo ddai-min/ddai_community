@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/main.dart';
 
@@ -8,7 +9,7 @@ enum CollectionPath {
   chat,
 }
 
-class PaginationRepository<T> {
+class PaginationRepository<T extends ModelWithId> {
   final CollectionPath collectionPath;
   final T Function(Map<String, dynamic> data) fromJson;
 
@@ -25,7 +26,10 @@ class PaginationRepository<T> {
     try {
       Query query = firestore
           .collection(collectionPath.name)
-          .orderBy('date', descending: true)
+          .orderBy(
+            'date',
+            descending: true,
+          )
           .limit(pageSize);
 
       if (lastDocument != null) {
@@ -52,5 +56,28 @@ class PaginationRepository<T> {
         items: [],
       );
     }
+  }
+
+  Stream<List<T>> streamData({
+    required CollectionPath collectionPath,
+    int pageSize = 100,
+  }) {
+    return firestore
+        .collection(collectionPath.name)
+        .orderBy(
+          'date',
+          descending: true,
+        )
+        .limit(pageSize)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (e) => fromJson(
+                  e.data(),
+                ),
+              )
+              .toList(),
+        );
   }
 }

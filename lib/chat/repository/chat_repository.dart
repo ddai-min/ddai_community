@@ -1,25 +1,13 @@
 import 'package:ddai_community/chat/model/chat_model.dart';
+import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
 
-class ChatRepository {
-  static Stream<List<ChatModel>> getChatList() {
-    return firestore
-        .collection('chat')
-        .orderBy(
-          'date',
-          descending: false,
-        )
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(
-                (doc) => ChatModel.fromJson(
-                  doc.data(),
-                ),
-              )
-              .toList(),
+class ChatRepository extends PaginationRepository<ChatModel> {
+  ChatRepository()
+      : super(
+          collectionPath: CollectionPath.chat,
+          fromJson: (data) => ChatModel.fromJson(data),
         );
-  }
 
   static Future<void> addChat({
     required String content,

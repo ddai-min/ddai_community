@@ -34,13 +34,14 @@ final boardRepositoryProvider = Provider(
 );
 
 // 게시글 목록 GET
-final getBoardListProvider = StateNotifierProvider<
+final getBoardListProvider = StateNotifierProvider.autoDispose<
     PaginationProvider<BoardModel>, PaginationModel<BoardModel>>((ref) {
   final repository = ref.watch(boardRepositoryProvider);
 
   return PaginationProvider<BoardModel>(
     paginationRepository: repository,
     collectionPath: CollectionPath.board,
+    isUsingStream: false,
   );
 });
 

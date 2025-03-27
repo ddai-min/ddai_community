@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ddai_community/common/model/model_with_id.dart';
 
-class PaginationModel<T> {
+class PaginationModel<T extends ModelWithId> {
   final List<T> items;
   final bool isLoading;
   final bool hasMore;

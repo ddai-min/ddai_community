@@ -1,5 +1,8 @@
 import 'package:ddai_community/chat/model/chat_model.dart';
 import 'package:ddai_community/chat/repository/chat_repository.dart';
+import 'package:ddai_community/common/model/pagination_model.dart';
+import 'package:ddai_community/common/provider/pagination_provider.dart';
+import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AddChatParams {
@@ -12,12 +15,20 @@ class AddChatParams {
   });
 }
 
-// 채팅 목록 GET
-final getChatListProvider =
-    StreamProvider.autoDispose<List<ChatModel>>((ref) async* {
-  final result = ChatRepository.getChatList();
+final chatRepositoryProvider = Provider(
+  (ref) => ChatRepository(),
+);
 
-  yield* result;
+// 채팅 목록 GET
+final getChatListProvider = StateNotifierProvider.autoDispose<
+    PaginationProvider<ChatModel>, PaginationModel<ChatModel>>((ref) {
+  final repository = ref.watch(chatRepositoryProvider);
+
+  return PaginationProvider<ChatModel>(
+    paginationRepository: repository,
+    collectionPath: CollectionPath.chat,
+    isUsingStream: true,
+  );
 });
 
 // 채팅 ADD

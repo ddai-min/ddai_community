@@ -1,15 +1,19 @@
+import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PaginationProvider<T> extends StateNotifier<PaginationModel<T>> {
+class PaginationProvider<T extends ModelWithId>
+    extends StateNotifier<PaginationModel<T>> {
   final PaginationRepository<T> paginationRepository;
   final CollectionPath collectionPath;
+  final bool isUsingStream;
   final int pageSize;
 
   PaginationProvider({
     required this.paginationRepository,
     required this.collectionPath,
+    required this.isUsingStream,
     this.pageSize = 30,
   }) : super(
           PaginationModel<T>(
@@ -17,7 +21,11 @@ class PaginationProvider<T> extends StateNotifier<PaginationModel<T>> {
             hasMore: true,
             lastDocument: null,
           ),
-        );
+        ) {
+    if (isUsingStream) {
+      streamData();
+    }
+  }
 
   Future<void> fetchData() async {
     if (state.isLoading || !state.hasMore) {
@@ -50,5 +58,21 @@ class PaginationProvider<T> extends StateNotifier<PaginationModel<T>> {
     );
 
     fetchData();
+  }
+
+  void streamData() {
+    paginationRepository
+        .streamData(
+      collectionPath: collectionPath,
+    )
+        .listen((newData) {
+      if (!mounted) {
+        return;
+      }
+
+      state = state.copyWith(
+        items: newData,
+      );
+    });
   }
 }

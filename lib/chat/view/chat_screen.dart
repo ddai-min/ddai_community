@@ -4,6 +4,7 @@ import 'package:ddai_community/chat/component/other_chat_bubble.dart';
 import 'package:ddai_community/chat/model/chat_model.dart';
 import 'package:ddai_community/chat/provider/chat_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
+import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,44 +22,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
-    super.dispose();
-
     scrollController.dispose();
     chatTextController.dispose();
+
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final chatList = ref.watch(getChatListProvider);
 
-    return chatList.when(
-      loading: () => const Center(
+    if (chatList.items.isEmpty && chatList.isLoading) {
+      return const Center(
         child: DefaultCircularProgressIndicator(),
-      ),
-      error: (error, stack) => const Center(
-        child: Text('로딩 중에 오류가 발생하였습니다.'),
-      ),
-      data: (data) => Column(
-        children: [
-          Expanded(
-            child: _Body(
-              scrollController: scrollController,
-              chatList: data,
-            ),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: _Body(
+            scrollController: scrollController,
+            chatList: chatList,
           ),
-          _Input(
-            controller: chatTextController,
-            onChanged: (value) {
-              chatTextController.text = value;
-            },
-            onPressed: _onChatPressed,
-          ),
-        ],
-      ),
+        ),
+        _Input(
+          controller: chatTextController,
+          onChanged: (value) {
+            chatTextController.text = value;
+          },
+          onPressed: _onChatPressed,
+        ),
+      ],
     );
   }
 
   void _onChatPressed() {
+    if (chatTextController.text.isEmpty) {
+      return;
+    }
+
     ref.read(
       addChatProvider(
         AddChatParams(
@@ -78,7 +81,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
 class _Body extends ConsumerWidget {
   final ScrollController scrollController;
-  final List<ChatModel> chatList;
+  final PaginationModel<ChatModel> chatList;
 
   const _Body({
     required this.scrollController,
@@ -87,37 +90,29 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
+    return ListView.builder(
       controller: scrollController,
       reverse: true,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: chatList.map((e) {
-            if (e.userName == ref.read(userMeProvider).userName) {
-              return Column(
-                children: [
-                  MyChatBubble(
-                    message: e.content,
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              );
-            } else {
-              return Column(
-                children: [
-                  OtherChatBubble(
-                    userName: e.userName,
-                    message: e.content,
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              );
-            }
-          }).toList(),
-        ),
-      ),
+      itemCount: chatList.items.length,
+      itemBuilder: (context, index) {
+        final chatItem = chatList.items[index];
+
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (chatItem.userName == ref.read(userMeProvider).userName)
+                MyChatBubble(message: chatItem.content)
+              else
+                OtherChatBubble(
+                  userName: chatItem.userName,
+                  message: chatItem.content,
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
