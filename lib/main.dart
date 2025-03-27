@@ -16,17 +16,21 @@ Logger logger = Logger();
 
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+final String firebaseWebApiKey = dotenv.env['FIREBASE_WEB_API_KEY']!;
+final String firebaseAndroidApiKey = dotenv.env['FIREBASE_ANDROID_API_KEY']!;
+final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
   // env file load
   await dotenv.load(
     fileName: '.env',
+  );
+
+  // firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(
