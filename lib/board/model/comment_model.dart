@@ -1,35 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/converter/timestamp_converter.dart';
 import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'board_model.g.dart';
+part 'comment_model.g.dart';
 
 @JsonSerializable()
-class BoardModel implements ModelWithId {
+class CommentModel implements ModelWithId {
   @override
   final String id;
-  final String title;
-  final String content;
   final String userName;
+  final String content;
   @TimestampConverter()
   final DateTime date;
   final String? imageUrl;
-  final List<CommentModel>? commentList;
 
-  BoardModel({
+  CommentModel({
     required this.id,
-    required this.title,
-    required this.content,
     required this.userName,
+    required this.content,
     required this.date,
     this.imageUrl,
-    this.commentList,
   });
 
-  factory BoardModel.fromJson(Map<String, dynamic> json) =>
-      _$BoardModelFromJson(json);
+  factory CommentModel.fromJson(Map<String, dynamic> json) =>
+      _$CommentModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$BoardModelToJson(this);
+  Map<String, dynamic> toJson() => _$CommentModelToJson(this);
 }

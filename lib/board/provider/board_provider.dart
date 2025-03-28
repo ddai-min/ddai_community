@@ -17,18 +17,6 @@ class AddBoardParams {
   });
 }
 
-class AddCommentParams {
-  final String searchId;
-  final String userName;
-  final String content;
-
-  AddCommentParams({
-    required this.searchId,
-    required this.userName,
-    required this.content,
-  });
-}
-
 final boardRepositoryProvider = Provider(
   (ref) => BoardRepository(),
 );
@@ -62,18 +50,6 @@ final addBoardProvider = FutureProvider.family
     title: params.title,
     content: params.content,
     userName: params.userName,
-  );
-
-  return result;
-});
-
-// 댓글 ADD
-final addCommentProvider = FutureProvider.family
-    .autoDispose<bool, AddCommentParams>((ref, params) async {
-  final result = await BoardRepository.addComment(
-    searchId: params.searchId,
-    userName: params.userName,
-    content: params.content,
   );
 
   return result;

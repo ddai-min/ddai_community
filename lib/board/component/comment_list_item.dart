@@ -1,4 +1,4 @@
-import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/component/default_avatar.dart';
 import 'package:flutter/material.dart';
 

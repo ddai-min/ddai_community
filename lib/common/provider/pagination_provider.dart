@@ -7,12 +7,16 @@ class PaginationProvider<T extends ModelWithId>
     extends StateNotifier<PaginationModel<T>> {
   final PaginationRepository<T> paginationRepository;
   final CollectionPath collectionPath;
+  final CollectionPath? subCollectionPath;
+  final String? collectionId;
   final bool isUsingStream;
   final int pageSize;
 
   PaginationProvider({
     required this.paginationRepository,
     required this.collectionPath,
+    this.subCollectionPath,
+    this.collectionId,
     required this.isUsingStream,
     this.pageSize = 30,
   }) : super(
@@ -38,6 +42,8 @@ class PaginationProvider<T extends ModelWithId>
 
     final newData = await paginationRepository.fetchData(
       collectionPath: collectionPath,
+      subCollectionPath: subCollectionPath,
+      collectionId: collectionId,
       pageSize: pageSize,
       lastDocument: state.lastDocument,
     );

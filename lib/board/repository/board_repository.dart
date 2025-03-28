@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
 
@@ -71,35 +72,6 @@ class BoardRepository extends PaginationRepository<BoardModel> {
       ).toJson();
 
       await boardRef.set(boardData);
-
-      return true;
-    } catch (error) {
-      logger.e(error);
-
-      return false;
-    }
-  }
-
-  static Future<bool> addComment({
-    required String searchId,
-    required String userName,
-    required String content,
-  }) async {
-    try {
-      final commentRef = firestore
-          .collection('board')
-          .doc(searchId)
-          .collection('comment')
-          .doc();
-
-      Map<String, dynamic> commentData = CommentModel(
-        id: commentRef.id,
-        userName: userName,
-        content: content,
-        date: DateTime.now(),
-      ).toJson();
-
-      await commentRef.set(commentData);
 
       return true;
     } catch (error) {

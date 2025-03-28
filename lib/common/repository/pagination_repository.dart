@@ -20,17 +20,33 @@ class PaginationRepository<T extends ModelWithId> {
 
   Future<PaginationModel<T>> fetchData({
     required CollectionPath collectionPath,
+    CollectionPath? subCollectionPath,
+    String? collectionId,
     int pageSize = 30,
     DocumentSnapshot? lastDocument,
   }) async {
     try {
-      Query query = firestore
-          .collection(collectionPath.name)
-          .orderBy(
-            'date',
-            descending: true,
-          )
-          .limit(pageSize);
+      Query query;
+
+      if (subCollectionPath == null || collectionId == null) {
+        query = firestore
+            .collection(collectionPath.name)
+            .orderBy(
+              'date',
+              descending: true,
+            )
+            .limit(pageSize);
+      } else {
+        query = firestore
+            .collection(collectionPath.name)
+            .doc(collectionId)
+            .collection(subCollectionPath.name)
+            .orderBy(
+              'date',
+              descending: true,
+            )
+            .limit(pageSize);
+      }
 
       if (lastDocument != null) {
         query = query.startAfterDocument(lastDocument);
