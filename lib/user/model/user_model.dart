@@ -6,12 +6,14 @@ part 'user_model.g.dart';
 class UserModel {
   final String id;
   final String userName;
+  final bool isAnonymous;
   final String? email;
   final String? imageUrl;
 
   UserModel({
     required this.id,
     required this.userName,
+    required this.isAnonymous,
     this.email,
     this.imageUrl,
   });

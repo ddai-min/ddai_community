@@ -5,5 +5,6 @@ final userMeProvider = StateProvider<UserModel>(
   (ref) => UserModel(
     id: '',
     userName: '',
+    isAnonymous: false,
   ),
 );

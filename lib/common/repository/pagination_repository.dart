@@ -27,6 +27,7 @@ class PaginationRepository<T extends ModelWithId> {
   }) async {
     try {
       Query query;
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
 
       if (subCollectionPath == null || collectionId == null) {
         query = firestore
@@ -78,6 +79,8 @@ class PaginationRepository<T extends ModelWithId> {
     required CollectionPath collectionPath,
     int pageSize = 100,
   }) {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
     return firestore
         .collection(collectionPath.name)
         .orderBy(

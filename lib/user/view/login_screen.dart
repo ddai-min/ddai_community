@@ -95,6 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 id: userCredential.user!.email!,
                 userName: userCredential.user!.displayName ??
                     userCredential.user!.email!,
+                isAnonymous: false,
                 email: userCredential.user!.email,
                 imageUrl: userCredential.user!.photoURL,
               ),
@@ -152,6 +153,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       userName: DataUtils.setAnonymousName(
                         uid: userCredential.user!.uid,
                       ),
+                      isAnonymous: true,
                     ),
                   );
 

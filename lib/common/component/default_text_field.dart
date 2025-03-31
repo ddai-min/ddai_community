@@ -6,14 +6,15 @@ class DefaultTextField extends StatelessWidget {
   final String? forceErrorText;
   final ValueChanged<String>? onChanged;
   final FormFieldValidator<String>? validator;
-  final double? padding;
-  final int? maxLines;
-  final bool? obscureText;
-  final InputBorder? border;
-  final InputBorder? focusedBorder;
-  final Color? cursorColor;
-  final bool? filled;
-  final Color? focusColor;
+  final bool readOnly;
+  final double padding;
+  final int maxLines;
+  final bool obscureText;
+  final InputBorder border;
+  final InputBorder focusedBorder;
+  final Color cursorColor;
+  final bool filled;
+  final Color focusColor;
   final String? labelText;
   final String? hintText;
   final Widget? suffixIcon;
@@ -24,6 +25,7 @@ class DefaultTextField extends StatelessWidget {
     this.forceErrorText,
     this.onChanged,
     this.validator,
+    this.readOnly = false,
     this.padding = 8.0,
     this.maxLines = 1,
     this.obscureText = false,
@@ -44,7 +46,7 @@ class DefaultTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(padding!),
+      padding: EdgeInsets.all(padding),
       child: TextFormField(
         controller: controller,
         forceErrorText: forceErrorText,
@@ -53,8 +55,14 @@ class DefaultTextField extends StatelessWidget {
         onTapOutside: (event) {
           FocusManager.instance.primaryFocus?.unfocus();
         },
+        readOnly: readOnly,
+        style: readOnly
+            ? const TextStyle(
+                color: Colors.grey,
+              )
+            : null,
         maxLines: maxLines,
-        obscureText: obscureText!,
+        obscureText: obscureText,
         cursorColor: cursorColor,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.all(10),

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/chat/model/chat_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
@@ -14,6 +15,8 @@ class ChatRepository extends PaginationRepository<ChatModel> {
     required String userName,
   }) async {
     try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
       final chatRef = firestore.collection('chat').doc();
 
       Map<String, dynamic> chatData = ChatModel(

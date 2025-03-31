@@ -18,6 +18,8 @@ class BoardRepository extends PaginationRepository<BoardModel> {
     List<CommentModel>? commentList;
 
     try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
       final boardSnapshot =
           await firestore.collection('board').doc(searchId).get();
 
@@ -61,6 +63,8 @@ class BoardRepository extends PaginationRepository<BoardModel> {
     required String userName,
   }) async {
     try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
       final boardRef = firestore.collection('board').doc();
 
       Map<String, dynamic> boardData = BoardModel(

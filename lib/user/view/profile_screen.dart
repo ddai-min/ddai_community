@@ -1,8 +1,11 @@
 import 'package:ddai_community/common/component/default_avatar.dart';
+import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
+import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:ddai_community/user/view/login_screen.dart';
+import 'package:ddai_community/user/view/profile_edit_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,8 +32,22 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 20),
-          _License(
-            onTap: () => _pushLicenseScreen(context),
+          _List(
+            title: '프로필 수정',
+            onTap: () {
+              _pushProfileEditScreen(
+                context: context,
+                userMe: userMe,
+              );
+            },
+          ),
+          _List(
+            title: '오픈소스 라이센스',
+            onTap: () {
+              context.goNamed(
+                LicenseScreen.routeName,
+              );
+            },
           ),
           const Expanded(
             child: SizedBox(),
@@ -47,9 +64,34 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _pushLicenseScreen(BuildContext context) {
+  void _pushProfileEditScreen({
+    required BuildContext context,
+    required UserModel userMe,
+  }) {
+    if (userMe.isAnonymous) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return DefaultDialog(
+            contentText: '로그인 후\n프로필을 수정할 수 있습니다.',
+            buttonText: '확인',
+            onPressed: () {
+              context.pop();
+            },
+          );
+        },
+      );
+
+      return;
+    }
+
     context.goNamed(
-      LicenseScreen.routeName,
+      ProfileEditScreen.routeName,
+      queryParameters: {
+        if (userMe.imageUrl != null) 'imageUrl': userMe.imageUrl!,
+        'userName': userMe.userName,
+        'email': userMe.email!,
+      },
     );
   }
 
@@ -96,25 +138,32 @@ class _Profile extends StatelessWidget {
   }
 }
 
-class _License extends StatelessWidget {
+class _List extends StatelessWidget {
+  final String title;
   final GestureTapCallback onTap;
 
-  const _License({
+  const _List({
+    required this.title,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: const Text(
-        '오픈소스 라이센스',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+    return Column(
+      children: [
+        ListTile(
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: const Icon(Icons.arrow_forward_ios),
+          onTap: onTap,
         ),
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios),
-      onTap: onTap,
+        const SizedBox(height: 10),
+      ],
     );
   }
 }

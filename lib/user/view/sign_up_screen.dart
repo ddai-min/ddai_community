@@ -147,6 +147,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           (model) => UserModel(
             id: emailTextController.text,
             userName: nicknameTextController.text,
+            isAnonymous: false,
             email: emailTextController.text,
           ),
         );

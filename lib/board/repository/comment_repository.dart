@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
@@ -15,6 +16,8 @@ class CommentRepository extends PaginationRepository<CommentModel> {
     required String content,
   }) async {
     try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
       final commentRef = firestore
           .collection('board')
           .doc(searchId)

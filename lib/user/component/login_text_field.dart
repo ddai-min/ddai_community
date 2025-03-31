@@ -6,7 +6,7 @@ class LoginTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final String? labelText;
   final String? hintText;
-  final bool? obscureText;
+  final bool obscureText;
 
   const LoginTextField({
     super.key,

@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ddai_community/bootstrap.dart';
 import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/common/util/data_utils.dart';
-import 'package:ddai_community/firebase_options.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
@@ -14,8 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Logger logger = Logger();
 
-FirebaseFirestore firestore = FirebaseFirestore.instance;
-
 final String firebaseWebApiKey = dotenv.env['FIREBASE_WEB_API_KEY']!;
 final String firebaseAndroidApiKey = dotenv.env['FIREBASE_ANDROID_API_KEY']!;
 final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
@@ -23,15 +19,7 @@ final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // env file load
-  await dotenv.load(
-    fileName: '.env',
-  );
-
-  // firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Bootstrap.run();
 
   runApp(
     const ProviderScope(
@@ -59,6 +47,7 @@ class _AppState extends ConsumerState<App> {
               (userModel) => UserModel(
                 id: '',
                 userName: '',
+                isAnonymous: false,
               ),
             );
       } else {
@@ -69,6 +58,7 @@ class _AppState extends ConsumerState<App> {
                   userName: DataUtils.setAnonymousName(
                     uid: user.uid,
                   ),
+                  isAnonymous: true,
                 ),
               );
         } else {
@@ -76,6 +66,7 @@ class _AppState extends ConsumerState<App> {
                 (userModel) => UserModel(
                   id: user.email!,
                   userName: user.displayName ?? user.email!,
+                  isAnonymous: false,
                   email: user.email,
                   imageUrl: user.photoURL,
                 ),

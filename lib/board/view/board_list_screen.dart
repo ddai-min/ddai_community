@@ -71,7 +71,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
                 context.goNamed(
                   BoardDetailScreen.routeName,
                   pathParameters: {
-                    'rid': board.id,
+                    'id': board.id,
                   },
                 );
               },
