@@ -43,6 +43,7 @@ Community App
 - [logger](https://pub.dev/packages/logger)
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
+- [image_picker](https://pub.dev/packages/image_picker)
 
 ## Using Dev Packages
 
