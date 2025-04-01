@@ -99,6 +99,10 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   }
 
   Future<void> _addComment() async {
+    if (commentTextController.text.isEmpty) {
+      return;
+    }
+
     final isSuccessed = await ref.read(
       addCommentProvider(
         AddCommentParams(
