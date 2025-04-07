@@ -39,12 +39,10 @@ Community App
 - [json_annotation](https://pub.dev/packages/json_annotation)
 - [firebase_core](https://pub.dev/packages/firebase_core)
 - [firebase_auth](https://pub.dev/packages/firebase_auth)
-- [firebase_storage](https://pub.dev/packages/firebase_storage)
 - [cloud_firestore](https://pub.dev/packages/cloud_firestore)
 - [logger](https://pub.dev/packages/logger)
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
-- [image_picker](https://pub.dev/packages/image_picker)
 
 ## Using Dev Packages
 
