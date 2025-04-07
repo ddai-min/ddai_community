@@ -54,6 +54,12 @@ List<LicenseItem> license = [
     license: 'BSD-3-Clause',
   ),
   LicenseItem(
+    title: 'firebase_storage',
+    url: 'https://pub.dev/packages/firebase_storage',
+    copyright: 'Copyright 2017 The Chromium Authors. All rights reserved.',
+    license: 'BSD-3-Clause',
+  ),
+  LicenseItem(
     title: 'cloud_firestore',
     url: 'https://pub.dev/packages/cloud_firestore',
     copyright:
