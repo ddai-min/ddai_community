@@ -32,6 +32,7 @@ class BoardListItem extends StatelessWidget {
         ),
         subtitle: Text(
           content,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: const Icon(Icons.arrow_forward_ios),
