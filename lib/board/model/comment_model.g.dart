@@ -11,7 +11,6 @@ CommentModel _$CommentModelFromJson(Map<String, dynamic> json) => CommentModel(
       userName: json['userName'] as String,
       content: json['content'] as String,
       date: const TimestampConverter().fromJson(json['date'] as Timestamp),
-      imageUrl: json['imageUrl'] as String?,
     );
 
 Map<String, dynamic> _$CommentModelToJson(CommentModel instance) =>
@@ -20,5 +19,4 @@ Map<String, dynamic> _$CommentModelToJson(CommentModel instance) =>
       'userName': instance.userName,
       'content': instance.content,
       'date': const TimestampConverter().toJson(instance.date),
-      'imageUrl': instance.imageUrl,
     };

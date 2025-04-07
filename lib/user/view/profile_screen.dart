@@ -1,4 +1,3 @@
-import 'package:ddai_community/common/component/default_avatar.dart';
 import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
@@ -25,9 +24,6 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           _Profile(
             userName: userMe.userName,
-            image: userMe.imageUrl != null
-                ? Image.network(userMe.imageUrl!)
-                : null,
           ),
           const SizedBox(height: 20),
           const Divider(),
@@ -88,7 +84,6 @@ class ProfileScreen extends ConsumerWidget {
     context.goNamed(
       ProfileEditScreen.routeName,
       queryParameters: {
-        if (userMe.imageUrl != null) 'imageUrl': userMe.imageUrl!,
         'userName': userMe.userName,
         'email': userMe.email!,
       },
@@ -108,32 +103,19 @@ class ProfileScreen extends ConsumerWidget {
 
 class _Profile extends StatelessWidget {
   final String userName;
-  final Image? image;
 
   const _Profile({
     required this.userName,
-    this.image,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DefaultAvatar(
-          image: image,
-          width: 80,
-          height: 80,
-        ),
-        const SizedBox(width: 10),
-        Text(
-          userName,
-          style: const TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+    return Text(
+      userName,
+      style: const TextStyle(
+        fontSize: 25,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }

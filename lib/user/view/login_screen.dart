@@ -97,7 +97,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     userCredential.user!.email!,
                 isAnonymous: false,
                 email: userCredential.user!.email,
-                imageUrl: userCredential.user!.photoURL,
               ),
             );
 

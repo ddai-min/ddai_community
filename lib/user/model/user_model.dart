@@ -8,14 +8,12 @@ class UserModel {
   final String userName;
   final bool isAnonymous;
   final String? email;
-  final String? imageUrl;
 
   UserModel({
     required this.id,
     required this.userName,
     required this.isAnonymous,
     this.email,
-    this.imageUrl,
   });
 
   UserModel copyWith({
@@ -23,14 +21,12 @@ class UserModel {
     String? userName,
     bool? isAnonymous,
     String? email,
-    String? imageUrl,
   }) {
     return UserModel(
       id: id ?? this.id,
       userName: userName ?? this.userName,
       isAnonymous: isAnonymous ?? this.isAnonymous,
       email: email ?? this.email,
-      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 

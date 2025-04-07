@@ -15,7 +15,6 @@ class BoardModel implements ModelWithId {
   final String userName;
   @TimestampConverter()
   final DateTime date;
-  final String? imageUrl;
   final List<CommentModel>? commentList;
 
   BoardModel({
@@ -24,7 +23,6 @@ class BoardModel implements ModelWithId {
     required this.content,
     required this.userName,
     required this.date,
-    this.imageUrl,
     this.commentList,
   });
 

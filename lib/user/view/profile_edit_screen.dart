@@ -1,32 +1,24 @@
-import 'dart:io';
-
-import 'package:ddai_community/common/component/default_avatar.dart';
 import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
-import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/util/reg_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   static get routeName => 'profile_edit';
 
-  final String? imageUrl;
   final String userName;
   final String email;
 
   const ProfileEditScreen({
     super.key,
-    this.imageUrl,
     required this.userName,
     required this.email,
   });
@@ -41,16 +33,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController nicknameTextController;
   late TextEditingController emailTextController;
 
-  late String? imageUrl;
-
   @override
   void initState() {
     super.initState();
 
     nicknameTextController = TextEditingController(text: widget.userName);
     emailTextController = TextEditingController(text: widget.email);
-
-    imageUrl = widget.imageUrl;
   }
 
   @override
@@ -71,23 +59,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      DefaultAvatar(
-                        image: imageUrl != null
-                            ? imageUrl!.startsWith('http')
-                                ? Image.network(imageUrl!)
-                                : Image.file(
-                                    File(imageUrl!),
-                                  )
-                            : null,
-                        width: 160,
-                        height: 160,
-                      ),
-                      const SizedBox(height: 10),
-                      DefaultTextButton(
-                        onPressed: _editImage,
-                        text: '프로필 사진 변경',
-                      ),
-                      const SizedBox(height: 20),
                       Form(
                         key: formKey,
                         child: _Input(
@@ -113,8 +84,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
               ),
               DefaultElevatedButton(
-                onPressed: widget.imageUrl == imageUrl &&
-                        widget.userName == nicknameTextController.text
+                onPressed: widget.userName == nicknameTextController.text
                     ? null
                     : _editProfile,
                 text: '수정하기',
@@ -124,22 +94,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         ),
       ),
     );
-  }
-
-  void _editImage() async {
-    final imagePicker = ImagePicker();
-
-    final image = await imagePicker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (image == null) {
-      return;
-    }
-
-    setState(() {
-      imageUrl = image.path;
-    });
   }
 
   String? _nicknameValidator(String? value) {
@@ -158,27 +112,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   void _editProfile() async {
     DefaultLoadingOverlay.showLoading(context);
-
-    if (widget.imageUrl != imageUrl) {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      final uid = user.uid;
-      final file = File(imageUrl!);
-
-      final storageRef =
-          FirebaseStorage.instance.ref().child('profile/$uid.jpg');
-
-      await storageRef.putFile(file);
-
-      final url = await storageRef.getDownloadURL();
-      imageUrl = url;
-
-      await FirebaseAuth.instance.currentUser?.updatePhotoURL(url);
-    }
 
     if (widget.userName != nicknameTextController.text) {
       if (!formKey.currentState!.validate()) {
@@ -205,7 +138,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               (model) {
                 return model.copyWith(
                   userName: nicknameTextController.text,
-                  imageUrl: imageUrl,
                 );
               },
             );

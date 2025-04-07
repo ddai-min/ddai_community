@@ -13,14 +13,12 @@ class CommentModel implements ModelWithId {
   final String content;
   @TimestampConverter()
   final DateTime date;
-  final String? imageUrl;
 
   CommentModel({
     required this.id,
     required this.userName,
     required this.content,
     required this.date,
-    this.imageUrl,
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) =>

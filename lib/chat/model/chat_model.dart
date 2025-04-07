@@ -13,14 +13,12 @@ class ChatModel implements ModelWithId {
   final String userName;
   @TimestampConverter()
   final DateTime date;
-  final String? imageUrl;
 
   ChatModel({
     required this.id,
     required this.content,
     required this.userName,
     required this.date,
-    this.imageUrl,
   });
 
   factory ChatModel.fromJson(Map<String, dynamic> json) =>

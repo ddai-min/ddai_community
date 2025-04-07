@@ -68,7 +68,6 @@ class _AppState extends ConsumerState<App> {
                   userName: user.displayName ?? user.email!,
                   isAnonymous: false,
                   email: user.email,
-                  imageUrl: user.photoURL,
                 ),
               );
         }

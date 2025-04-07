@@ -11,7 +11,6 @@ ChatModel _$ChatModelFromJson(Map<String, dynamic> json) => ChatModel(
       content: json['content'] as String,
       userName: json['userName'] as String,
       date: const TimestampConverter().fromJson(json['date'] as Timestamp),
-      imageUrl: json['imageUrl'] as String?,
     );
 
 Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
@@ -19,5 +18,4 @@ Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
       'content': instance.content,
       'userName': instance.userName,
       'date': const TimestampConverter().toJson(instance.date),
-      'imageUrl': instance.imageUrl,
     };

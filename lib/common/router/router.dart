@@ -47,7 +47,6 @@ List<GoRoute> routes = [
         path: 'profile_edit',
         name: ProfileEditScreen.routeName,
         builder: (_, state) => ProfileEditScreen(
-          imageUrl: state.uri.queryParameters['imageUrl'],
           userName: state.uri.queryParameters['userName']!,
           email: state.uri.queryParameters['email']!,
         ),

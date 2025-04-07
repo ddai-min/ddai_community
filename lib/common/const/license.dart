@@ -54,12 +54,6 @@ List<LicenseItem> license = [
     license: 'BSD-3-Clause',
   ),
   LicenseItem(
-    title: 'firebase_storage',
-    url: 'https://pub.dev/packages/firebase_storage',
-    copyright: 'Copyright 2017 The Chromium Authors. All rights reserved.',
-    license: 'BSD-3-Clause',
-  ),
-  LicenseItem(
     title: 'cloud_firestore',
     url: 'https://pub.dev/packages/cloud_firestore',
     copyright:
@@ -85,12 +79,6 @@ List<LicenseItem> license = [
     copyright: 'Copyright (c) 2018 java-james',
     license: 'MIT',
   ),
-  LicenseItem(
-    title: 'image_picker',
-    url: 'https://pub.dev/packages/image_picker',
-    copyright: 'Copyright 2013 The Flutter Authors. All rights reserved.',
-    license: 'Apache-2.0, BSD-3-Clause',
-  ),
 ];
 
 List<LicenseDescriptionItem> licenseDescription = [
@@ -101,10 +89,6 @@ List<LicenseDescriptionItem> licenseDescription = [
   LicenseDescriptionItem(
     title: 'BSD-3-Clause',
     description: bsd3Description,
-  ),
-  LicenseDescriptionItem(
-    title: 'Apache-2.0',
-    description: apache2Description,
   ),
 ];
 
