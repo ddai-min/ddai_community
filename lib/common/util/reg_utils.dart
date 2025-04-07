@@ -8,4 +8,14 @@ class RegUtils {
 
     return emailRegex.hasMatch(email);
   }
+
+  static bool isValidNickname({
+    required String nickname,
+  }) {
+    final RegExp nicknameRegex = RegExp(
+      r'^[a-zA-Z0-9가-힣]{2,12}$',
+    );
+
+    return nicknameRegex.hasMatch(nickname);
+  }
 }

@@ -192,6 +192,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return '닉네임을 입력해주세요.';
     } else if (value.length < 2) {
       return '닉네임은 두 글자 이상 입력해주세요.';
+    } else if (value.length > 12) {
+      return '닉네임은 12글자 이하로 입력해주세요.';
+    } else if (!RegUtils.isValidNickname(nickname: value)) {
+      return '닉네임은 한글, 영어, 숫자만 가능합니다.';
     }
 
     return null;

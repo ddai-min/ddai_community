@@ -16,7 +16,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userMe = ref.read(userMeProvider);
+    final userMe = ref.watch(userMeProvider);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),

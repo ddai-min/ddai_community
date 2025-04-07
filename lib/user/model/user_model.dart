@@ -18,6 +18,22 @@ class UserModel {
     this.imageUrl,
   });
 
+  UserModel copyWith({
+    String? id,
+    String? userName,
+    bool? isAnonymous,
+    String? email,
+    String? imageUrl,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      userName: userName ?? this.userName,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
+      email: email ?? this.email,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);
 

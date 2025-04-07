@@ -7,7 +7,11 @@ import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/common/util/reg_utils.dart';
+import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +36,8 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+  final formKey = GlobalKey<FormState>();
+
   late TextEditingController nicknameTextController;
   late TextEditingController emailTextController;
 
@@ -51,91 +57,136 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '프로필 수정',
-      child: SingleChildScrollView(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 8.0,
-              right: 8.0,
-              top: 16.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DefaultAvatar(
-                  image: imageUrl != null
-                      ? imageUrl!.startsWith('http')
-                          ? Image.network(imageUrl!)
-                          : Image.file(
-                              File(imageUrl!),
-                            )
-                      : null,
-                  width: 160,
-                  height: 160,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 8.0,
+            right: 8.0,
+            top: 16.0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      DefaultAvatar(
+                        image: imageUrl != null
+                            ? imageUrl!.startsWith('http')
+                                ? Image.network(imageUrl!)
+                                : Image.file(
+                                    File(imageUrl!),
+                                  )
+                            : null,
+                        width: 160,
+                        height: 160,
+                      ),
+                      const SizedBox(height: 10),
+                      DefaultTextButton(
+                        onPressed: _editImage,
+                        text: '프로필 사진 변경',
+                      ),
+                      const SizedBox(height: 20),
+                      Form(
+                        key: formKey,
+                        child: _Input(
+                          controller: nicknameTextController,
+                          validator: _nicknameValidator,
+                          onChanged: (value) {
+                            setState(() {
+                              nicknameTextController.text = value;
+                            });
+                          },
+                          labelText: '닉네임',
+                          hintText: '닉네임',
+                        ),
+                      ),
+                      _Input(
+                        controller: emailTextController,
+                        labelText: '이메일',
+                        hintText: '이메일',
+                        readOnly: true,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                DefaultTextButton(
-                  onPressed: () async {
-                    final imagePicker = ImagePicker();
-
-                    final image = await imagePicker.pickImage(
-                      source: ImageSource.gallery,
-                    );
-
-                    if (image == null) {
-                      return;
-                    }
-
-                    setState(() {
-                      imageUrl = image.path;
-                    });
-                  },
-                  text: '프로필 사진 변경',
-                ),
-                const SizedBox(height: 20),
-                _Input(
-                  controller: nicknameTextController,
-                  onChanged: (value) {
-                    setState(() {
-                      nicknameTextController.text = value;
-                    });
-                  },
-                  labelText: '닉네임',
-                  hintText: '닉네임',
-                ),
-                _Input(
-                  controller: emailTextController,
-                  labelText: '이메일',
-                  hintText: '이메일',
-                  readOnly: true,
-                ),
-                const Expanded(
-                  child: SizedBox(),
-                ),
-                DefaultElevatedButton(
-                  onPressed: widget.imageUrl == imageUrl &&
-                          widget.userName == nicknameTextController.text
-                      ? null
-                      // : _editProfile,
-                      : () {},
-                  text: '수정하기',
-                ),
-              ],
-            ),
+              ),
+              DefaultElevatedButton(
+                onPressed: widget.imageUrl == imageUrl &&
+                        widget.userName == nicknameTextController.text
+                    ? null
+                    : _editProfile,
+                text: '수정하기',
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  void _editImage() async {
+    final imagePicker = ImagePicker();
+
+    final image = await imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      imageUrl = image.path;
+    });
+  }
+
+  String? _nicknameValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '닉네임을 입력해주세요.';
+    } else if (value.length < 2) {
+      return '닉네임은 두 글자 이상 입력해주세요.';
+    } else if (value.length > 12) {
+      return '닉네임은 12글자 이하로 입력해주세요.';
+    } else if (!RegUtils.isValidNickname(nickname: value)) {
+      return '닉네임은 한글, 영어, 숫자만 가능합니다.';
+    }
+
+    return null;
+  }
+
   void _editProfile() async {
     DefaultLoadingOverlay.showLoading(context);
 
     if (widget.imageUrl != imageUrl) {
-      await FirebaseAuth.instance.currentUser?.updatePhotoURL(imageUrl);
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        return;
+      }
+
+      final uid = user.uid;
+      final file = File(imageUrl!);
+
+      final storageRef =
+          FirebaseStorage.instance.ref().child('profile/$uid.jpg');
+
+      await storageRef.putFile(file);
+
+      final url = await storageRef.getDownloadURL();
+      imageUrl = url;
+
+      await FirebaseAuth.instance.currentUser?.updatePhotoURL(url);
     }
 
     if (widget.userName != nicknameTextController.text) {
+      if (!formKey.currentState!.validate()) {
+        DefaultLoadingOverlay.hideLoading(context);
+
+        return;
+      }
+
       await FirebaseAuth.instance.currentUser
           ?.updateDisplayName(nicknameTextController.text);
     }
@@ -150,7 +201,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           contentText: '프로필이\n수정되었습니다.',
           buttonText: '확인',
           onPressed: () {
-            this.context.pop();
+            ref.read(userMeProvider.notifier).update(
+              (model) {
+                return model.copyWith(
+                  userName: nicknameTextController.text,
+                  imageUrl: imageUrl,
+                );
+              },
+            );
+
+            context.goNamed(
+              HomeTab.routeName,
+            );
           },
         );
       },
@@ -160,6 +222,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
 class _Input extends StatelessWidget {
   final TextEditingController? controller;
+  final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final String labelText;
   final String? hintText;
@@ -167,6 +230,7 @@ class _Input extends StatelessWidget {
 
   const _Input({
     this.controller,
+    this.validator,
     this.onChanged,
     required this.labelText,
     this.hintText,
@@ -179,6 +243,7 @@ class _Input extends StatelessWidget {
       children: [
         DefaultTextField(
           controller: controller,
+          validator: validator,
           onChanged: onChanged,
           labelText: labelText,
           hintText: hintText,
