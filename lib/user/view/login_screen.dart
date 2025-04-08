@@ -86,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         ref.read(userMeProvider.notifier).update(
               (model) => UserModel(
-                id: userCredential.user!.email!,
+                id: userCredential.user!.uid,
                 userName: userCredential.user!.displayName ??
                     userCredential.user!.email!,
                 isAnonymous: false,

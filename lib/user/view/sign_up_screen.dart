@@ -145,7 +145,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     ref.read(userMeProvider.notifier).update(
           (model) => UserModel(
-            id: emailTextController.text,
+            id: result.user!.uid,
             userName: nicknameTextController.text,
             isAnonymous: false,
             email: emailTextController.text,
