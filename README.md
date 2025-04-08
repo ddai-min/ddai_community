@@ -2,6 +2,8 @@
 
 Community App
 
+[앱 안내](https://ddai-min.notion.site/1ce98497e613806b8b98e631cc606628)
+
 ## Client
 
 <img src="https://img.shields.io/badge/flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white">
