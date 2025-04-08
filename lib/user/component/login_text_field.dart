@@ -26,6 +26,7 @@ class LoginTextField extends StatelessWidget {
       hintText: hintText,
       obscureText: obscureText,
       filled: false,
+      maxLength: 50,
     );
   }
 }

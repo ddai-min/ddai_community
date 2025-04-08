@@ -9,6 +9,7 @@ class DefaultTextField extends StatelessWidget {
   final bool readOnly;
   final double padding;
   final int maxLines;
+  final int maxLength;
   final bool obscureText;
   final InputBorder border;
   final InputBorder focusedBorder;
@@ -28,6 +29,7 @@ class DefaultTextField extends StatelessWidget {
     this.readOnly = false,
     this.padding = 8.0,
     this.maxLines = 1,
+    this.maxLength = 500,
     this.obscureText = false,
     this.border = const OutlineInputBorder(),
     this.focusedBorder = const OutlineInputBorder(
@@ -62,6 +64,7 @@ class DefaultTextField extends StatelessWidget {
               )
             : null,
         maxLines: maxLines,
+        maxLength: maxLength,
         obscureText: obscureText,
         cursorColor: cursorColor,
         decoration: InputDecoration(

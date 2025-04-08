@@ -259,6 +259,7 @@ class _Input extends StatelessWidget {
           validator: validator,
           obscureText: obscureText,
           forceErrorText: forceErrorText,
+          maxLength: 50,
         ),
         const SizedBox(height: 10),
       ],

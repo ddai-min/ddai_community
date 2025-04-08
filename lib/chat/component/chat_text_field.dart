@@ -20,6 +20,7 @@ class ChatTextField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       padding: 0,
+      maxLength: 100,
       border: const UnderlineInputBorder(),
       focusedBorder: const UnderlineInputBorder(
         borderSide: BorderSide(
