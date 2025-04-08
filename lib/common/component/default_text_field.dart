@@ -80,6 +80,7 @@ class DefaultTextField extends StatelessWidget {
           focusColor: focusColor,
           focusedBorder: focusedBorder,
           suffixIcon: suffixIcon,
+          counterText: '',
         ),
       ),
     );
