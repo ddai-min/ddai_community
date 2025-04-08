@@ -69,29 +69,36 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     await remoteConfig.fetchAndActivate().then((value) async {
       final currentVersionName = packageInfo.version;
-      final currentVersionCode = int.parse(packageInfo.buildNumber);
-
       final latestVersionName = remoteConfig.getString('version_name');
-      final latestVersionCode = remoteConfig.getInt('version_code');
-      final isForce = remoteConfig.getBool('is_force');
 
-      if (isForce) {
-        if (currentVersionName != latestVersionName ||
-            currentVersionCode < latestVersionCode) {
-          await showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              return DefaultDialog(
-                contentText: '최신 버전으로 업데이트 해주세요.\n\n업데이트 후 이용 가능합니다.',
-                buttonText: '확인',
-                onPressed: () {
-                  exit(0);
-                },
-              );
-            },
-          );
-        }
+      final currentVersionNameList = currentVersionName
+          .split('.')
+          .map(
+            (e) => int.parse(e),
+          )
+          .toList();
+      final latestVersionNameList = latestVersionName
+          .split('.')
+          .map(
+            (e) => int.parse(e),
+          )
+          .toList();
+
+      if (currentVersionNameList[0] < latestVersionNameList[0] ||
+          currentVersionNameList[1] < latestVersionNameList[1]) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return DefaultDialog(
+              contentText: '최신 버전으로 업데이트 해주세요.\n\n업데이트 후 이용 가능합니다.',
+              buttonText: '확인',
+              onPressed: () {
+                exit(0);
+              },
+            );
+          },
+        );
       }
     }).catchError((error) async {
       await showDialog(
