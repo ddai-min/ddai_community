@@ -65,7 +65,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           controller: nicknameTextController,
                           validator: _nicknameValidator,
                           onChanged: (value) {
-                            nicknameTextController.text = value;
+                            setState(() {});
                           },
                           labelText: '닉네임',
                           hintText: '닉네임',
@@ -178,6 +178,7 @@ class _Input extends StatelessWidget {
           labelText: labelText,
           hintText: hintText,
           readOnly: readOnly,
+          maxLength: 30,
         ),
         const SizedBox(height: 10),
       ],

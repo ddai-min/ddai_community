@@ -57,12 +57,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _Inputs(
               idTextController: idTextController,
               passwordTextController: passwordTextController,
-              onIdChanged: (String value) {
-                value = idTextController.text;
-              },
-              onPasswordChanged: (String value) {
-                value = passwordTextController.text;
-              },
             ),
             _Buttons(
               onLogin: _onLogin,
@@ -216,14 +210,10 @@ class _ErrorText extends StatelessWidget {
 class _Inputs extends StatelessWidget {
   final TextEditingController idTextController;
   final TextEditingController passwordTextController;
-  final ValueChanged<String> onIdChanged;
-  final ValueChanged<String> onPasswordChanged;
 
   const _Inputs({
     required this.idTextController,
     required this.passwordTextController,
-    required this.onIdChanged,
-    required this.onPasswordChanged,
   });
 
   @override
@@ -232,12 +222,10 @@ class _Inputs extends StatelessWidget {
       children: [
         LoginTextField(
           controller: idTextController,
-          onChanged: onIdChanged,
           hintText: '아이디',
         ),
         LoginTextField(
           controller: passwordTextController,
-          onChanged: onPasswordChanged,
           hintText: '비밀번호',
           obscureText: true,
         ),

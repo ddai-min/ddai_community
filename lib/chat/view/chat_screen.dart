@@ -48,9 +48,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
         _Input(
           controller: chatTextController,
-          onChanged: (value) {
-            chatTextController.text = value;
-          },
           onPressed: _onChatPressed,
         ),
       ],
@@ -119,12 +116,10 @@ class _Body extends ConsumerWidget {
 
 class _Input extends StatelessWidget {
   final TextEditingController controller;
-  final ValueChanged<String> onChanged;
   final VoidCallback onPressed;
 
   const _Input({
     required this.controller,
-    required this.onChanged,
     required this.onPressed,
   });
 
@@ -132,7 +127,6 @@ class _Input extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChatTextField(
       controller: controller,
-      onChanged: onChanged,
       onPressed: onPressed,
     );
   }

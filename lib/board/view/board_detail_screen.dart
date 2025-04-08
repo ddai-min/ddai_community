@@ -82,9 +82,6 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                 const SizedBox(height: 16.0),
                 CommentTextField(
                   controller: commentTextController,
-                  onChanged: (value) {
-                    commentTextController.text = value;
-                  },
                   onPressed: _addComment,
                 ),
                 _CommentList(

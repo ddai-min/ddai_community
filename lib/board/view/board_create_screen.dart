@@ -53,12 +53,6 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
             contentValidator: _boardCreateContentValidator,
             titleTextController: titleTextController,
             contentTextController: contentTextController,
-            titleTextOnChanged: (value) {
-              titleTextController.text = value;
-            },
-            contentTextOnChanged: (value) {
-              contentTextController.text = value;
-            },
           ),
         ),
       ),
@@ -109,16 +103,12 @@ class _Body extends StatelessWidget {
   final FormFieldValidator<String> contentValidator;
   final TextEditingController titleTextController;
   final TextEditingController contentTextController;
-  final ValueChanged<String> titleTextOnChanged;
-  final ValueChanged<String> contentTextOnChanged;
 
   const _Body({
     required this.titleValidator,
     required this.contentValidator,
     required this.titleTextController,
     required this.contentTextController,
-    required this.titleTextOnChanged,
-    required this.contentTextOnChanged,
   });
 
   @override
@@ -129,14 +119,13 @@ class _Body extends StatelessWidget {
           controller: titleTextController,
           validator: titleValidator,
           hintText: '제목을 입력해주세요.',
-          onChanged: titleTextOnChanged,
+          maxLength: 30,
         ),
         DefaultTextField(
           controller: contentTextController,
           validator: contentValidator,
           hintText: '내용을 입력해주세요.',
           maxLines: 20,
-          onChanged: contentTextOnChanged,
         ),
       ],
     );
