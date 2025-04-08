@@ -11,6 +11,7 @@ class ChatModel implements ModelWithId {
   final String id;
   final String content;
   final String userName;
+  final String userEmail;
   @TimestampConverter()
   final DateTime date;
 
@@ -18,6 +19,7 @@ class ChatModel implements ModelWithId {
     required this.id,
     required this.content,
     required this.userName,
+    required this.userEmail,
     required this.date,
   });
 

@@ -64,6 +64,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         AddChatParams(
           content: chatTextController.text,
           userName: ref.read(userMeProvider).userName,
+          userEmail: ref.read(userMeProvider).id,
         ),
       ),
     );
@@ -99,7 +100,7 @@ class _Body extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (chatItem.userName == ref.read(userMeProvider).userName)
+              if (chatItem.userEmail == ref.read(userMeProvider).id)
                 MyChatBubble(message: chatItem.content)
               else
                 OtherChatBubble(

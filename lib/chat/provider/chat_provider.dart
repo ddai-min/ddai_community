@@ -8,10 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class AddChatParams {
   final String content;
   final String userName;
+  final String userEmail;
 
   AddChatParams({
     required this.content,
     required this.userName,
+    required this.userEmail,
   });
 }
 
@@ -37,5 +39,6 @@ final addChatProvider =
   await ChatRepository.addChat(
     content: params.content,
     userName: params.userName,
+    userEmail: params.userEmail,
   );
 });
