@@ -65,9 +65,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           controller: nicknameTextController,
                           validator: _nicknameValidator,
                           onChanged: (value) {
-                            setState(() {
-                              nicknameTextController.text = value;
-                            });
+                            nicknameTextController.text = value;
                           },
                           labelText: '닉네임',
                           hintText: '닉네임',
