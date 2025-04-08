@@ -39,10 +39,12 @@ Community App
 - [json_annotation](https://pub.dev/packages/json_annotation)
 - [firebase_core](https://pub.dev/packages/firebase_core)
 - [firebase_auth](https://pub.dev/packages/firebase_auth)
+- [firebase_remote_config](https://pub.dev/packages/firebase_remote_config)
 - [cloud_firestore](https://pub.dev/packages/cloud_firestore)
 - [logger](https://pub.dev/packages/logger)
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
+- [package_info_plus](https://pub.dev/packages/package_info_plus)
 
 ## Using Dev Packages
 

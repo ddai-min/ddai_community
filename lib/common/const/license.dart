@@ -54,6 +54,13 @@ List<LicenseItem> license = [
     license: 'BSD-3-Clause',
   ),
   LicenseItem(
+    title: 'firebase_remote_config',
+    url: 'https://pub.dev/packages/firebase_remote_config',
+    copyright:
+        'Copyright 2018, the Chromium project authors. All rights reserved.',
+    license: 'BSD-3-Clause',
+  ),
+  LicenseItem(
     title: 'cloud_firestore',
     url: 'https://pub.dev/packages/cloud_firestore',
     copyright:
@@ -78,6 +85,12 @@ List<LicenseItem> license = [
     url: 'https://pub.dev/packages/flutter_dotenv',
     copyright: 'Copyright (c) 2018 java-james',
     license: 'MIT',
+  ),
+  LicenseItem(
+    title: 'package_info_plus',
+    url: 'https://pub.dev/packages/package_info_plus',
+    copyright: 'Copyright 2017 The Chromium Authors. All rights reserved.',
+    license: 'BSD-3-Clause',
   ),
 ];
 
