@@ -13,7 +13,7 @@ class ChatRepository extends PaginationRepository<ChatModel> {
   static Future<void> addChat({
     required String content,
     required String userName,
-    required String userEmail,
+    required String userUid,
   }) async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -24,7 +24,7 @@ class ChatRepository extends PaginationRepository<ChatModel> {
         id: chatRef.id,
         content: content,
         userName: userName,
-        userEmail: userEmail,
+        userUid: userUid,
         date: DateTime.now(),
       ).toJson();
 

@@ -10,7 +10,7 @@ ChatModel _$ChatModelFromJson(Map<String, dynamic> json) => ChatModel(
       id: json['id'] as String,
       content: json['content'] as String,
       userName: json['userName'] as String,
-      userEmail: json['userEmail'] as String,
+      userUid: json['userUid'] as String,
       date: const TimestampConverter().fromJson(json['date'] as Timestamp),
     );
 
@@ -18,6 +18,6 @@ Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
       'id': instance.id,
       'content': instance.content,
       'userName': instance.userName,
-      'userEmail': instance.userEmail,
+      'userUid': instance.userUid,
       'date': const TimestampConverter().toJson(instance.date),
     };
