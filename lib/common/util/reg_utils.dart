@@ -18,4 +18,18 @@ class RegUtils {
 
     return nicknameRegex.hasMatch(nickname);
   }
+
+  static bool isValidPassword({
+    required String password,
+  }) {
+    final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+    final hasNumber = RegExp(r'\d').hasMatch(password);
+    final hasSpecialChar = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+
+    if (!hasLowercase || !hasNumber || !hasSpecialChar) {
+      return false;
+    }
+
+    return true;
+  }
 }

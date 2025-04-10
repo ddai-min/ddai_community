@@ -182,6 +182,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   String? _passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
       return '비밀번호를 입력해주세요.';
+    } else if (value.length < 10) {
+      return '비밀번호는 10글자 이상 입력해주세요.';
+    } else if (!RegUtils.isValidPassword(password: value)) {
+      return '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.';
     }
 
     return null;
@@ -191,7 +195,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (value == null || value.isEmpty) {
       return '닉네임을 입력해주세요.';
     } else if (value.length < 2) {
-      return '닉네임은 두 글자 이상 입력해주세요.';
+      return '닉네임은 2글자 이상 입력해주세요.';
     } else if (value.length > 12) {
       return '닉네임은 12글자 이하로 입력해주세요.';
     } else if (!RegUtils.isValidNickname(nickname: value)) {
