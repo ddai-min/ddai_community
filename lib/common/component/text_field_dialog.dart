@@ -1,14 +1,18 @@
 import 'package:ddai_community/common/component/default_elevated_button.dart';
+import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:flutter/material.dart';
 
-class DefaultDialog extends StatelessWidget {
+class TextFieldDialog extends StatelessWidget {
   final String contentText;
   final String buttonText;
   final VoidCallback onPressed;
   final double width;
   final TextStyle contentTextStyle;
+  final TextEditingController? textController;
+  final String? hintText;
+  final bool obscureText;
 
-  const DefaultDialog({
+  const TextFieldDialog({
     super.key,
     required this.contentText,
     required this.buttonText,
@@ -17,6 +21,9 @@ class DefaultDialog extends StatelessWidget {
     this.contentTextStyle = const TextStyle(
       fontSize: 20.0,
     ),
+    this.textController,
+    this.hintText,
+    this.obscureText = false,
   });
 
   @override
@@ -35,6 +42,13 @@ class DefaultDialog extends StatelessWidget {
                   contentText,
                   textAlign: TextAlign.center,
                   style: contentTextStyle,
+                ),
+                const SizedBox(height: 20),
+                DefaultTextField(
+                  controller: textController,
+                  hintText: hintText,
+                  obscureText: obscureText,
+                  padding: 0,
                 ),
                 const SizedBox(height: 20),
                 DefaultElevatedButton(

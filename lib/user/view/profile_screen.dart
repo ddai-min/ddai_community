@@ -29,7 +29,7 @@ class ProfileScreen extends ConsumerWidget {
           const Divider(),
           const SizedBox(height: 20),
           _List(
-            title: '프로필 수정',
+            title: '프로필 관리',
             onTap: () {
               _pushProfileEditScreen(
                 context: context,

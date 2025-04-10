@@ -3,7 +3,6 @@ import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/common/util/data_utils.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
-import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -51,10 +50,6 @@ class _AppState extends ConsumerState<App> {
                 isAnonymous: false,
               ),
             );
-
-        context.goNamed(
-          LoginScreen.routeName,
-        );
       } else {
         if (user.isAnonymous) {
           ref.read(userMeProvider.notifier).update(

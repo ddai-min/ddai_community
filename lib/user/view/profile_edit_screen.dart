@@ -2,10 +2,12 @@ import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
+import 'package:ddai_community/common/component/text_field_dialog.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/util/reg_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +34,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   late TextEditingController nicknameTextController;
   late TextEditingController emailTextController;
+  TextEditingController passwordTextController = TextEditingController();
 
   @override
   void initState() {
@@ -81,6 +84,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ),
               ),
+              TextButton(
+                onPressed: _deleteUser,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: const Text('계정 삭제'),
+              ),
+              const SizedBox(height: 10),
               DefaultElevatedButton(
                 onPressed: widget.userName == nicknameTextController.text
                     ? null
@@ -106,6 +117,94 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
 
     return null;
+  }
+
+  void _deleteUser() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return TextFieldDialog(
+          textController: passwordTextController,
+          contentText: '계정을 삭제하시려면\n비밀번호를 입력해주세요.',
+          buttonText: '계정 삭제',
+          hintText: '비밀번호',
+          obscureText: true,
+          onPressed: () async {
+            try {
+              DefaultLoadingOverlay.showLoading(context);
+
+              final credential = EmailAuthProvider.credential(
+                email: widget.email,
+                password: passwordTextController.text,
+              );
+
+              final user = FirebaseAuth.instance.currentUser;
+
+              if (user == null) {
+                throw FirebaseAuthException(
+                  code: 'no-user',
+                  message: '로그인된 사용자가 없습니다.',
+                );
+              }
+
+              await user.reauthenticateWithCredential(credential);
+
+              await user.delete();
+
+              DefaultLoadingOverlay.hideLoading(context);
+
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) {
+                  return DefaultDialog(
+                    contentText: '계정이 삭제되었습니다.',
+                    buttonText: '확인',
+                    onPressed: () {
+                      context.goNamed(
+                        LoginScreen.routeName,
+                      );
+                    },
+                  );
+                },
+              );
+            } on FirebaseAuthException catch (error) {
+              DefaultLoadingOverlay.hideLoading(context);
+
+              if (error.code == 'invalid-credential') {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) {
+                    return DefaultDialog(
+                      contentText: '비밀번호가\n일치하지 않습니다.',
+                      buttonText: '확인',
+                      onPressed: () {
+                        context.pop();
+                      },
+                    );
+                  },
+                );
+              } else {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) {
+                    return DefaultDialog(
+                      contentText: '계정 삭제 중 오류가 발생했습니다.\n다시 시도해주세요.',
+                      buttonText: '확인',
+                      onPressed: () {
+                        context.pop();
+                      },
+                    );
+                  },
+                );
+              }
+            }
+          },
+        );
+      },
+    );
   }
 
   void _editProfile() async {
