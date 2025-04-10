@@ -1,15 +1,13 @@
-import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
-import 'package:ddai_community/common/util/data_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/main.dart';
 import 'package:ddai_community/user/component/login_text_field.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
-import 'package:ddai_community/user/view/sign_up_screen.dart';
+import 'package:ddai_community/user/view/eula_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,53 +115,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _onSignUp() {
     context.goNamed(
-      SignUpScreen.routeName,
+      EulaScreen.routeName,
+      queryParameters: {
+        'isAnonymous': 'false',
+      },
     );
   }
 
   void _onAnonymous() {
-    try {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return DefaultDialog(
-            contentText:
-                '익명이더라도 법률에 위반되는 행위를 할 시, 법적 책임이 발생할 수 있습니다.\n\n원활한 이용을 위해 규정을 준수해주세요.',
-            contentTextStyle: const TextStyle(
-              fontSize: 16.0,
-              fontWeight: FontWeight.bold,
-            ),
-            buttonText: '확인',
-            onPressed: () async {
-              DefaultLoadingOverlay.showLoading(context);
-
-              final userCredential =
-                  await FirebaseAuth.instance.signInAnonymously();
-
-              ref.read(userMeProvider.notifier).update(
-                    (user) => UserModel(
-                      id: userCredential.user!.uid,
-                      userName: DataUtils.setAnonymousName(
-                        uid: userCredential.user!.uid,
-                      ),
-                      isAnonymous: true,
-                    ),
-                  );
-
-              DefaultLoadingOverlay.hideLoading(context);
-
-              context.goNamed(
-                HomeTab.routeName,
-              );
-            },
-          );
-        },
-      );
-    } catch (error) {
-      DefaultLoadingOverlay.hideLoading(context);
-
-      logger.e(error);
-    }
+    context.goNamed(
+      EulaScreen.routeName,
+      queryParameters: {
+        'isAnonymous': 'true',
+      },
+    );
   }
 }
 

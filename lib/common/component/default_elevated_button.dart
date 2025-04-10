@@ -6,6 +6,8 @@ class DefaultElevatedButton extends StatelessWidget {
   final String text;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final OutlinedBorder? shape;
+  final EdgeInsetsGeometry? padding;
 
   const DefaultElevatedButton({
     super.key,
@@ -13,6 +15,8 @@ class DefaultElevatedButton extends StatelessWidget {
     required this.text,
     this.backgroundColor = primaryColor,
     this.foregroundColor = Colors.white,
+    this.shape,
+    this.padding,
   });
 
   @override
@@ -21,11 +25,13 @@ class DefaultElevatedButton extends StatelessWidget {
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         elevation: 0,
+        padding: padding,
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
+        shape: shape ??
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
       ),
       child: Text(text),
     );

@@ -3,6 +3,7 @@ import 'package:ddai_community/board/view/board_detail_screen.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/common/view/license_screen.dart';
 import 'package:ddai_community/common/view/splash_screen.dart';
+import 'package:ddai_community/user/view/eula_screen.dart';
 import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:ddai_community/user/view/profile_edit_screen.dart';
 import 'package:ddai_community/user/view/sign_up_screen.dart';
@@ -19,6 +20,13 @@ List<GoRoute> routes = [
     name: LoginScreen.routeName,
     builder: (_, __) => const LoginScreen(),
     routes: [
+      GoRoute(
+        path: '/eula',
+        name: EulaScreen.routeName,
+        builder: (_, state) => EulaScreen(
+          isAnonymous: state.uri.queryParameters['isAnonymous'] == 'true',
+        ),
+      ),
       GoRoute(
         path: '/sign_up',
         name: SignUpScreen.routeName,

@@ -3,29 +3,35 @@ import 'package:flutter/material.dart';
 
 class DefaultLayout extends StatelessWidget {
   final Widget child;
+  final bool? resizeToAvoidBottomInset;
   final Color? backgroundColor;
   final String? title;
   final List<Widget>? actions;
   final Widget? bottomNavigationBar;
+  final Widget? bottomSheet;
   final Widget? floatingActionButton;
 
   const DefaultLayout({
     super.key,
     required this.child,
+    this.resizeToAvoidBottomInset,
     this.backgroundColor = Colors.white,
     this.title,
     this.actions,
     this.bottomNavigationBar,
+    this.bottomSheet,
     this.floatingActionButton,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       backgroundColor: backgroundColor,
       appBar: _renderAppBar(),
       body: child,
       bottomNavigationBar: bottomNavigationBar,
+      bottomSheet: bottomSheet,
       floatingActionButton: floatingActionButton,
     );
   }
