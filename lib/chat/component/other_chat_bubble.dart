@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 class OtherChatBubble extends StatelessWidget {
+  final bool isSayAgain;
   final String userName;
   final String message;
 
   const OtherChatBubble({
     super.key,
+    required this.isSayAgain,
     required this.userName,
     required this.message,
   });
@@ -15,8 +17,8 @@ class OtherChatBubble extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(userName),
-        const SizedBox(height: 5),
+        if (!isSayAgain) Text(userName),
+        if (!isSayAgain) const SizedBox(height: 5),
         Container(
           padding: const EdgeInsets.all(10),
           constraints: BoxConstraints(

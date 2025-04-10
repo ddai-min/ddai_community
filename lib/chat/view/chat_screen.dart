@@ -93,6 +93,10 @@ class _Body extends ConsumerWidget {
       reverse: true,
       itemCount: chatList.items.length,
       itemBuilder: (context, index) {
+        ChatModel? postChatItem;
+        if (index < chatList.items.length - 1) {
+          postChatItem = chatList.items[index + 1];
+        }
         final chatItem = chatList.items[index];
 
         return Padding(
@@ -104,6 +108,7 @@ class _Body extends ConsumerWidget {
                 MyChatBubble(message: chatItem.content)
               else
                 OtherChatBubble(
+                  isSayAgain: postChatItem?.userUid == chatItem.userUid,
                   userName: chatItem.userName,
                   message: chatItem.content,
                 ),
