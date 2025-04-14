@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 enum FirebaseAuthExceptionCode {
   emailAlreadyInUse,
   weakPassword,
+  invalidCredential,
+  noUser,
   unknownError,
 }
 
@@ -53,6 +55,52 @@ class AuthRepository {
       return AuthResult(
         errorCode: FirebaseAuthExceptionCode.unknownError,
       );
+    } catch (error) {
+      logger.e(error);
+
+      return AuthResult(
+        errorCode: FirebaseAuthExceptionCode.unknownError,
+      );
+    }
+  }
+
+  static Future<AuthResult> deleteUser({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.noUser,
+        );
+      }
+
+      await user.reauthenticateWithCredential(credential);
+
+      await user.delete();
+
+      return AuthResult(
+        user: user,
+      );
+    } on FirebaseAuthException catch (error) {
+      logger.e(error);
+
+      if (error.code == 'invalid-credential') {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.invalidCredential,
+        );
+      } else {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.unknownError,
+        );
+      }
     } catch (error) {
       logger.e(error);
 

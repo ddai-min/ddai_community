@@ -7,6 +7,7 @@ import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/util/reg_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/repository/auth_repository.dart';
 import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -130,29 +131,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           hintText: '비밀번호',
           obscureText: true,
           onPressed: () async {
-            try {
-              DefaultLoadingOverlay.showLoading(context);
+            DefaultLoadingOverlay.showLoading(context);
 
-              final credential = EmailAuthProvider.credential(
-                email: widget.email,
-                password: passwordTextController.text,
-              );
+            final result = await AuthRepository.deleteUser(
+              email: widget.email,
+              password: passwordTextController.text,
+            );
 
-              final user = FirebaseAuth.instance.currentUser;
+            DefaultLoadingOverlay.hideLoading(context);
 
-              if (user == null) {
-                throw FirebaseAuthException(
-                  code: 'no-user',
-                  message: '로그인된 사용자가 없습니다.',
-                );
-              }
-
-              await user.reauthenticateWithCredential(credential);
-
-              await user.delete();
-
-              DefaultLoadingOverlay.hideLoading(context);
-
+            if (result.isSuccess) {
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -168,38 +156,23 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   );
                 },
               );
-            } on FirebaseAuthException catch (error) {
-              DefaultLoadingOverlay.hideLoading(context);
-
-              if (error.code == 'invalid-credential') {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) {
-                    return DefaultDialog(
-                      contentText: '비밀번호가\n일치하지 않습니다.',
-                      buttonText: '확인',
-                      onPressed: () {
-                        context.pop();
-                      },
-                    );
-                  },
-                );
-              } else {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) {
-                    return DefaultDialog(
-                      contentText: '계정 삭제 중 오류가 발생했습니다.\n다시 시도해주세요.',
-                      buttonText: '확인',
-                      onPressed: () {
-                        context.pop();
-                      },
-                    );
-                  },
-                );
-              }
+            } else {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) {
+                  return DefaultDialog(
+                    contentText: result.errorCode ==
+                            FirebaseAuthExceptionCode.invalidCredential
+                        ? '비밀번호가\n일치하지 않습니다.'
+                        : '계정 삭제 중 오류가 발생했습니다.\n다시 시도해주세요.',
+                    buttonText: '확인',
+                    onPressed: () {
+                      context.pop();
+                    },
+                  );
+                },
+              );
             }
           },
         );
