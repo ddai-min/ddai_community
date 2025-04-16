@@ -87,4 +87,20 @@ class BoardRepository extends PaginationRepository<BoardModel> {
       return false;
     }
   }
+
+  static Future<bool> deleteBoard({
+    required String searchId,
+  }) async {
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      await firestore.collection('board').doc(searchId).delete();
+
+      return true;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
+    }
+  }
 }

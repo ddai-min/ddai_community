@@ -4,11 +4,14 @@ import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/board/provider/comment_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
+import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
+import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class BoardDetailScreen extends ConsumerStatefulWidget {
   static get routeName => 'board_detail';
@@ -68,6 +71,9 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
       ),
       data: (data) => DefaultLayout(
         title: data!.title,
+        actions: _renderActions(
+          userUid: data.userUid,
+        ),
         child: SingleChildScrollView(
           controller: scrollController,
           child: SafeArea(
@@ -93,6 +99,48 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget>? _renderActions({
+    required String userUid,
+  }) {
+    if (ref.read(userMeProvider).id == userUid) {
+      return [
+        TextButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) {
+                return DefaultDialog(
+                  titleText: '게시글 삭제',
+                  contentText: '정말로 삭제하시겠습니까?',
+                  buttonText: '삭제',
+                  onPressed: () async {
+                    final isDelete = await ref.read(
+                      deleteBoardProvider(widget.id).future,
+                    );
+
+                    if (isDelete) {
+                      ref.read(getBoardListProvider.notifier).refresh();
+
+                      context.goNamed(
+                        HomeTab.routeName,
+                      );
+                    }
+                  },
+                );
+              },
+            );
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('삭제'),
+        ),
+      ];
+    } else {
+      return null;
+    }
   }
 
   Future<void> _addComment() async {

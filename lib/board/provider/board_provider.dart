@@ -57,3 +57,13 @@ final addBoardProvider = FutureProvider.family
 
   return result;
 });
+
+// 게시글 DELETE
+final deleteBoardProvider =
+    FutureProvider.family.autoDispose<bool, String>((ref, searchId) async {
+  final result = await BoardRepository.deleteBoard(
+    searchId: searchId,
+  );
+
+  return result;
+});

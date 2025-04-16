@@ -2,6 +2,7 @@ import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:flutter/material.dart';
 
 class DefaultDialog extends StatelessWidget {
+  final String? titleText;
   final String contentText;
   final String buttonText;
   final VoidCallback onPressed;
@@ -10,12 +11,13 @@ class DefaultDialog extends StatelessWidget {
 
   const DefaultDialog({
     super.key,
+    this.titleText,
     required this.contentText,
     required this.buttonText,
     required this.onPressed,
     this.width = 0,
     this.contentTextStyle = const TextStyle(
-      fontSize: 20.0,
+      fontSize: 16.0,
     ),
   });
 
@@ -31,6 +33,16 @@ class DefaultDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (titleText != null)
+                  Text(
+                    titleText!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                if (titleText != null) const SizedBox(height: 10),
                 Text(
                   contentText,
                   textAlign: TextAlign.center,
