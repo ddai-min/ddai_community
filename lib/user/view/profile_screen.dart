@@ -45,9 +45,7 @@ class ProfileScreen extends ConsumerWidget {
               );
             },
           ),
-          const Expanded(
-            child: SizedBox(),
-          ),
+          const SizedBox(height: 50),
           _LogoutButton(
             onPressed: () {
               _logout(
@@ -55,6 +53,17 @@ class ProfileScreen extends ConsumerWidget {
               );
             },
           ),
+          const Expanded(
+            child: SizedBox(),
+          ),
+          Text(
+            '문의사항은 yoda3714@gmail.com으로\n연락주시기 바랍니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14.0,
+            ),
+          )
         ],
       ),
     );
@@ -93,10 +102,21 @@ class ProfileScreen extends ConsumerWidget {
   void _logout({
     required BuildContext context,
   }) async {
-    await FirebaseAuth.instance.signOut();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return DefaultDialog(
+          contentText: '정말로 로그아웃 하시겠습니까?',
+          buttonText: '로그아웃',
+          onPressed: () async {
+            await FirebaseAuth.instance.signOut();
 
-    context.goNamed(
-      LoginScreen.routeName,
+            context.goNamed(
+              LoginScreen.routeName,
+            );
+          },
+        );
+      },
     );
   }
 }
