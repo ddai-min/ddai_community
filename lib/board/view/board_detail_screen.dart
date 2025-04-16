@@ -9,6 +9,7 @@ import 'package:ddai_community/common/component/text_field_dialog.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/auth_provider.dart';
 import 'package:ddai_community/user/provider/report_provider.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
@@ -170,6 +171,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                   buttonText: '차단',
                   onPressed: () {
                     _blockUser(
+                      userMe: ref.read(userMeProvider),
                       blockUserUid: userUid,
                     );
                   },
@@ -222,6 +224,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
 
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (_) {
           return DefaultDialog(
             titleText: '신고 완료',
@@ -238,8 +241,28 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   }
 
   void _blockUser({
+    required UserModel userMe,
     required String blockUserUid,
   }) async {
+    if (userMe.isAnonymous) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          return DefaultDialog(
+            contentText: '로그인 후\n차단할 수 있습니다.',
+            buttonText: '확인',
+            onPressed: () {
+              context.pop();
+              context.pop();
+            },
+          );
+        },
+      );
+
+      return;
+    }
+
     final isBlockSuccess = await ref.read(
       blockUserProvider(
         blockUserUid,
@@ -249,6 +272,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     if (isBlockSuccess) {
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (_) {
           return DefaultDialog(
             titleText: '차단 완료',
