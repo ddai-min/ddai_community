@@ -64,7 +64,7 @@ class _AppState extends ConsumerState<App> {
         } else {
           ref.read(userMeProvider.notifier).update(
                 (userModel) => UserModel(
-                  id: user.email!,
+                  id: user.uid,
                   userName: user.displayName ?? user.email!,
                   isAnonymous: false,
                   email: user.email,

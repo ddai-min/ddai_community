@@ -19,6 +19,7 @@ class PaginationRepository<T extends ModelWithId> {
   });
 
   Future<PaginationModel<T>> fetchData({
+    required String userUid,
     required CollectionPath collectionPath,
     CollectionPath? subCollectionPath,
     String? collectionId,
@@ -28,6 +29,14 @@ class PaginationRepository<T extends ModelWithId> {
     try {
       Query query;
       FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      final blockSnapshot = await firestore
+          .collection('user')
+          .doc(userUid)
+          .collection('blockUser')
+          .get();
+
+      final blockUserList = blockSnapshot.docs.map((e) => e.id).toList();
 
       if (subCollectionPath == null || collectionId == null) {
         query = firestore
@@ -47,6 +56,13 @@ class PaginationRepository<T extends ModelWithId> {
               descending: true,
             )
             .limit(pageSize);
+      }
+
+      if (blockUserList.isNotEmpty) {
+        query = query.where(
+          'userUid',
+          whereNotIn: blockUserList,
+        );
       }
 
       if (lastDocument != null) {

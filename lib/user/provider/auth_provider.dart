@@ -24,3 +24,13 @@ final signUpWithEmailProvider = FutureProvider.family
 
   return result;
 });
+
+// 유저 차단
+final blockUserProvider =
+    FutureProvider.family.autoDispose<bool, String>((ref, userUid) async {
+  final result = await AuthRepository.blockUser(
+    blockUserUid: userUid,
+  );
+
+  return result;
+});

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class PaginationProvider<T extends ModelWithId>
     extends StateNotifier<PaginationModel<T>> {
   final PaginationRepository<T> paginationRepository;
+  final String userUid;
   final CollectionPath collectionPath;
   final CollectionPath? subCollectionPath;
   final String? collectionId;
@@ -14,6 +15,7 @@ class PaginationProvider<T extends ModelWithId>
 
   PaginationProvider({
     required this.paginationRepository,
+    required this.userUid,
     required this.collectionPath,
     this.subCollectionPath,
     this.collectionId,
@@ -41,6 +43,7 @@ class PaginationProvider<T extends ModelWithId>
     );
 
     final newData = await paginationRepository.fetchData(
+      userUid: userUid,
       collectionPath: collectionPath,
       subCollectionPath: subCollectionPath,
       collectionId: collectionId,

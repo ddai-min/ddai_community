@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/main.dart';
+import 'package:ddai_community/user/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 enum FirebaseAuthExceptionCode {
@@ -35,6 +37,20 @@ class AuthRepository {
       );
 
       await userCredential.user!.updateDisplayName(userName);
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      final userRef =
+          firestore.collection('user').doc(userCredential.user!.uid);
+
+      Map<String, dynamic> userData = UserModel(
+        id: userCredential.user!.uid,
+        userName: userName,
+        isAnonymous: false,
+        email: email,
+      ).toJson();
+
+      await userRef.set(userData);
 
       return AuthResult(
         user: userCredential.user,
@@ -86,6 +102,12 @@ class AuthRepository {
 
       await user.delete();
 
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      final userRef = firestore.collection('user').doc(user.uid);
+
+      await userRef.delete();
+
       return AuthResult(
         user: user,
       );
@@ -107,6 +129,35 @@ class AuthRepository {
       return AuthResult(
         errorCode: FirebaseAuthExceptionCode.unknownError,
       );
+    }
+  }
+
+  static Future<bool> blockUser({
+    required String blockUserUid,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        return false;
+      }
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      await firestore
+          .collection('user')
+          .doc(user.uid)
+          .collection('blockUser')
+          .doc(blockUserUid)
+          .set({
+        'blockUserUid': blockUserUid,
+      });
+
+      return true;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
     }
   }
 }
