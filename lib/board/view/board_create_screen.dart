@@ -86,6 +86,7 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
           title: titleTextController.text,
           content: contentTextController.text,
           userName: ref.read(userMeProvider).userName,
+          userUid: ref.read(userMeProvider).id,
         ),
       ).future,
     );

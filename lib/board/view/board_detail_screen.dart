@@ -105,6 +105,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         AddCommentParams(
           searchId: widget.id,
           userName: ref.read(userMeProvider).userName,
+          userUid: ref.read(userMeProvider).id,
           content: commentTextController.text,
         ),
       ).future,

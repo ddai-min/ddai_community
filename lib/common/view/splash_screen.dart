@@ -56,7 +56,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await _checkUpdate();
 
     context.goNamed(
-      ref.read(userMeProvider.notifier).state.id == ''
+      ref.read(userMeProvider).id == ''
           ? LoginScreen.routeName
           : HomeTab.routeName,
     );

@@ -10,6 +10,7 @@ class CommentModel implements ModelWithId {
   @override
   final String id;
   final String userName;
+  final String userUid;
   final String content;
   @TimestampConverter()
   final DateTime date;
@@ -17,6 +18,7 @@ class CommentModel implements ModelWithId {
   CommentModel({
     required this.id,
     required this.userName,
+    required this.userUid,
     required this.content,
     required this.date,
   });

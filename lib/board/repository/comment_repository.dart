@@ -13,6 +13,7 @@ class CommentRepository extends PaginationRepository<CommentModel> {
   static Future<bool> addComment({
     required String searchId,
     required String userName,
+    required String userUid,
     required String content,
   }) async {
     try {
@@ -27,6 +28,7 @@ class CommentRepository extends PaginationRepository<CommentModel> {
       Map<String, dynamic> commentData = CommentModel(
         id: commentRef.id,
         userName: userName,
+        userUid: userUid,
         content: content,
         date: DateTime.now(),
       ).toJson();

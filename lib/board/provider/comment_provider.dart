@@ -8,11 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class AddCommentParams {
   final String searchId;
   final String userName;
+  final String userUid;
   final String content;
 
   AddCommentParams({
     required this.searchId,
     required this.userName,
+    required this.userUid,
     required this.content,
   });
 }
@@ -43,6 +45,7 @@ final addCommentProvider = FutureProvider.family
   final result = await CommentRepository.addComment(
     searchId: params.searchId,
     userName: params.userName,
+    userUid: params.userUid,
     content: params.content,
   );
 

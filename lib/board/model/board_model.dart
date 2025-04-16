@@ -13,6 +13,7 @@ class BoardModel implements ModelWithId {
   final String title;
   final String content;
   final String userName;
+  final String userUid;
   @TimestampConverter()
   final DateTime date;
   final List<CommentModel>? commentList;
@@ -22,6 +23,7 @@ class BoardModel implements ModelWithId {
     required this.title,
     required this.content,
     required this.userName,
+    required this.userUid,
     required this.date,
     this.commentList,
   });

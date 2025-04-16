@@ -45,6 +45,7 @@ class BoardRepository extends PaginationRepository<BoardModel> {
         title: boardSnapshot['title'],
         content: boardSnapshot['content'],
         userName: boardSnapshot['userName'],
+        userUid: boardSnapshot['userUid'],
         date: date,
         commentList: commentList,
       );
@@ -61,6 +62,7 @@ class BoardRepository extends PaginationRepository<BoardModel> {
     required String title,
     required String content,
     required String userName,
+    required String userUid,
   }) async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -72,6 +74,7 @@ class BoardRepository extends PaginationRepository<BoardModel> {
         title: title,
         content: content,
         userName: userName,
+        userUid: userUid,
         date: DateTime.now(),
       ).toJson();
 
