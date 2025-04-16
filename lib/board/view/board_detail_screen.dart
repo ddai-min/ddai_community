@@ -5,9 +5,11 @@ import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/board/provider/comment_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/component/default_dialog.dart';
+import 'package:ddai_community/common/component/text_field_dialog.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/provider/report_provider.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +32,7 @@ class BoardDetailScreen extends ConsumerStatefulWidget {
 class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   ScrollController scrollController = ScrollController();
   TextEditingController commentTextController = TextEditingController();
+  TextEditingController reportTextController = TextEditingController();
 
   @override
   void initState() {
@@ -47,6 +50,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     scrollController.removeListener(_listener);
     scrollController.dispose();
     commentTextController.dispose();
+    reportTextController.dispose();
 
     super.dispose();
   }
@@ -73,6 +77,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         title: data!.title,
         actions: _renderActions(
           userUid: data.userUid,
+          userName: data.userName,
         ),
         child: SingleChildScrollView(
           controller: scrollController,
@@ -103,6 +108,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
 
   List<Widget>? _renderActions({
     required String userUid,
+    required String userName,
   }) {
     if (ref.read(userMeProvider).id == userUid) {
       return [
@@ -139,7 +145,60 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
       ];
     } else {
-      return null;
+      return [
+        TextButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) {
+                return TextFieldDialog(
+                  textController: reportTextController,
+                  contentText: '신고 사유를 입력해주세요.',
+                  hintText: '신고 사유',
+                  buttonText: '신고',
+                  onPressed: () async {
+                    final isReportSuccess = await ref.read(
+                      reportProvider(
+                        ReportParams(
+                          reporterUserName: ref.read(userMeProvider).userName,
+                          reporterUserUid: ref.read(userMeProvider).id,
+                          reportedUserName: userName,
+                          reportedUserUid: userUid,
+                          reportReason: reportTextController.text,
+                          reportContentId: widget.id,
+                        ),
+                      ).future,
+                    );
+
+                    if (isReportSuccess) {
+                      reportTextController.text = '';
+
+                      showDialog(
+                        context: context,
+                        builder: (_) {
+                          return DefaultDialog(
+                            titleText: '신고 완료',
+                            contentText: '신고가 완료되었습니다.',
+                            buttonText: '확인',
+                            onPressed: () {
+                              context.pop();
+                              context.pop();
+                            },
+                          );
+                        },
+                      );
+                    }
+                  },
+                );
+              },
+            );
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('신고'),
+        ),
+      ];
     }
   }
 

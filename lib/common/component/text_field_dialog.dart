@@ -19,7 +19,7 @@ class TextFieldDialog extends StatelessWidget {
     required this.onPressed,
     this.width = 0,
     this.contentTextStyle = const TextStyle(
-      fontSize: 20.0,
+      fontSize: 16.0,
     ),
     this.textController,
     this.hintText,
