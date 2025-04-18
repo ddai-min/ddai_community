@@ -51,6 +51,7 @@ class DefaultTextField extends StatelessWidget {
       padding: EdgeInsets.all(padding),
       child: TextFormField(
         controller: controller,
+        selectionControls: materialTextSelectionControls,
         forceErrorText: forceErrorText,
         onChanged: onChanged,
         validator: validator,

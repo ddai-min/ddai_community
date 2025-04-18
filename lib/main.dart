@@ -1,4 +1,5 @@
 import 'package:ddai_community/bootstrap.dart';
+import 'package:ddai_community/common/const/colors.dart';
 import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/common/util/data_utils.dart';
 import 'package:ddai_community/user/model/user_model.dart';
@@ -88,6 +89,10 @@ class _AppState extends ConsumerState<App> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'NotoSans',
+        textSelectionTheme: const TextSelectionThemeData(
+          selectionColor: Colors.grey,
+          selectionHandleColor: primaryColor,
+        ),
       ),
       routerDelegate: router.routerDelegate,
       routeInformationParser: router.routeInformationParser,
