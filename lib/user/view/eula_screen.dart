@@ -1,3 +1,4 @@
+import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/default_elevated_button.dart';
 import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
@@ -5,8 +6,9 @@ import 'package:ddai_community/common/util/data_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/repository/auth_repository.dart';
+import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:ddai_community/user/view/sign_up_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,23 +57,46 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
     if (widget.isAnonymous) {
       DefaultLoadingOverlay.showLoading(context);
 
-      final userCredential = await FirebaseAuth.instance.signInAnonymously();
+      final result = await AuthRepository.loginAnonymous();
 
-      ref.read(userMeProvider.notifier).update(
-            (user) => UserModel(
-              id: userCredential.user!.uid,
-              userName: DataUtils.setAnonymousName(
-                uid: userCredential.user!.uid,
+      if (result.isSuccess) {
+        ref.read(userMeProvider.notifier).update(
+              (user) => UserModel(
+                id: result.user!.uid,
+                userName: DataUtils.setAnonymousName(
+                  uid: result.user!.uid,
+                ),
+                isAnonymous: true,
               ),
-              isAnonymous: true,
-            ),
-          );
+            );
 
-      DefaultLoadingOverlay.hideLoading(context);
+        DefaultLoadingOverlay.hideLoading(context);
 
-      context.goNamed(
-        HomeTab.routeName,
-      );
+        context.goNamed(
+          HomeTab.routeName,
+        );
+      } else {
+        DefaultLoadingOverlay.hideLoading(context);
+
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return DefaultDialog(
+              contentText:
+                  result.errorCode == FirebaseAuthExceptionCode.tooManyRequests
+                      ? '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.'
+                      : '오류가 발생했습니다.\n다시 시도해주세요.',
+              buttonText: '확인',
+              onPressed: () {
+                context.goNamed(
+                  LoginScreen.routeName,
+                );
+              },
+            );
+          },
+        );
+      }
     } else {
       context.goNamed(
         SignUpScreen.routeName,

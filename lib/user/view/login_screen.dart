@@ -3,12 +3,11 @@ import 'package:ddai_community/common/component/default_loading_overlay.dart';
 import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
-import 'package:ddai_community/main.dart';
 import 'package:ddai_community/user/component/login_text_field.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/repository/auth_repository.dart';
 import 'package:ddai_community/user/view/eula_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,48 +67,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onLogin() async {
-    try {
-      DefaultLoadingOverlay.showLoading(context);
+    DefaultLoadingOverlay.showLoading(context);
 
-      final userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: idTextController.text,
-        password: passwordTextController.text,
+    final result = await AuthRepository.login(
+      email: idTextController.text,
+      password: passwordTextController.text,
+    );
+
+    DefaultLoadingOverlay.hideLoading(context);
+
+    if (result.isSuccess) {
+      setState(() {
+        isLoginError = false;
+      });
+
+      ref.read(userMeProvider.notifier).update(
+            (model) => UserModel(
+              id: result.user!.uid,
+              userName: result.user!.displayName ?? result.user!.email!,
+              isAnonymous: false,
+              email: result.user!.email,
+            ),
+          );
+
+      context.goNamed(
+        HomeTab.routeName,
       );
-
-      if (userCredential.user != null) {
-        setState(() {
-          isLoginError = false;
-        });
-
-        ref.read(userMeProvider.notifier).update(
-              (model) => UserModel(
-                id: userCredential.user!.uid,
-                userName: userCredential.user!.displayName ??
-                    userCredential.user!.email!,
-                isAnonymous: false,
-                email: userCredential.user!.email,
-              ),
-            );
-
-        context.goNamed(
-          HomeTab.routeName,
-        );
-      } else {
-        throw FirebaseAuthException;
-      }
-
-      DefaultLoadingOverlay.hideLoading(context);
-    } on FirebaseAuthException {
-      DefaultLoadingOverlay.hideLoading(context);
-
+    } else {
       setState(() {
         isLoginError = true;
       });
-    } catch (error) {
-      DefaultLoadingOverlay.hideLoading(context);
-
-      logger.e(error);
     }
   }
 

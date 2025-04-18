@@ -8,6 +8,7 @@ enum FirebaseAuthExceptionCode {
   weakPassword,
   invalidCredential,
   noUser,
+  tooManyRequests,
   unknownError,
 }
 
@@ -71,6 +72,63 @@ class AuthRepository {
       return AuthResult(
         errorCode: FirebaseAuthExceptionCode.unknownError,
       );
+    } catch (error) {
+      logger.e(error);
+
+      return AuthResult(
+        errorCode: FirebaseAuthExceptionCode.unknownError,
+      );
+    }
+  }
+
+  static Future<AuthResult> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return AuthResult(
+        user: userCredential.user,
+      );
+    } on FirebaseAuthException catch (error) {
+      logger.e(error);
+
+      return AuthResult(
+        errorCode: FirebaseAuthExceptionCode.unknownError,
+      );
+    } catch (error) {
+      logger.e(error);
+
+      return AuthResult(
+        errorCode: FirebaseAuthExceptionCode.unknownError,
+      );
+    }
+  }
+
+  static Future<AuthResult> loginAnonymous() async {
+    try {
+      final userCredential = await FirebaseAuth.instance.signInAnonymously();
+
+      return AuthResult(
+        user: userCredential.user,
+      );
+    } on FirebaseAuthException catch (error) {
+      logger.e(error);
+
+      if (error.code == 'too-many-requests') {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.tooManyRequests,
+        );
+      } else {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.unknownError,
+        );
+      }
     } catch (error) {
       logger.e(error);
 
