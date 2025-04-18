@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class LoginTextField extends StatelessWidget {
   final TextEditingController? controller;
+  final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final String? labelText;
   final String? hintText;
@@ -11,6 +12,7 @@ class LoginTextField extends StatelessWidget {
   const LoginTextField({
     super.key,
     this.controller,
+    this.validator,
     this.onChanged,
     this.labelText,
     this.hintText,
@@ -21,6 +23,7 @@ class LoginTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTextField(
       controller: controller,
+      validator: validator,
       onChanged: onChanged,
       labelText: labelText,
       hintText: hintText,

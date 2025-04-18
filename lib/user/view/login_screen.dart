@@ -22,6 +22,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final formKey = GlobalKey<FormState>();
+
   TextEditingController idTextController = TextEditingController();
   TextEditingController passwordTextController = TextEditingController();
 
@@ -37,36 +39,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appBar = AppBar();
+    final availableHeight = MediaQuery.of(context).size.height -
+        appBar.preferredSize.height -
+        MediaQuery.of(context).padding.top;
+
     return DefaultLayout(
       title: 'DDAI Community',
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16.0,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _Title(),
-            const SizedBox(height: 15),
-            if (isLoginError) const _ErrorText(),
-            const SizedBox(height: 15),
-            _Inputs(
-              idTextController: idTextController,
-              passwordTextController: passwordTextController,
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: availableHeight,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
             ),
-            _Buttons(
-              onLogin: _onLogin,
-              onSignUp: _onSignUp,
-              onAnonymous: _onAnonymous,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _Title(),
+                const SizedBox(height: 15),
+                if (isLoginError) const _ErrorText(),
+                const SizedBox(height: 15),
+                Form(
+                  key: formKey,
+                  child: _Inputs(
+                    idTextController: idTextController,
+                    passwordTextController: passwordTextController,
+                    idValidator: _idValidator,
+                    passwordValidator: _passwordValidator,
+                  ),
+                ),
+                _Buttons(
+                  onLogin: _onLogin,
+                  onSignUp: _onSignUp,
+                  onAnonymous: _onAnonymous,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   void _onLogin() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
     DefaultLoadingOverlay.showLoading(context);
 
     final result = await AuthRepository.login(
@@ -117,6 +140,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       },
     );
   }
+
+  String? _idValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '이메일을 입력해주세요.';
+    }
+
+    return null;
+  }
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return '비밀번호를 입력해주세요.';
+    }
+
+    return null;
+  }
 }
 
 class _Title extends StatelessWidget {
@@ -161,11 +200,15 @@ class _ErrorText extends StatelessWidget {
 
 class _Inputs extends StatelessWidget {
   final TextEditingController idTextController;
+  final FormFieldValidator<String>? idValidator;
   final TextEditingController passwordTextController;
+  final FormFieldValidator<String>? passwordValidator;
 
   const _Inputs({
     required this.idTextController,
     required this.passwordTextController,
+    this.idValidator,
+    this.passwordValidator,
   });
 
   @override
@@ -174,10 +217,12 @@ class _Inputs extends StatelessWidget {
       children: [
         LoginTextField(
           controller: idTextController,
+          validator: idValidator,
           hintText: '아이디',
         ),
         LoginTextField(
           controller: passwordTextController,
+          validator: passwordValidator,
           hintText: '비밀번호',
           obscureText: true,
         ),

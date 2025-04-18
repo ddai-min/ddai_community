@@ -59,7 +59,11 @@ class AuthRepository {
     } on FirebaseAuthException catch (error) {
       logger.e(error);
 
-      if (error.code == 'email-already-in-use') {
+      if (error.code == 'too-many-requests') {
+        return AuthResult(
+          errorCode: FirebaseAuthExceptionCode.tooManyRequests,
+        );
+      } else if (error.code == 'email-already-in-use') {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.emailAlreadyInUse,
         );

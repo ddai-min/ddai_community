@@ -9,6 +9,7 @@ import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/auth_provider.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:ddai_community/user/repository/auth_repository.dart';
+import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -130,13 +131,30 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     DefaultLoadingOverlay.hideLoading(context);
 
     if (!result.isSuccess) {
-      if (result.errorCode == FirebaseAuthExceptionCode.emailAlreadyInUse) {
+      if (result.errorCode == FirebaseAuthExceptionCode.tooManyRequests) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return DefaultDialog(
+              contentText: '너무 많은 계정 생성 요청이 발생했습니다.\n잠시 후 다시 시도해주세요.',
+              buttonText: '확인',
+              onPressed: () {
+                context.goNamed(
+                  LoginScreen.routeName,
+                );
+              },
+            );
+          },
+        );
+      } else if (result.errorCode ==
+          FirebaseAuthExceptionCode.emailAlreadyInUse) {
         setState(() {
           emailErrorText = '이미 사용 중인 이메일입니다.';
         });
       } else if (result.errorCode == FirebaseAuthExceptionCode.weakPassword) {
         setState(() {
-          passwordErrorText = '비밀번호를 6글자 이상 사용해주세요.';
+          passwordErrorText = '비밀번호를 10글자 이상 사용해주세요.';
         });
       }
 
