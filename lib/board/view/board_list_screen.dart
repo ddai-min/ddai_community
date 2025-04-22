@@ -54,6 +54,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
       },
       child: ListView.builder(
           controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == boardList.items.length) {
