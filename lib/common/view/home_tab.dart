@@ -1,21 +1,27 @@
 import 'package:ddai_community/board/component/add_board_floating_action_button.dart';
 import 'package:ddai_community/board/view/board_list_screen.dart';
 import 'package:ddai_community/chat/view/chat_screen.dart';
+import 'package:ddai_community/common/component/default_text_button.dart';
 import 'package:ddai_community/common/const/colors.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
+import 'package:ddai_community/user/provider/user_me_provider.dart';
+import 'package:ddai_community/user/view/login_screen.dart';
 import 'package:ddai_community/user/view/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class HomeTab extends StatefulWidget {
+class HomeTab extends ConsumerStatefulWidget {
   static get routeName => 'home';
 
   const HomeTab({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  ConsumerState<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
+class _HomeTabState extends ConsumerState<HomeTab>
+    with SingleTickerProviderStateMixin {
   int index = 0;
   late TabController tabController;
 
@@ -47,6 +53,35 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.read(userMeProvider);
+
+    if (user.id.isEmpty) {
+      return DefaultLayout(
+        title: 'DDAI Community',
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '로그인 후 이용해주세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16.0,
+              ),
+            ),
+            DefaultTextButton(
+              onPressed: () {
+                context.goNamed(
+                  LoginScreen.routeName,
+                );
+              },
+              text: '로그인',
+            ),
+          ],
+        ),
+      );
+    }
+
     return DefaultLayout(
       title: 'DDAI Community',
       floatingActionButton: renderFloatingActionButton(),
