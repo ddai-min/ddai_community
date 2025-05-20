@@ -4,12 +4,18 @@ import 'package:ddai_community/user/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 enum FirebaseAuthExceptionCode {
-  emailAlreadyInUse,
-  weakPassword,
-  invalidCredential,
-  noUser,
-  tooManyRequests,
-  unknownError,
+  emailAlreadyInUse('email-already-in-use'),
+  weakPassword('weak-password'),
+  invalidCredential('invalid-credential'),
+  noUser('no-user'),
+  tooManyRequests('too-many-requests'),
+  unknownError('unknown-error');
+
+  final String code;
+
+  const FirebaseAuthExceptionCode(
+    this.code,
+  );
 }
 
 class AuthResult {
@@ -59,15 +65,16 @@ class AuthRepository {
     } on FirebaseAuthException catch (error) {
       logger.e(error);
 
-      if (error.code == 'too-many-requests') {
+      if (error.code == FirebaseAuthExceptionCode.tooManyRequests.code) {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.tooManyRequests,
         );
-      } else if (error.code == 'email-already-in-use') {
+      } else if (error.code ==
+          FirebaseAuthExceptionCode.emailAlreadyInUse.code) {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.emailAlreadyInUse,
         );
-      } else if (error.code == 'weak-password') {
+      } else if (error.code == FirebaseAuthExceptionCode.weakPassword.code) {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.weakPassword,
         );
@@ -124,7 +131,7 @@ class AuthRepository {
     } on FirebaseAuthException catch (error) {
       logger.e(error);
 
-      if (error.code == 'too-many-requests') {
+      if (error.code == FirebaseAuthExceptionCode.tooManyRequests.code) {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.tooManyRequests,
         );
@@ -176,7 +183,7 @@ class AuthRepository {
     } on FirebaseAuthException catch (error) {
       logger.e(error);
 
-      if (error.code == 'invalid-credential') {
+      if (error.code == FirebaseAuthExceptionCode.invalidCredential.code) {
         return AuthResult(
           errorCode: FirebaseAuthExceptionCode.invalidCredential,
         );
