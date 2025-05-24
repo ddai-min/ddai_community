@@ -2,6 +2,7 @@ import 'package:ddai_community/board/component/board_detail_buttons.dart';
 import 'package:ddai_community/board/component/comment_list_item.dart';
 import 'package:ddai_community/board/component/comment_text_field.dart';
 import 'package:ddai_community/board/model/comment_model.dart';
+import 'package:ddai_community/board/model/comment_parameter.dart';
 import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/board/provider/comment_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';

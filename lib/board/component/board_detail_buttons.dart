@@ -2,6 +2,7 @@ import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_dialog.dart';
 import 'package:ddai_community/common/component/text_field_dialog.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/model/report_parameter.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/auth_provider.dart';
 import 'package:ddai_community/user/provider/report_provider.dart';

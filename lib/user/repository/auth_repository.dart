@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/main.dart';
+import 'package:ddai_community/user/model/auth_parameter.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -32,18 +33,17 @@ class AuthResult {
 
 class AuthRepository {
   static Future<AuthResult> signUp({
-    required String email,
-    required String password,
-    required String userName,
+    required SignUpWithEmailParams signUpWithEmailParams,
   }) async {
     try {
       final userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: signUpWithEmailParams.email,
+        password: signUpWithEmailParams.password,
       );
 
-      await userCredential.user!.updateDisplayName(userName);
+      await userCredential.user!
+          .updateDisplayName(signUpWithEmailParams.userName);
 
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
@@ -52,9 +52,9 @@ class AuthRepository {
 
       Map<String, dynamic> userData = UserModel(
         id: userCredential.user!.uid,
-        userName: userName,
+        userName: signUpWithEmailParams.userName,
         isAnonymous: false,
-        email: email,
+        email: signUpWithEmailParams.email,
       ).toJson();
 
       await userRef.set(userData);

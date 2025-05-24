@@ -1,15 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/main.dart';
 import 'package:ddai_community/user/model/report_model.dart';
+import 'package:ddai_community/user/model/report_parameter.dart';
 
 class ReportRepository {
   static Future<bool> report({
-    required String reporterUserName,
-    required String reporterUserUid,
-    required String reportedUserName,
-    required String reportedUserUid,
-    required String reportReason,
-    required String reportContentId,
+    required ReportParams reportParams,
   }) async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -18,12 +14,12 @@ class ReportRepository {
 
       Map<String, dynamic> reportData = ReportModel(
         id: reportRef.id,
-        reporterUserName: reporterUserName,
-        reporterUserUid: reporterUserUid,
-        reportedUserName: reportedUserName,
-        reportedUserUid: reportedUserUid,
-        reportReason: reportReason,
-        reportContentId: reportContentId,
+        reporterUserName: reportParams.reporterUserName,
+        reporterUserUid: reportParams.reporterUserUid,
+        reportedUserName: reportParams.reportedUserName,
+        reportedUserUid: reportParams.reportedUserUid,
+        reportReason: reportParams.reportReason,
+        reportContentId: reportParams.reportContentId,
         date: DateTime.now(),
       ).toJson();
 

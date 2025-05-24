@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/board_model.dart';
+import 'package:ddai_community/board/model/board_parameter.dart';
 import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
@@ -14,9 +15,6 @@ class BoardRepository extends PaginationRepository<BoardModel> {
   static Future<BoardModel?> getBoard({
     required String searchId,
   }) async {
-    BoardModel? boardModel;
-    List<CommentModel>? commentList;
-
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
@@ -33,14 +31,14 @@ class BoardRepository extends PaginationRepository<BoardModel> {
           )
           .get();
 
-      commentList = commentSnapshot.docs
+      final commentList = commentSnapshot.docs
           .map((e) => CommentModel.fromJson(e.data()))
           .toList();
 
       Timestamp timestamp = boardSnapshot['date'];
       DateTime date = timestamp.toDate();
 
-      boardModel = BoardModel(
+      final boardModel = BoardModel(
         id: boardSnapshot['id'],
         title: boardSnapshot['title'],
         content: boardSnapshot['content'],
@@ -59,10 +57,7 @@ class BoardRepository extends PaginationRepository<BoardModel> {
   }
 
   static Future<bool> addBoard({
-    required String title,
-    required String content,
-    required String userName,
-    required String userUid,
+    required AddBoardParams addBoardParams,
   }) async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -71,10 +66,10 @@ class BoardRepository extends PaginationRepository<BoardModel> {
 
       Map<String, dynamic> boardData = BoardModel(
         id: boardRef.id,
-        title: title,
-        content: content,
-        userName: userName,
-        userUid: userUid,
+        title: addBoardParams.title,
+        content: addBoardParams.content,
+        userName: addBoardParams.userName,
+        userUid: addBoardParams.userUid,
         date: DateTime.now(),
       ).toJson();
 

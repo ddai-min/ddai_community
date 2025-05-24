@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/chat/model/chat_model.dart';
+import 'package:ddai_community/chat/model/chat_parameter.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/main.dart';
 
@@ -11,9 +12,7 @@ class ChatRepository extends PaginationRepository<ChatModel> {
         );
 
   static Future<void> addChat({
-    required String content,
-    required String userName,
-    required String userUid,
+    required AddChatParams addChatParams,
   }) async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -22,9 +21,9 @@ class ChatRepository extends PaginationRepository<ChatModel> {
 
       Map<String, dynamic> chatData = ChatModel(
         id: chatRef.id,
-        content: content,
-        userName: userName,
-        userUid: userUid,
+        content: addChatParams.content,
+        userName: addChatParams.userName,
+        userUid: addChatParams.userUid,
         date: DateTime.now(),
       ).toJson();
 

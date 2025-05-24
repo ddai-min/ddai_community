@@ -2,6 +2,7 @@ import 'package:ddai_community/chat/component/chat_text_field.dart';
 import 'package:ddai_community/chat/component/my_chat_bubble.dart';
 import 'package:ddai_community/chat/component/other_chat_bubble.dart';
 import 'package:ddai_community/chat/model/chat_model.dart';
+import 'package:ddai_community/chat/model/chat_parameter.dart';
 import 'package:ddai_community/chat/provider/chat_provider.dart';
 import 'package:ddai_community/common/component/default_circular_progress_indicator.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';

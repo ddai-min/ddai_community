@@ -1,3 +1,4 @@
+import 'package:ddai_community/board/model/board_parameter.dart';
 import 'package:ddai_community/board/provider/board_provider.dart';
 import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';

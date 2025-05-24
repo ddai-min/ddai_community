@@ -5,6 +5,7 @@ import 'package:ddai_community/common/component/default_text_field.dart';
 import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:ddai_community/common/util/reg_utils.dart';
 import 'package:ddai_community/common/view/home_tab.dart';
+import 'package:ddai_community/user/model/auth_parameter.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/auth_provider.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
