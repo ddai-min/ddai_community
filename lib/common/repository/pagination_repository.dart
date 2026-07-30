@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/common/util/logger.dart';
 
 /// Firestore 최상위 컬렉션 이름 모음.
 ///

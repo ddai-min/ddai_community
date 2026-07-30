@@ -2,20 +2,19 @@ import 'package:ddai_community/common/model/model_with_id.dart';
 import 'package:ddai_community/common/model/pagination_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-/// 페이지네이션 목록 상태([PaginationModel])를 관리하는 제네릭 Notifier 베이스.
+/// 페이지네이션 목록 Notifier의 공통 로직 mixin.
 ///
-/// 게시판·채팅·댓글 목록 Notifier가 이 클래스를 상속해 컬렉션 설정만 지정하면
-/// 공통 조회 로직(다음 페이지 로드·새로고침·실시간 스트림)을 그대로 사용한다.
-/// [isUsingStream] 이 true 면 build 시 실시간 스트림을 구독하고(채팅),
-/// false 면 [fetchData] 호출 시마다 다음 페이지를 이어서 불러온다(게시판/댓글).
-abstract class PaginationNotifier<T extends ModelWithId>
-    extends Notifier<PaginationModel<T>> {
-  late final PaginationRepository<T> _repository;
-
-  /// build 시점에 사용할 repository 를 반환한다. (하위 클래스에서 ref 로 조회)
-  PaginationRepository<T> readRepository();
+/// `@riverpod` 로 생성된 목록 Notifier(`BoardList`/`ChatList`/`CommentList`)에
+/// `with` 로 섞어 사용한다. 각 Notifier는 [paginationRepository]·[collectionPath]
+/// 등 설정만 제공하면 [fetchData]/[refresh]/[subscribeStream] 을 그대로 쓸 수 있다.
+///
+/// (codegen 은 제네릭 Notifier 를 지원하지 않으므로, 공통 로직만 이 제네릭 mixin 으로
+///  분리하고 구체 Notifier 는 도메인별로 둔다. mixin 은 생성된 base `$Notifier` 에 붙는다.)
+mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
+  /// build 시점에 조회할 repository. (구체 Notifier 에서 `ref.read` 로 제공)
+  PaginationRepository<T> get paginationRepository;
 
   /// 조회 대상 최상위 컬렉션.
   CollectionPath get collectionPath;
@@ -26,27 +25,32 @@ abstract class PaginationNotifier<T extends ModelWithId>
   /// 하위 컬렉션 조회 시 상위 문서 id. (예: 게시글 id)
   String? get collectionId => null;
 
-  /// 실시간 스트림 구독 여부. true 면 채팅처럼 실시간으로 동기화한다.
-  bool get isUsingStream => false;
-
   int get pageSize => 30;
 
-  @override
-  PaginationModel<T> build() {
-    _repository = readRepository();
-
-    // 로그인 유저가 바뀌면 목록을 다시 만든다. (차단 필터가 유저별로 다르기 때문)
+  /// `build()` 에서 반환할 초기 상태.
+  ///
+  /// 로그인 유저가 바뀌면 목록을 다시 만들도록 [userMeProvider] 를 watch 한다.
+  /// (차단 필터가 유저별로 다르기 때문)
+  PaginationModel<T> initialState() {
     ref.watch(userMeProvider);
-
-    if (isUsingStream) {
-      _subscribeStream();
-    }
 
     return PaginationModel<T>(
       items: [],
       hasMore: true,
       lastDocument: null,
     );
+  }
+
+  /// 실시간 스트림을 구독해 새 데이터가 도착하면 목록을 교체한다. (`build()` 에서 호출)
+  void subscribeStream() {
+    final subscription = paginationRepository
+        .streamData(collectionPath: collectionPath)
+        .listen((newData) {
+      state = state.copyWith(items: newData);
+    });
+
+    // provider 가 재빌드/폐기될 때 구독을 해제한다.
+    ref.onDispose(subscription.cancel);
   }
 
   /// 다음 페이지를 불러와 기존 목록 뒤에 이어 붙인다.
@@ -58,7 +62,7 @@ abstract class PaginationNotifier<T extends ModelWithId>
 
     state = state.copyWith(isLoading: true);
 
-    final newData = await _repository.fetchData(
+    final newData = await paginationRepository.fetchData(
       userUid: ref.read(userMeProvider).id,
       collectionPath: collectionPath,
       subCollectionPath: subCollectionPath,
@@ -86,17 +90,5 @@ abstract class PaginationNotifier<T extends ModelWithId>
     );
 
     fetchData();
-  }
-
-  /// 실시간 스트림을 구독해 새 데이터가 도착하면 목록을 교체한다.
-  void _subscribeStream() {
-    final subscription = _repository
-        .streamData(collectionPath: collectionPath)
-        .listen((newData) {
-      state = state.copyWith(items: newData);
-    });
-
-    // provider 가 재빌드/폐기될 때 구독을 해제한다.
-    ref.onDispose(subscription.cancel);
   }
 }

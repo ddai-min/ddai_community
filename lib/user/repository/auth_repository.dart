@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/common/util/logger.dart';
 import 'package:ddai_community/user/model/auth_parameter.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';

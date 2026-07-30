@@ -3,7 +3,7 @@ import 'package:ddai_community/board/model/board_model.dart';
 import 'package:ddai_community/board/model/board_parameter.dart';
 import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/common/util/logger.dart';
 
 /// 게시글(`board` 컬렉션) 관련 Firestore 연산.
 ///

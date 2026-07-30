@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/board/model/comment_model.dart';
 import 'package:ddai_community/board/model/comment_parameter.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/common/util/logger.dart';
 
 /// 댓글(`board/{boardId}/comment` 하위 컬렉션) 관련 Firestore 연산.
 ///

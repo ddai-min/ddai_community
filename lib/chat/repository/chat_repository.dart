@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/chat/model/chat_model.dart';
 import 'package:ddai_community/chat/model/chat_parameter.dart';
 import 'package:ddai_community/common/repository/pagination_repository.dart';
-import 'package:ddai_community/main.dart';
+import 'package:ddai_community/common/util/logger.dart';
 
 /// 채팅(`chat` 컬렉션) 관련 Firestore 연산.
 ///

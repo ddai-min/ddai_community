@@ -2,22 +2,13 @@ import 'package:ddai_community/bootstrap.dart';
 import 'package:ddai_community/common/const/colors.dart';
 import 'package:ddai_community/common/router/router.dart';
 import 'package:ddai_community/common/util/data_utils.dart';
+import 'package:ddai_community/common/util/logger.dart';
 import 'package:ddai_community/user/model/user_model.dart';
 import 'package:ddai_community/user/provider/user_me_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
-import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// 앱 전역에서 사용하는 공용 로거.
-Logger logger = Logger();
-
-// .env 에서 로드하는 플랫폼별 Firebase API 키.
-final String firebaseWebApiKey = dotenv.env['FIREBASE_WEB_API_KEY']!;
-final String firebaseAndroidApiKey = dotenv.env['FIREBASE_ANDROID_API_KEY']!;
-final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

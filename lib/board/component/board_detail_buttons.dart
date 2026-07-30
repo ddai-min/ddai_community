@@ -53,7 +53,7 @@ class _BoardDeleteButtonState extends ConsumerState<BoardDeleteButton> {
     );
 
     if (isDelete) {
-      ref.read(getBoardListProvider.notifier).refresh();
+      ref.read(boardListProvider.notifier).refresh();
 
       context.goNamed(
         HomeTab.routeName,
@@ -235,7 +235,7 @@ class _BoardBlockButtonState extends ConsumerState<BoardBlockButton> {
             contentText: '차단이 완료되었습니다.',
             buttonText: '확인',
             onPressed: () {
-              ref.read(getBoardListProvider.notifier).refresh();
+              ref.read(boardListProvider.notifier).refresh();
 
               context.goNamed(
                 HomeTab.routeName,

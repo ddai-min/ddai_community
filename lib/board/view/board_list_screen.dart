@@ -22,7 +22,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
     super.initState();
 
     Future.microtask(() {
-      ref.read(getBoardListProvider.notifier).fetchData();
+      ref.read(boardListProvider.notifier).fetchData();
     });
 
     scrollController.addListener(_listener);
@@ -38,7 +38,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final boardList = ref.watch(getBoardListProvider);
+    final boardList = ref.watch(boardListProvider);
 
     if (boardList.items.isEmpty && boardList.isLoading) {
       return const Center(
@@ -50,7 +50,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
       color: primaryColor,
       backgroundColor: Colors.white,
       onRefresh: () async {
-        ref.read(getBoardListProvider.notifier).refresh();
+        ref.read(boardListProvider.notifier).refresh();
       },
       child: ListView.builder(
           controller: scrollController,
@@ -85,7 +85,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
   void _listener() {
     if (scrollController.offset >
         scrollController.position.maxScrollExtent - 200) {
-      ref.read(getBoardListProvider.notifier).fetchData();
+      ref.read(boardListProvider.notifier).fetchData();
     }
   }
 }

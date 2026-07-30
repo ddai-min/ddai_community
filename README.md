@@ -8,9 +8,9 @@ Flutter + Firebase 기반 커뮤니티 앱.
 
 <img src="https://img.shields.io/badge/flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white"> <img src="https://img.shields.io/badge/firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white"> <img src="https://img.shields.io/badge/riverpod-40C4FF?style=for-the-badge&logoColor=white">
 
-- **Client**: Flutter 3.41.6 (FVM 관리), Dart `>=3.9.0 <4.0.0` (번들 Dart 3.11.4)
+- **Client**: Flutter 3.44.8 (FVM 관리), Dart `>=3.12.0 <4.0.0` (번들 Dart 3.12.2)
 - **Backend**: Firebase — Authentication, Cloud Firestore, Remote Config
-- **상태 관리**: Riverpod (`flutter_riverpod`)
+- **상태 관리**: Riverpod (`flutter_riverpod` + `riverpod_generator` 코드 생성)
 - **라우팅**: `go_router`
 - **직렬화**: `json_serializable` / `json_annotation`
 
@@ -48,7 +48,7 @@ lib/
     ├── converter/           #   TimestampConverter (Firestore Timestamp ↔ DateTime)
     ├── layout/              #   DefaultLayout (공통 Scaffold)
     ├── model/               #   ModelWithId · PaginationModel
-    ├── provider/            #   PaginationProvider (제네릭 페이지네이션)
+    ├── provider/            #   PaginationMixin (페이지네이션 공통 로직)
     ├── repository/          #   PaginationRepository (제네릭 Firestore 조회)
     ├── router/              #   go_router 라우트 정의
     ├── util/                #   DataUtils · RegUtils
@@ -84,8 +84,8 @@ View ──watch/read──▶ Provider(Riverpod) ──▶ Repository ──▶
 
 - **`PaginationRepository<T extends ModelWithId>`**: 커서 기반 페이지네이션(`fetchData`)과
   실시간 스트림(`streamData`)을 제공한다. 조회 시 현재 유저가 **차단한 유저의 글을 자동 제외**한다.
-- **`PaginationProvider<T>`**: `StateNotifier` 로 목록 상태(`PaginationModel<T>`)를 관리한다.
-  `isUsingStream: true` 면 실시간 구독(채팅), false 면 스크롤에 따라 다음 페이지를 이어서 조회(게시판/댓글).
+- **`PaginationMixin<T>`**: 목록 상태(`PaginationModel<T>`) 공통 로직(다음 페이지·새로고침·스트림)을 담은 mixin.
+  각 목록 Notifier(`@riverpod class BoardList ... with PaginationMixin`)에 섞어 쓴다. 채팅은 실시간 스트림으로 동기화한다.
 - 각 도메인 repository 는 `PaginationRepository` 를 상속해 컬렉션과 `fromJson` 만 지정한다.
 
 ## Firestore 데이터 모델

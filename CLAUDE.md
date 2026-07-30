@@ -10,7 +10,7 @@
 
 ## 명령어
 
-이 프로젝트는 **FVM** 으로 Flutter 버전(3.41.6, `.fvmrc`, 번들 Dart 3.11.4)을 고정한다. 항상 `fvm` 접두사를 사용한다.
+이 프로젝트는 **FVM** 으로 Flutter 버전(3.44.8, `.fvmrc`, 번들 Dart 3.12.2)을 고정한다. 항상 `fvm` 접두사를 사용한다.
 
 ```bash
 fvm flutter pub get                # 의존성 설치
@@ -40,11 +40,12 @@ view  ──watch/read──▶  provider(Riverpod)  ──▶  repository  ─�
   - `fetchData(...)`: 커서(`startAfterDocument`) 기반 페이지네이션. **차단 유저 글 자동 제외**(`whereNotIn`).
   - `streamData(...)`: 실시간 스트림(채팅용).
   - `CollectionPath` enum 의 `name` 이 실제 Firestore 컬렉션 경로다.
-- `common/provider/pagination_provider.dart` — `PaginationNotifier<T>` (`Notifier<PaginationModel<T>>`, Riverpod 3)
-  - 각 목록은 이 제네릭 base 를 **상속한 구체 Notifier**(`BoardListNotifier`/`ChatListNotifier`/`CommentListNotifier`)로 만들고,
-    `readRepository()`·`collectionPath`·(필요 시) `subCollectionPath`·`isUsingStream` 만 override 한다.
-  - `isUsingStream: true` → `build` 시 스트림 구독(채팅), `false` → `fetchData` 호출 시 다음 페이지 append(게시판/댓글).
-  - provider 는 `NotifierProvider.autoDispose(.family)(구체Notifier.new)` 로 노출한다. (family 인자는 Notifier 생성자로 주입)
+- `common/provider/pagination_provider.dart` — `PaginationMixin<T>` (공통 목록 로직 mixin, `on $Notifier<PaginationModel<T>>`)
+  - 각 목록은 `@riverpod class BoardList extends _$BoardList with PaginationMixin<BoardModel>` 처럼 만들고,
+    `paginationRepository`(`ref.read`)·`collectionPath`·(필요 시) `subCollectionPath` 만 override 한다.
+  - `build()` 는 `initialState()` 를 반환한다. 채팅은 `build()` 에서 `subscribeStream()` 을 추가 호출(실시간).
+  - 스크롤 시 `fetchData()`, 새로고침/작성·삭제 후 `refresh()` 를 호출한다. (mixin 이 제공)
+  - family(댓글)는 `build(String boardId)` 로 인자를 받고, codegen 이 `commentListProvider(boardId)` 를 생성한다.
 - 각 도메인 repository 는 `PaginationRepository` 를 **상속**해 `collectionPath` 와 `fromJson` 만 지정한다.
   (예: `BoardRepository`, `CommentRepository`, `ChatRepository`)
 
@@ -52,14 +53,15 @@ view  ──watch/read──▶  provider(Riverpod)  ──▶  repository  ─�
 
 - **언어**: 코드 주석·다이얼로그 문구·문서는 **한국어**로 작성한다.
 - **Repository**: 단건 조회/생성/삭제는 `static` 메서드. 성공 여부는 `bool`, 조회는 `Model?`(실패 시 `null`) 반환.
-  모든 메서드는 `try/catch` 로 감싸고 실패 시 전역 `logger`(main.dart 정의)로 로깅 후 안전한 기본값을 반환한다.
-- **Provider 네이밍**: `xxxRepositoryProvider`(인스턴스), `getXxxProvider`(조회),
-  `addXxxProvider`/`deleteXxxProvider`(변경). 목록 조회는 `NotifierProvider`(위 페이지네이션),
-  단건 조회·변경 계열은 대부분 `FutureProvider.family.autoDispose<..., Params>`.
+  모든 메서드는 `try/catch` 로 감싸고 실패 시 전역 `logger`(`common/util/logger.dart`)로 로깅 후 안전한 기본값을 반환한다.
+- **Provider(codegen) 네이밍**: 모든 provider 는 `@riverpod` 로 생성한다.
+  - 함수형(`getBoard`/`addBoard`/`report` 등) → `getBoardProvider` 등(autoDispose Future) 자동 생성.
+  - 목록 Notifier(`BoardList`/`ChatList`/`CommentList`) → `boardListProvider` 등 자동 생성.
+  - repository(`boardRepository` 등)와 전역 상태(`UserMe`)는 `@Riverpod(keepAlive: true)`.
 - **Model**: `@JsonSerializable` + `part '*.g.dart'`. 목록 대상 모델은 `ModelWithId`(문서 `id` 노출)를 구현한다.
   날짜 필드는 `@TimestampConverter()` 로 Firestore `Timestamp` ↔ `DateTime` 변환.
 - **요청 파라미터**: `*_parameter.dart` 의 별도 클래스(예: `AddBoardParams`)로 전달한다.
-- **전역 유저 상태**: `userMeProvider`(`NotifierProvider<UserMeNotifier, UserModel>`). `id == ''` 이면 비로그인.
+- **전역 유저 상태**: `@Riverpod(keepAlive: true) class UserMe` → `userMeProvider`. `id == ''` 이면 비로그인.
   갱신은 `ref.read(userMeProvider.notifier).update((state) => ...)` 로 하며, 주로 `main.dart` 의
   `FirebaseAuth.authStateChanges()` 리스너에서 이루어진다.
 - **화면 공통 레이아웃**: `DefaultLayout`(공통 Scaffold). `title` 을 주면 브랜드 색 AppBar 가 렌더된다.
@@ -69,9 +71,9 @@ view  ──watch/read──▶  provider(Riverpod)  ──▶  repository  ─�
 
 ## 주의사항 (Gotchas)
 
-- **생성 파일 직접 수정 금지**: `*.g.dart`, `lib/firebase_options.dart`. 모델 변경 후 `build_runner` 를 실행한다.
-- **Riverpod 3 패턴**: 상태는 `Notifier`/`NotifierProvider`(권장 패턴)로 작성한다. 구형 `StateNotifier(Provider)`·`StateProvider`(legacy.dart)는 사용하지 않는다.
-- **Riverpod codegen 불가**: `@riverpod` 코드 생성(`riverpod_generator`)은 현재 **Flutter 3.41.6 이 고정한 `meta 1.17.0` 과 analyzer 버전이 충돌**해 설치 불가하다. 그래서 provider 는 수동으로 작성한다. (Flutter 가 meta 핀을 올리는 향후 버전에서 재검토)
+- **생성 파일 직접 수정 금지**: `*.g.dart` (모델 변경 후 `build_runner` 실행). 단 `lib/firebase_options.dart` 는 API 키를 `.env`(→ `common/const/firebase_env.dart`)에서 읽도록 커스터마이징돼 있어, `flutterfire configure` 로 재생성하면 그 import 를 다시 적용해야 한다.
+- **Riverpod 패턴(codegen)**: provider 는 `@riverpod`/`@Riverpod` 애너테이션 + `riverpod_generator` 로 작성하고, 변경 후 `build_runner` 로 `*.g.dart` 를 재생성한다. 구형 `StateNotifier`·`StateProvider`(legacy)는 사용하지 않는다.
+- **codegen ↔ Flutter 버전**: `@riverpod` codegen 은 **Flutter ≥ 3.44 (Dart ≥ 3.12, meta ≥ 1.18)** 에서만 resolve 된다. 이전 버전(예: 3.41.6/meta 1.17)에서는 analyzer 충돌로 설치 불가하니 Flutter 를 낮추지 말 것.
 - **build_runner**: 최신 버전에서 `--delete-conflicting-outputs` 플래그는 제거됐고 기본 동작이다. `build_runner build` 로 실행한다.
 - **`.env` 필수**: 없으면 시작 시 크래시(`dotenv.env[...]!`). 필요한 키는 `README.md` 참고.
 - **정적 분석**: `analysis_options.yaml` 에서 `use_build_context_synchronously` 를 `ignore` 로 설정해 두었다.
@@ -87,6 +89,6 @@ view  ──watch/read──▶  provider(Riverpod)  ──▶  repository  ─�
 | `lib/bootstrap.dart` | `.env` 로드 + Firebase 초기화 |
 | `lib/common/router/router.dart` | 전체 라우트 정의 |
 | `lib/common/repository/pagination_repository.dart` | 제네릭 목록 조회 + 차단 필터 |
-| `lib/common/provider/pagination_provider.dart` | 제네릭 목록 상태 관리 |
+| `lib/common/provider/pagination_provider.dart` | 목록 공통 로직 (`PaginationMixin`) |
 | `lib/user/repository/auth_repository.dart` | 회원가입/로그인/탈퇴/차단 |
 | `lib/common/view/splash_screen.dart` | 강제 업데이트 확인 + 초기 라우팅 분기 |

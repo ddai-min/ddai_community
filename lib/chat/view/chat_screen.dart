@@ -31,7 +31,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final chatList = ref.watch(getChatListProvider);
+    final chatList = ref.watch(chatListProvider);
 
     if (chatList.items.isEmpty && chatList.isLoading) {
       return const Center(

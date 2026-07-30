@@ -93,7 +93,7 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
     );
 
     if (isCreateSuccess) {
-      ref.read(getBoardListProvider.notifier).refresh();
+      ref.read(boardListProvider.notifier).refresh();
 
       context.pop();
     }

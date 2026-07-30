@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.4.1+7
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.12.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -58,6 +58,9 @@ dependencies:
   # 상태 관리
   flutter_riverpod: ^3.3.2
 
+  # Riverpod 코드 생성 애너테이션 (@riverpod)
+  riverpod_annotation: ^4.0.3
+
   # .env 환경 변수 로드
   flutter_dotenv: ^6.0.1
 
@@ -76,6 +79,9 @@ dev_dependencies:
 
   # JSON 직렬화 코드 생성
   json_serializable: ^6.14.0
+
+  # Riverpod provider 코드 생성기
+  riverpod_generator: ^4.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

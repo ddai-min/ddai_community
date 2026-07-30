@@ -35,7 +35,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     super.initState();
 
     Future.microtask(() {
-      ref.read(getCommentListProvider(widget.id).notifier).fetchData();
+      ref.read(commentListProvider(widget.id).notifier).fetchData();
     });
 
     scrollController.addListener(_listener);
@@ -53,7 +53,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final board = ref.watch(getBoardProvider(widget.id));
-    final commentList = ref.watch(getCommentListProvider(widget.id));
+    final commentList = ref.watch(commentListProvider(widget.id));
 
     return board.when(
       loading: () => const DefaultLayout(
@@ -147,14 +147,14 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     if (isSuccessed) {
       commentTextController.text = '';
 
-      ref.read(getCommentListProvider(widget.id).notifier).refresh();
+      ref.read(commentListProvider(widget.id).notifier).refresh();
     }
   }
 
   void _listener() {
     if (scrollController.offset >
         scrollController.position.maxScrollExtent - 200) {
-      ref.read(getCommentListProvider(widget.id).notifier).fetchData();
+      ref.read(commentListProvider(widget.id).notifier).fetchData();
     }
   }
 }
