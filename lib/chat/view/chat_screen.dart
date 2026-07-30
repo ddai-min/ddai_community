@@ -91,9 +91,11 @@ class _Body extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView.builder(
       controller: scrollController,
+      // 최신 메시지가 하단에 오도록 리스트를 뒤집어 렌더링한다.
       reverse: true,
       itemCount: chatList.items.length,
       itemBuilder: (context, index) {
+        // 바로 다음(더 이전 시각) 메시지. 같은 사람의 연속 발화인지 판단하는 데 쓴다.
         ChatModel? postChatItem;
         if (index < chatList.items.length - 1) {
           postChatItem = chatList.items[index + 1];
@@ -105,6 +107,8 @@ class _Body extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // 내 메시지는 오른쪽, 상대 메시지는 왼쪽 말풍선으로 표시한다.
+              // (상대가 연속으로 보낸 경우 isSayAgain=true 로 이름을 생략)
               if (chatItem.userUid == ref.read(userMeProvider).id)
                 MyChatBubble(message: chatItem.content)
               else

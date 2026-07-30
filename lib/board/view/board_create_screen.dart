@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class BoardCreateScreen extends ConsumerStatefulWidget {
-  static get routeName => 'board_create';
+  static String get routeName => 'board_create';
 
   const BoardCreateScreen({super.key});
 

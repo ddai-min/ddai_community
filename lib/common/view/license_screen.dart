@@ -3,7 +3,7 @@ import 'package:ddai_community/common/layout/default_layout.dart';
 import 'package:flutter/material.dart';
 
 class LicenseScreen extends StatelessWidget {
-  static get routeName => 'license';
+  static String get routeName => 'license';
 
   const LicenseScreen({super.key});
 

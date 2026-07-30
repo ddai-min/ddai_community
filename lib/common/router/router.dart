@@ -9,16 +9,21 @@ import 'package:ddai_community/user/view/profile_edit_screen.dart';
 import 'package:ddai_community/user/view/sign_up_screen.dart';
 import 'package:go_router/go_router.dart';
 
+/// go_router 라우트 정의.
+///
+/// 로그인 플로우(`/login` 하위의 `/eula`·`/sign_up`)와 메인 플로우
+/// (`/` 하위의 게시글 상세/작성, 프로필 수정, 라이선스)로 구성된다.
+/// 화면 간 값 전달은 path parameter(`:id`)와 query parameter(`isAnonymous` 등)를 사용한다.
 List<GoRoute> routes = [
   GoRoute(
     path: '/splash',
     name: SplashScreen.routeName,
-    builder: (_, __) => const SplashScreen(),
+    builder: (_, _) => const SplashScreen(),
   ),
   GoRoute(
     path: '/login',
     name: LoginScreen.routeName,
-    builder: (_, __) => const LoginScreen(),
+    builder: (_, _) => const LoginScreen(),
     routes: [
       GoRoute(
         path: '/eula',
@@ -30,14 +35,14 @@ List<GoRoute> routes = [
       GoRoute(
         path: '/sign_up',
         name: SignUpScreen.routeName,
-        builder: (_, __) => const SignUpScreen(),
+        builder: (_, _) => const SignUpScreen(),
       ),
     ],
   ),
   GoRoute(
     path: '/',
     name: HomeTab.routeName,
-    builder: (_, __) => const HomeTab(),
+    builder: (_, _) => const HomeTab(),
     routes: [
       GoRoute(
         path: 'board_detail/:id',
@@ -49,7 +54,7 @@ List<GoRoute> routes = [
       GoRoute(
         path: 'board_create',
         name: BoardCreateScreen.routeName,
-        builder: (_, __) => const BoardCreateScreen(),
+        builder: (_, _) => const BoardCreateScreen(),
       ),
       GoRoute(
         path: 'profile_edit',
@@ -62,7 +67,7 @@ List<GoRoute> routes = [
       GoRoute(
         path: 'license',
         name: LicenseScreen.routeName,
-        builder: (_, __) => const LicenseScreen(),
+        builder: (_, _) => const LicenseScreen(),
       ),
     ],
   ),

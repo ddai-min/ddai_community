@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class BoardDetailScreen extends ConsumerStatefulWidget {
-  static get routeName => 'board_detail';
+  static String get routeName => 'board_detail';
 
   final String id;
 
@@ -101,6 +101,9 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     );
   }
 
+  /// AppBar 우측 액션 버튼을 상황에 맞게 구성한다.
+  ///
+  /// 내 글이면 삭제 버튼을, 남의 글이면 신고·차단 버튼을 보여준다.
   List<Widget>? _renderActions({
     required String userUid,
     required String userName,

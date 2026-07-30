@@ -15,7 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
-  static get routeName => 'profile_edit';
+  static String get routeName => 'profile_edit';
 
   final String userName;
   final String email;

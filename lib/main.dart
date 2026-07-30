@@ -11,8 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// 앱 전역에서 사용하는 공용 로거.
 Logger logger = Logger();
 
+// .env 에서 로드하는 플랫폼별 Firebase API 키.
 final String firebaseWebApiKey = dotenv.env['FIREBASE_WEB_API_KEY']!;
 final String firebaseAndroidApiKey = dotenv.env['FIREBASE_ANDROID_API_KEY']!;
 final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
@@ -20,6 +22,7 @@ final String firebaseIosApiKey = dotenv.env['FIREBASE_IOS_API_KEY']!;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // .env 로드 및 Firebase 초기화.
   await Bootstrap.run();
 
   runApp(
@@ -41,9 +44,10 @@ class _AppState extends ConsumerState<App> {
   void initState() {
     super.initState();
 
-    // firebase 로그인 listen
+    // Firebase 인증 상태 변화를 구독해 전역 유저 상태(userMeProvider)를 동기화한다.
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user == null) {
+        // 로그아웃(비로그인) 상태: 빈 유저로 초기화한다.
         ref.read(userMeProvider.notifier).update(
               (userModel) => UserModel(
                 id: '',
@@ -53,6 +57,7 @@ class _AppState extends ConsumerState<App> {
             );
       } else {
         if (user.isAnonymous) {
+          // 익명 로그인: uid 기반의 익명 표시 이름을 부여한다.
           ref.read(userMeProvider.notifier).update(
                 (userModel) => UserModel(
                   id: user.uid,
@@ -63,6 +68,7 @@ class _AppState extends ConsumerState<App> {
                 ),
               );
         } else {
+          // 이메일 로그인: displayName(없으면 email)을 표시 이름으로 사용한다.
           ref.read(userMeProvider.notifier).update(
                 (userModel) => UserModel(
                   id: user.uid,

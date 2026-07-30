@@ -5,6 +5,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'comment_model.g.dart';
 
+/// 댓글 모델. Firestore `board/{boardId}/comment` 하위 컬렉션 문서에 대응한다.
 @JsonSerializable()
 class CommentModel implements ModelWithId {
   @override

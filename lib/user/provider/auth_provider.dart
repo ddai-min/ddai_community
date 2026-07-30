@@ -2,7 +2,7 @@ import 'package:ddai_community/user/model/auth_parameter.dart';
 import 'package:ddai_community/user/repository/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// 이메일 회원가입
+/// 이메일 회원가입. 결과로 [AuthResult] 를 반환한다.
 final signUpWithEmailProvider = FutureProvider.family
     .autoDispose<AuthResult, SignUpWithEmailParams>((ref, params) async {
   final result = await AuthRepository.signUp(
@@ -12,7 +12,7 @@ final signUpWithEmailProvider = FutureProvider.family
   return result;
 });
 
-// 유저 차단
+/// 유저 차단. 결과로 성공 여부(bool)를 반환한다.
 final blockUserProvider =
     FutureProvider.family.autoDispose<bool, String>((ref, userUid) async {
   final result = await AuthRepository.blockUser(

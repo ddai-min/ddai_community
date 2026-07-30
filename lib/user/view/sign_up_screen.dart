@@ -16,7 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
-  static get routeName => 'sign_up';
+  static String get routeName => 'sign_up';
 
   const SignUpScreen({super.key});
 
@@ -224,6 +224,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return null;
   }
 
+  /// 비밀번호와 비밀번호 확인 입력이 바뀔 때마다 실시간으로 일치 여부를 검사한다.
   void _passwordTextControllerListener() {
     if (passwordTextController.text.isNotEmpty &&
         passwordVerifyTextController.text.isNotEmpty &&

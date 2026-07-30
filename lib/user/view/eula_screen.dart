@@ -16,7 +16,7 @@ import 'package:go_router/go_router.dart';
 class EulaScreen extends ConsumerStatefulWidget {
   final bool isAnonymous;
 
-  static get routeName => 'eula';
+  static String get routeName => 'eula';
 
   const EulaScreen({
     super.key,
@@ -53,6 +53,7 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
     );
   }
 
+  /// 약관 동의 후 분기: 익명 진입이면 즉시 익명 로그인, 아니면 회원가입 화면으로 이동한다.
   void _onBottomButtonPressed() async {
     if (widget.isAnonymous) {
       DefaultLoadingOverlay.showLoading(context);

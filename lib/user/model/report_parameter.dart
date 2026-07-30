@@ -1,3 +1,4 @@
+/// 신고 요청 파라미터.
 class ReportParams {
   final String reporterUserName;
   final String reporterUserUid;

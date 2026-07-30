@@ -5,6 +5,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'chat_model.g.dart';
 
+/// 채팅 메시지 모델. Firestore `chat` 컬렉션 문서에 대응한다.
 @JsonSerializable()
 class ChatModel implements ModelWithId {
   @override

@@ -7,15 +7,15 @@ part of 'report_model.dart';
 // **************************************************************************
 
 ReportModel _$ReportModelFromJson(Map<String, dynamic> json) => ReportModel(
-      id: json['id'] as String,
-      reporterUserName: json['reporterUserName'] as String,
-      reporterUserUid: json['reporterUserUid'] as String,
-      reportedUserName: json['reportedUserName'] as String,
-      reportedUserUid: json['reportedUserUid'] as String,
-      reportReason: json['reportReason'] as String,
-      reportContentId: json['reportContentId'] as String,
-      date: const TimestampConverter().fromJson(json['date'] as Timestamp),
-    );
+  id: json['id'] as String,
+  reporterUserName: json['reporterUserName'] as String,
+  reporterUserUid: json['reporterUserUid'] as String,
+  reportedUserName: json['reportedUserName'] as String,
+  reportedUserUid: json['reportedUserUid'] as String,
+  reportReason: json['reportReason'] as String,
+  reportContentId: json['reportContentId'] as String,
+  date: const TimestampConverter().fromJson(json['date'] as Timestamp),
+);
 
 Map<String, dynamic> _$ReportModelToJson(ReportModel instance) =>
     <String, dynamic>{

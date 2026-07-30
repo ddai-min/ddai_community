@@ -1,6 +1,10 @@
 import 'package:ddai_community/common/const/colors.dart';
 import 'package:flutter/material.dart';
 
+/// 앱 전역에서 사용하는 공통 Scaffold 레이아웃.
+///
+/// [title] 이 주어지면 브랜드 색상의 AppBar 를 렌더링하고,
+/// null 이면 AppBar 없이 [child] 만 표시한다.
 class DefaultLayout extends StatelessWidget {
   final Widget child;
   final bool? resizeToAvoidBottomInset;
@@ -36,6 +40,7 @@ class DefaultLayout extends StatelessWidget {
     );
   }
 
+  /// [title] 이 null 이면 AppBar 를 그리지 않는다.
   AppBar? _renderAppBar() {
     if (title == null) {
       return null;

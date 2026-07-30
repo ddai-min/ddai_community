@@ -81,6 +81,7 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
     );
   }
 
+  /// 스크롤이 목록 끝(200px 이내)에 도달하면 다음 페이지를 불러온다. (무한 스크롤)
   void _listener() {
     if (scrollController.offset >
         scrollController.position.maxScrollExtent - 200) {

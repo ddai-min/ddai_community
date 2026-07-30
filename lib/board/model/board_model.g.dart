@@ -7,16 +7,16 @@ part of 'board_model.dart';
 // **************************************************************************
 
 BoardModel _$BoardModelFromJson(Map<String, dynamic> json) => BoardModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      content: json['content'] as String,
-      userName: json['userName'] as String,
-      userUid: json['userUid'] as String,
-      date: const TimestampConverter().fromJson(json['date'] as Timestamp),
-      commentList: (json['commentList'] as List<dynamic>?)
-          ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
+  id: json['id'] as String,
+  title: json['title'] as String,
+  content: json['content'] as String,
+  userName: json['userName'] as String,
+  userUid: json['userUid'] as String,
+  date: const TimestampConverter().fromJson(json['date'] as Timestamp),
+  commentList: (json['commentList'] as List<dynamic>?)
+      ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
 
 Map<String, dynamic> _$BoardModelToJson(BoardModel instance) =>
     <String, dynamic>{
