@@ -1,0 +1,252 @@
+import 'package:ddai_community/core/models/pagination_model.dart';
+import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
+import 'package:ddai_community/core/widgets/default_layout.dart';
+import 'package:ddai_community/features/board/domain/comment_model.dart';
+import 'package:ddai_community/features/board/domain/comment_parameter.dart';
+import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
+import 'package:ddai_community/features/board/presentation/providers/comment_provider.dart';
+import 'package:ddai_community/features/board/presentation/widgets/board_detail_buttons.dart';
+import 'package:ddai_community/features/board/presentation/widgets/comment_list_item.dart';
+import 'package:ddai_community/features/board/presentation/widgets/comment_text_field.dart';
+import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class BoardDetailScreen extends ConsumerStatefulWidget {
+  static String get routeName => 'board_detail';
+
+  final String id;
+
+  const BoardDetailScreen({
+    super.key,
+    required this.id,
+  });
+
+  @override
+  ConsumerState<BoardDetailScreen> createState() => _BoardDetailScreenState();
+}
+
+class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
+  ScrollController scrollController = ScrollController();
+  TextEditingController commentTextController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      ref.read(commentListProvider(widget.id).notifier).fetchData();
+    });
+
+    scrollController.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_listener);
+    scrollController.dispose();
+    commentTextController.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final board = ref.watch(getBoardProvider(widget.id));
+    final commentList = ref.watch(commentListProvider(widget.id));
+
+    return board.when(
+      loading: () => const DefaultLayout(
+        title: '',
+        child: Center(
+          child: DefaultCircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => const DefaultLayout(
+        title: '',
+        child: Center(
+          child: Text('로딩 중에 오류가 발생하였습니다.'),
+        ),
+      ),
+      data: (data) => DefaultLayout(
+        title: data!.title,
+        actions: _renderActions(
+          userUid: data.userUid,
+          userName: data.userName,
+        ),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 16.0),
+                _Writing(
+                  title: data.title,
+                  userName: data.userName,
+                  content: data.content,
+                ),
+                const SizedBox(height: 16.0),
+                CommentTextField(
+                  controller: commentTextController,
+                  onPressed: _addComment,
+                ),
+                _CommentList(
+                  commentList: commentList,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// AppBar 우측 액션 버튼을 상황에 맞게 구성한다.
+  ///
+  /// 내 글이면 삭제 버튼을, 남의 글이면 신고·차단 버튼을 보여준다.
+  List<Widget>? _renderActions({
+    required String userUid,
+    required String userName,
+  }) {
+    if (ref.read(userMeProvider).id == userUid) {
+      return [
+        BoardDeleteButton(
+          boardId: widget.id,
+        ),
+      ];
+    } else {
+      return [
+        BoardReportButton(
+          userUid: userUid,
+          userName: userName,
+          boardId: widget.id,
+        ),
+        BoardBlockButton(
+          userUid: userUid,
+        ),
+      ];
+    }
+  }
+
+  Future<void> _addComment() async {
+    if (commentTextController.text.isEmpty) {
+      return;
+    }
+
+    final isSuccessed = await ref.read(
+      addCommentProvider(
+        AddCommentParams(
+          searchId: widget.id,
+          userName: ref.read(userMeProvider).userName,
+          userUid: ref.read(userMeProvider).id,
+          content: commentTextController.text,
+        ),
+      ).future,
+    );
+
+    if (isSuccessed) {
+      commentTextController.text = '';
+
+      ref.read(commentListProvider(widget.id).notifier).refresh();
+    }
+  }
+
+  void _listener() {
+    if (scrollController.offset >
+        scrollController.position.maxScrollExtent - 200) {
+      ref.read(commentListProvider(widget.id).notifier).fetchData();
+    }
+  }
+}
+
+class _Writing extends StatelessWidget {
+  final String title;
+  final String userName;
+  final String content;
+
+  const _Writing({
+    required this.title,
+    required this.userName,
+    required this.content,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            '작성자: $userName',
+            style: TextStyle(
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          const Divider(),
+          const SizedBox(height: 16.0),
+          Container(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: Text(
+              content,
+              style: const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentList extends StatelessWidget {
+  final PaginationModel<CommentModel> commentList;
+
+  const _CommentList({
+    required this.commentList,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (commentList.items.isEmpty) {
+      return SizedBox(
+        height: 100,
+        child: Center(
+          child: commentList.isLoading
+              ? const DefaultCircularProgressIndicator()
+              : const Text('댓글이 없습니다.'),
+        ),
+      );
+    } else {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: commentList.items.length + (commentList.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == commentList.items.length) {
+            return const Center(
+              child: DefaultCircularProgressIndicator(),
+            );
+          }
+
+          final comment = commentList.items[index];
+
+          return CommentListItem(
+            commentModel: comment,
+          );
+        },
+      );
+    }
+  }
+}
