@@ -1,3 +1,4 @@
+import 'package:ddai_community/core/data/captcha_repository.dart';
 import 'package:ddai_community/core/data/supabase_client.dart';
 import 'package:ddai_community/core/utils/data_utils.dart';
 import 'package:ddai_community/core/utils/logger.dart';
@@ -23,6 +24,10 @@ enum AuthExceptionCode {
   anonymousDisabled('anonymous_provider_disabled'),
   noUser('session_not_found'),
   tooManyRequests('over_request_rate_limit'),
+
+  /// Supabase 의 CAPTCHA 보호가 켜졌는데 토큰이 없거나 검증에 실패한 경우.
+  /// 앱이 토큰을 못 만들었을 때(네트워크·WebView 문제)도 여기로 온다.
+  captchaFailed('captcha_failed'),
   unknownError('unknown_error');
 
   final String code;
@@ -50,6 +55,10 @@ class AuthResult {
 }
 
 /// Supabase 인증 및 계정 관련 연산.
+///
+/// 가입·로그인·익명 로그인 세 경로는 [CaptchaRepository] 로 받은 CAPTCHA 토큰을
+/// 함께 보낸다. 토큰은 발급 시점부터 유효기간이 짧고 1회용이라 호출 직전에 만들며,
+/// CAPTCHA 를 안 쓰는 설정에서는 `null` 이 실려 서버가 무시한다.
 class AuthRepository {
   /// Supabase 의 `User` 를 앱 모델로 변환한다.
   ///
@@ -90,6 +99,7 @@ class AuthRepository {
         data: {
           'user_name': signUpWithEmailParams.userName,
         },
+        captchaToken: await CaptchaRepository.issueToken(),
       );
 
       final user = response.user;
@@ -129,6 +139,7 @@ class AuthRepository {
       final response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
+        captchaToken: await CaptchaRepository.issueToken(),
       );
 
       final user = response.user;
@@ -157,7 +168,9 @@ class AuthRepository {
   /// [AuthExceptionCode.tooManyRequests] 를 반환한다.
   static Future<AuthResult> loginAnonymous() async {
     try {
-      final response = await supabase.auth.signInAnonymously();
+      final response = await supabase.auth.signInAnonymously(
+        captchaToken: await CaptchaRepository.issueToken(),
+      );
 
       final user = response.user;
 
@@ -331,6 +344,7 @@ class AuthRepository {
       'session_not_found' || 'session_missing' => AuthExceptionCode.noUser,
       'over_request_rate_limit' ||
       'over_email_send_rate_limit' => AuthExceptionCode.tooManyRequests,
+      'captcha_failed' => AuthExceptionCode.captchaFailed,
       _ => AuthExceptionCode.unknownError,
     };
   }

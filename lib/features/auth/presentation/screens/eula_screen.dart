@@ -74,9 +74,13 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
           barrierDismissible: false,
           builder: (context) {
             return DefaultDialog(
-              contentText: result.errorCode == AuthExceptionCode.tooManyRequests
-                  ? '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.'
-                  : '오류가 발생했습니다.\n다시 시도해주세요.',
+              contentText: switch (result.errorCode) {
+                AuthExceptionCode.tooManyRequests =>
+                  '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.',
+                AuthExceptionCode.captchaFailed =>
+                  '자동 가입 방지 확인에 실패했습니다.\n네트워크 상태를 확인한 뒤\n다시 시도해주세요.',
+                _ => '오류가 발생했습니다.\n다시 시도해주세요.',
+              },
               buttonText: '확인',
               onPressed: () {
                 context.goNamed(

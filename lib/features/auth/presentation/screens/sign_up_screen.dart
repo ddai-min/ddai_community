@@ -156,6 +156,21 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         setState(() {
           passwordErrorText = '비밀번호를 10글자 이상 사용해주세요.';
         });
+      } else if (result.errorCode == AuthExceptionCode.captchaFailed) {
+        // 재시도로 풀리는 오류이므로 화면을 떠나지 않고 다이얼로그만 닫는다.
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return DefaultDialog(
+              contentText: '자동 가입 방지 확인에 실패했습니다.\n네트워크 상태를 확인한 뒤\n다시 시도해주세요.',
+              buttonText: '확인',
+              onPressed: () {
+                context.pop();
+              },
+            );
+          },
+        );
       } else if (result.errorCode == AuthExceptionCode.emailNotConfirmed) {
         // "Confirm email" 이 켜진 프로젝트에서는 계정만 만들어지고 세션이 없다.
         // 메일 인증을 마쳐야 로그인할 수 있으므로 로그인 화면으로 돌려보낸다.

@@ -30,7 +30,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   TextEditingController idTextController = TextEditingController();
   TextEditingController passwordTextController = TextEditingController();
 
-  bool isLoginError = false;
+  /// 직전 로그인 실패 사유. `null` 이면 오류 문구를 숨긴다.
+  AuthExceptionCode? loginErrorCode;
 
   @override
   void dispose() {
@@ -65,7 +66,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const _Title(),
                 const SizedBox(height: 15),
-                if (isLoginError) const _ErrorText(),
+                if (loginErrorCode != null)
+                  _ErrorText(errorCode: loginErrorCode!),
                 const SizedBox(height: 15),
                 Form(
                   key: formKey,
@@ -105,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (result.isSuccess) {
       setState(() {
-        isLoginError = false;
+        loginErrorCode = null;
       });
 
       ref.read(userMeProvider.notifier).update((model) => result.user!);
@@ -115,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
     } else {
       setState(() {
-        isLoginError = true;
+        loginErrorCode = result.errorCode;
       });
     }
   }
@@ -179,14 +181,27 @@ class _Title extends StatelessWidget {
 }
 
 class _ErrorText extends StatelessWidget {
-  const _ErrorText();
+  final AuthExceptionCode errorCode;
+
+  const _ErrorText({
+    required this.errorCode,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      '아이디 또는 패스워드가 일치하지 않습니다.',
+    // CAPTCHA 실패는 입력이 틀린 게 아니라 재시도로 풀리는 문제다.
+    // 자격증명 오류와 같은 문구를 보여주면 유저가 비밀번호를 계속 고치게 된다.
+    final message = switch (errorCode) {
+      AuthExceptionCode.captchaFailed =>
+        '자동 가입 방지 확인에 실패했습니다.\n네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+      AuthExceptionCode.tooManyRequests => '요청이 너무 많습니다.\n잠시 후 다시 시도해주세요.',
+      _ => '아이디 또는 패스워드가 일치하지 않습니다.',
+    };
+
+    return Text(
+      message,
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         color: Colors.red,
         fontSize: 16.0,
         fontWeight: FontWeight.bold,

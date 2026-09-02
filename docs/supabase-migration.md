@@ -2,7 +2,8 @@
 
 Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres · Realtime · Edge Functions) 전환.
 
-> **Phase 0~6 완료.** 앱은 Supabase 위에서 빌드·실행된다. 남은 것은 출시 직전의 Phase 7(CAPTCHA)뿐이다.
+> **Phase 0~6 완료, Phase 7 은 앱 코드까지 완료.** 앱은 Supabase 위에서 빌드·실행된다.
+> 남은 것은 Supabase 대시보드의 CAPTCHA 스위치를 켜고 실측하는 일뿐이다. (§Phase 7)
 > 이 문서는 이제 계획서가 아니라 **스키마 · RLS 정책의 단일 출처이자 전환 기록**이다.
 > 스키마를 다시 세우거나 새 환경을 만들 때는 §1(DDL)과 §2(RLS)를 그대로 실행하면 된다.
 
@@ -21,7 +22,7 @@ Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres �
 | 4 | 게시판 · 댓글 · 채팅 | ✅ |
 | 5 | 신고 · 강제 업데이트 → **앱 빌드·실행 성공** | ✅ |
 | 6 | `CLAUDE.md` · `README.md` 갱신 | ✅ |
-| 7 | CAPTCHA | 출시 직전 |
+| 7 | CAPTCHA (Cloudflare Turnstile) | 🟡 앱 코드 완료 · **서버 스위치 대기** |
 
 **아직 남은 검증** — 실기기에서의 UI 조작(무한 스크롤, 당겨서 새로고침, 2기기 채팅,
 회원가입 → 로그아웃 → 로그인 → 닉네임 수정 → 탈퇴 전 과정). 각 경로의 서버 동작은
@@ -831,53 +832,150 @@ Firestore 는 권한이 없으면 예외를 던졌지만, PostgREST 는 RLS(`boa
 
 두 문서 모두 `docs/supabase-migration.md` 를 **스키마 · RLS 의 단일 출처**로 참조한다.
 
-### Phase 7 — CAPTCHA (출시 직전)
+### Phase 7 — CAPTCHA 🟡 *(앱 코드 완료 · 서버 스위치 대기)*
 
-익명 로그인 남용을 막는 마지막 단계다. **Phase 0~6 동안에는 켜지 않는다.**
+익명 로그인 남용을 막는 마지막 단계. **앱 쪽 배선은 끝났고, Supabase 대시보드 스위치는
+아직 켜지 않았다.** 순서를 그렇게 잡은 이유는 아래 "롤아웃 순서" 참고.
 
-> **켜는 순간 인증이 전부 막힌다.** Supabase 의 Attack Protection CAPTCHA 는 회원가입 · 로그인 ·
-> 익명 로그인 · 비밀번호 재설정 등 **모든 auth 엔드포인트**에 `captchaToken` 을 요구한다.
-> 앱이 토큰을 실어 보내지 않으면 Phase 2 의 인증 작업과 테스트가 통째로 실패한다.
+#### 선택한 방식
 
-**1. 제공자 선택** — Supabase 는 hCaptcha 와 Cloudflare Turnstile 을 지원한다.
-모바일 UX 와 Flutter 패키지 성숙도를 보면 **Turnstile** 이 낫다.
-
-| 제공자 | Flutter 패키지 | 비고 |
-| --- | --- | --- |
-| Cloudflare Turnstile | `cloudflare_turnstile` (Android · iOS · macOS · Web · Windows) | 무료 · 무제한, 대부분 무마찰 통과 |
-| hCaptcha | `hcaptcha_widget` 등 | 퍼즐 노출 빈도가 상대적으로 높음 |
-
-둘 다 1st-party Flutter SDK 가 아니라 **WebView 기반 커뮤니티 패키지**다. 도입 전에 유지보수 상태를 확인한다.
-
-**2. 키 발급** — Cloudflare 대시보드 → Turnstile → Add site
-
-| 키 | 어디에 |
+| 항목 | 값 |
 | --- | --- |
-| **Site Key** (공개) | Flutter 앱의 위젯 초기화 |
-| **Secret Key** (비공개) | Supabase → Authentication → Attack Protection → **Captcha secret** |
+| 제공자 | Cloudflare Turnstile (무료·무제한, 대부분 무마찰) |
+| 패키지 | `cloudflare_turnstile` ^3.8.1 |
+| 모드 | invisible (`CloudflareTurnstile.invisible()` → `getToken()`) |
+| 발급 위치 | `core/data/captcha_repository.dart` — headless WebView, 화면 불필요 |
 
-**3. Supabase 설정** — Attack Protection 에서 Enable Captcha protection → Provider 선택 → Secret Key 붙여넣기
+hCaptcha 도 지원되지만 퍼즐 노출 빈도가 높아 모바일 UX 에 불리하다.
 
-**4. 앱 연동** — 위젯에서 받은 토큰을 모든 인증 호출에 전달한다.
+#### 구현
+
+앱은 `TURNSTILE_SITE_KEY` 가 `.env` 에 있을 때만 토큰을 만든다. 없으면 `null` 이 실리고
+서버는 그것을 무시한다 — **앱 배포 시점과 서버 활성화 시점을 분리하기 위한 장치다.**
 
 ```dart
-final token = await getTurnstileToken();   // 위젯에서 획득
+// core/data/captcha_repository.dart
+static Future<String?> issueToken() async {
+  if (!isCaptchaEnabled) return null;
 
-await supabase.auth.signInAnonymously(captchaToken: token);
-await supabase.auth.signUp(email: email, password: password, captchaToken: token);
-await supabase.auth.signInWithPassword(email: email, password: password, captchaToken: token);
+  CloudflareTurnstile? turnstile;
+  try {
+    turnstile = CloudflareTurnstile.invisible(
+      siteKey: turnstileSiteKey,
+      baseUrl: turnstileBaseUrl,
+    );
+    return await turnstile.getToken().timeout(_timeout);
+  } catch (error) {
+    logger.e(error);
+    return null;                 // 막을지 말지는 서버가 정한다
+  } finally {
+    await turnstile?.dispose();
+  }
+}
 ```
 
-**개발 중 우회** — Cloudflare 가 공개한 테스트 키를 쓰면 항상 통과한다. 연동 코드를 먼저 붙이고
-실제 키로 바꾸는 순서를 권한다. (운영 키는 더미 토큰을 거부하므로 **반드시 쌍으로** 맞춰 쓴다)
+`AuthRepository` 의 세 경로가 이걸 호출한다.
 
-| 용도 | 값 |
+```dart
+await supabase.auth.signUp(..., captchaToken: await CaptchaRepository.issueToken());
+await supabase.auth.signInWithPassword(..., captchaToken: await CaptchaRepository.issueToken());
+await supabase.auth.signInAnonymously(captchaToken: await CaptchaRepository.issueToken());
+```
+
+gotrue 는 `captchaToken` 이 `null` 이어도 `gotrue_meta_security` 를 항상 실어 보내므로,
+CAPTCHA 를 안 쓰는 지금과 **전송 형태가 동일하다.** 즉 이 커밋만으로는 동작이 안 바뀐다.
+
+#### 설계 판단 3가지
+
+| 판단 | 이유 |
 | --- | --- |
-| Site Key — 항상 통과 (invisible) | `1x00000000000000000000BB` |
-| Secret Key — 항상 통과 | `1x0000000000000000000000000000000AA` |
-| Secret Key — 항상 실패 (실패 경로 테스트) | `2x0000000000000000000000000000000AA` |
+| **발급 실패 시 막지 않고 `null`** | 앱이 미리 막으면 서버 설정과 어긋나는 순간 멀쩡한 로그인까지 불가능해진다. 거절은 서버가 `captcha_failed` 로 한다 |
+| **호출마다 인스턴스 새로 생성** | Turnstile 토큰은 1회용. 재사용하면 `timeout-or-duplicate` 인데, 화면에는 "비밀번호가 맞는데 안 됨" 으로 보여 원인 추적이 어렵다 |
+| **`getToken()` 을 `.timeout()` 으로 감쌈** | 패키지의 `getToken()` 은 **스스로 끝나지 않는다.** 8초 뒤 `onTimeout` 콜백만 부르고 Future 는 매달려 있어서, 안 감싸면 로딩 오버레이가 영영 안 걷힌다 |
 
----
+#### 함께 고친 것
+
+- **`AuthExceptionCode.captchaFailed('captcha_failed')`** 추가 + `_mapException` 매핑.
+- **화면 문구 분기** — 로그인 화면은 실패 사유를 `bool` 이 아니라 `AuthExceptionCode?` 로 들고
+  있게 바꿨다. CAPTCHA 실패에 "아이디 또는 패스워드가 일치하지 않습니다" 를 띄우면
+  유저가 비밀번호를 계속 고치게 된다. 약관(익명)·회원가입 화면에도 같은 분기를 넣었다.
+- **Edge Function `delete-account`** — §4 참고. anon 키로 `signInWithPassword` 를 부르던 것을
+  secret 키로 바꿨다. 안 바꿨으면 CAPTCHA 를 켜는 순간 탈퇴가 통째로 막혔다.
+
+#### iOS 의존성 — CocoaPods 복귀
+
+`cloudflare_turnstile` → `flutter_inappwebview` → **`flutter_inappwebview_ios` 는 podspec 만
+제공한다.** SPM 지원은 업스트림에 [열린 이슈](https://github.com/pichillilorenzo/flutter_inappwebview/issues/2842).
+그래서 빌드하면 Flutter 가 `Podfile` 을 다시 만들고, `6292137` 에서 걷어낸 CocoaPods 가
+iOS 에 돌아온다.
+
+검토한 대안과 기각 사유:
+
+| 대안 | 기각 사유 |
+| --- | --- |
+| `cloudflare_turnstile` 2.1.5 (webview_flutter 기반) | `getToken()` 이 없다. invisible 이 위젯 모드일 뿐이라 화면 3곳에 위젯을 심고 토큰 수명을 직접 관리해야 한다. 18개월 전 버전 |
+| `webview_flutter` 로 직접 구현 | 토큰 만료·재시도·에러코드·챌린지 폴백을 전부 떠안는다. headless 동작도 미검증 |
+
+**결론: 하이브리드를 받아들였다.** 예전엔 팟이 `Flutter` 하나뿐이라 순수 오버헤드였지만
+지금은 실제 의존성이 있다. 측정값 — `pod install` 692~735ms, 시뮬레이터 클린 빌드 42초.
+`Podfile` 은 Flutter 가 만든 **표준 템플릿 그대로 두어야** "non-standard Podfile" 경고를 피한다.
+
+#### 검증한 것
+
+시뮬레이터(iPhone 17, debug)에서 더미 sitekey `1x00000000000000000000AA` 로 실측.
+
+| 항목 | 결과 |
+| --- | --- |
+| 토큰 발급 | `XXXX.DUMMY.TOKEN.XXXX` (21자) — 더미 키의 정상 응답 |
+| 발급 소요 (1회차/콜드) | 2727ms |
+| 발급 소요 (2·3회차) | 1848ms · 1826ms |
+| `flutter analyze` | 0 issue |
+| iOS 시뮬레이터 빌드 | ✅ (경고는 SPM 미지원 안내뿐) |
+| Android APK 빌드 | ✅ 23.9s |
+
+**약 1.8초**가 로그인·가입·익명 3경로에 더해진다. 기존 로딩 오버레이 안에 들어가므로
+화면이 멈춘 것처럼 보이지는 않는다.
+
+#### 아직 검증 못 한 것
+
+서버 스위치가 꺼져 있어서 **서버가 실제로 거절하는지는 확인하지 못했다.** 남은 항목:
+
+- `captcha_failed` 가 실제로 그 문자열로 오는지 (매핑은 [공식 에러코드 문서](https://supabase.com/docs/guides/auth/debugging/error-codes) 기준)
+- 토큰 없이 보냈을 때의 거절 (`captcha protection: request disallowed (...)`)
+- 강제 챌린지 UI (`3x00000000000000000000FF`) 의 실기기 레이아웃
+- 탈퇴 플로우가 CAPTCHA 활성 상태에서도 되는지 (§4 의 secret 키 변경이 실제로 먹는지)
+
+#### 롤아웃 순서
+
+스위치가 **프로젝트 전역**이라 순서가 중요하다. 켜는 순간 토큰을 안 보내는 모든 빌드의
+가입·로그인이 실패한다. (이미 로그인된 세션은 갱신이 captcha 대상이 아니라서 무사)
+
+1. Cloudflare 대시보드 → Turnstile → Add site. **Widget Domains 에 `localhost` 등록**
+   (`TURNSTILE_BASE_URL` 과 같아야 한다. 다르면 `110200 Domain not allowed`)
+2. `.env` 에 `TURNSTILE_SITE_KEY` 채우고 앱 빌드·배포
+3. 배포된 사용자가 있으면 `app_config.version_name` 으로 강제 업데이트 → 확산 대기
+   (**major/minor 만 비교**하므로 patch 가 아니라 minor 를 올려야 한다)
+4. Supabase → Authentication → Attack Protection → Enable + secret 붙여넣기
+5. 위 "아직 검증 못 한 것" 항목 실측
+
+#### 테스트 매트릭스 (더미 키)
+
+sitekey 는 앱, secret 은 Supabase. 둘을 독립으로 조작하면 봇 없이 모든 경로를 만든다.
+
+| # | Supabase secret | 앱 sitekey | 확인 대상 |
+| --- | --- | --- | --- |
+| 1 | `1x…AA` 통과 | `1x00000000000000000000AA` 통과 | 해피패스 |
+| 2 | `1x…AA` 통과 | `2x00000000000000000000AB` 실패 | 위젯이 토큰을 못 냄 → 앱이 에러를 띄우는지 |
+| 3 | `2x…AA` 거절 | `1x…AA` 통과 | 서버 거절 → `captchaFailed` 매핑 |
+| 4 | `3x…AA` 재사용 | `1x…AA` 통과 | 1회용 토큰 처리 |
+| 5 | `1x…AA` 통과 | `3x00000000000000000000FF` 강제 | 챌린지 UI 레이아웃 |
+
+secret 전문: `1x/2x/3x0000000000000000000000000000000AA`.
+**4번이 가장 잘 놓치는 버그다** — 비밀번호를 틀려 재시도할 때 토큰을 새로 안 받으면
+맞는 비밀번호로도 실패한다.
+
+더미 secret 중 `1x…AA`(항상 통과) 상태는 **CAPTCHA 를 끈 것과 보호 수준이 같다.**
+운영 프로젝트에서 잠깐 써도 노출이 늘지 않는다. 반면 `2x…AA`(항상 거절)는 실질 장애다.
 
 ---
 

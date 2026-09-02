@@ -170,9 +170,18 @@ Screen ──watch/read──▶ Provider(Riverpod) ──▶ Repository ──�
 ```dotenv
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+
+# 선택 — Cloudflare Turnstile(CAPTCHA). 없으면 CAPTCHA 를 쓰지 않는다.
+#TURNSTILE_SITE_KEY=0x4AAAAAAA...
+#TURNSTILE_BASE_URL=http://localhost/
 ```
 
-`.env` 가 없거나 키가 비어 있으면 앱 시작 시 크래시하므로 반드시 먼저 준비해야 한다.
+위 **두 키가 없거나 비어 있으면 앱 시작 시 크래시**하므로 반드시 먼저 준비해야 한다.
+`TURNSTILE_*` 는 선택 항목이라 없어도 앱이 뜬다.
+
+`TURNSTILE_SITE_KEY` 를 채우면 회원가입 · 로그인 · 익명 로그인 요청에 CAPTCHA 토큰이 실린다.
+검증용 secret 은 Supabase 대시보드(Authentication → Attack Protection)에만 두며 앱에 넣지 않는다.
+서버 쪽 CAPTCHA 스위치는 **프로젝트 전역**이므로, 토큰을 보내는 빌드가 충분히 퍼진 뒤에 켠다.
 
 > **secret 키(`sb_secret_...`, 구 `service_role`)는 절대 넣지 않는다.** RLS 를 우회하는 키다.
 > 서버 권한이 필요한 작업(계정 삭제)은 Edge Function 런타임에서만 처리한다.
@@ -286,8 +295,9 @@ Dart 쪽 스플래시 화면은 없다 — 네트워크 확인이 끝날 때까�
 - **버전**: `pubspec.yaml` 이 단일 출처다. iOS `project.pbxproj` 나 Android `build.gradle` 에
   버전을 적지 않는다. Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 기록되어
   pubspec 이 무시되므로 주의한다.
-- **iOS 의존성**: CocoaPods 를 쓰지 않는다. 플러그인과 Flutter 프레임워크 모두
-  Swift Package 로 공급되므로 `Podfile` 이 없는 것이 정상이다.
+- **iOS 의존성**: Swift Package Manager 와 CocoaPods 를 함께 쓴다. 대부분의 플러그인은
+  Swift Package 로 공급되지만 `flutter_inappwebview_ios`(CAPTCHA) 는 podspec 만 제공한다.
+  빌드 시 `plugins do not support Swift Package Manager` 경고가 뜨는 것은 정상이다.
 - **Android Studio**: Flutter 프로젝트는 루트를 열어야 한다.
   `android/` 만 따로 열면 Gradle/JDK 설정이 프로젝트와 어긋난다.
 

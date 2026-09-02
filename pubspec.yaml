@@ -60,6 +60,7 @@ dependencies:
 
   # 네이티브 스플래시 생성 + 유지/해제 런타임 API
   flutter_native_splash: ^2.4.8
+  cloudflare_turnstile: ^3.8.1
 
 dev_dependencies:
   flutter_test:

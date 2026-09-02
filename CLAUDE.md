@@ -51,8 +51,8 @@ lib/
 │   └── bootstrap.dart         #   .env 로드 + Supabase 초기화
 │
 ├── core/                      # 기능에 종속되지 않는 공통 자산
-│   ├── constants/             #   colors · supabase_env
-│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository
+│   ├── constants/             #   colors · supabase_env · turnstile_env
+│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository · CaptchaRepository
 │   ├── models/                #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/             #   PaginationMixin · sessionUidProvider
 │   ├── router/                #   go_router 라우트 정의
@@ -156,8 +156,9 @@ features/<feature>/
 
 - **secret 키 금지**: `sb_secret_...`(구 `service_role`)는 RLS 를 우회한다.
   **앱·`.env`·저장소 어디에도 두지 않는다.** 서버 권한이 필요한 작업은 Edge Function 에서만 한다.
-- **`.env` 필수**: 없으면 시작 시 크래시(`dotenv.env[...]!`). 코드가 읽는 키는
-  `SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` 2개뿐이다.
+- **`.env` 필수**: 없으면 시작 시 크래시(`dotenv.env[...]!`). **필수 키는
+  `SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` 2개**다.
+  `TURNSTILE_SITE_KEY` · `TURNSTILE_BASE_URL` 은 **선택**이며 없으면 CAPTCHA 를 쓰지 않는다.
   (`IOS_BUNDLE_ID` · `ANDROID_PACKAGE_NAME` 은 참조되지 않는 잔여 키)
 - **`anonKey` 대신 `publishableKey`**: `supabase_flutter` 2.17.2 에서 `anonKey` 는 `@Deprecated` 다.
 - **RLS 는 조용히 0행을 만든다**: PostgREST 는 권한이 없어도 예외를 던지지 않는다.
@@ -199,9 +200,30 @@ features/<feature>/
     비밀번호 대조는 그대로 수행한다 — 틀린 비밀번호는 여전히 거절된다.
   - 반면 ① 신원 확인용 `userClient` 는 **anon 키 + 호출자 JWT** 그대로 두어야 한다.
     "누가 부르는지"를 서버가 판정하는 자리라 secret 키로 바꾸면 의미가 없어진다.
-- **iOS 는 CocoaPods 를 쓰지 않는다.** 플러그인과 Flutter 프레임워크 모두 Swift Package 로
-  공급된다. `Podfile` · `Podfile.lock` · `Pods/` 가 없는 것이 정상이다.
-  CocoaPods 로만 배포되는 플러그인을 새로 넣으면 Flutter 가 `Podfile` 을 다시 만들어 준다.
+- **CAPTCHA(Cloudflare Turnstile)**: 서버 스위치는 Supabase 대시보드
+  (Authentication → Attack Protection)에 있고 **프로젝트 전역**이다. 브랜치·환경별 토글이 없다.
+  - 앱은 `TURNSTILE_SITE_KEY` 가 `.env` 에 있을 때만 토큰을 만든다.
+    **켜는 순서는 "앱 배포 → 확산 → 서버 스위치"** 다. 순서를 뒤집으면 토큰을 안 보내는
+    기존 빌드의 가입·로그인이 전부 막힌다. (이미 로그인된 세션은 갱신이 captcha 대상이
+    아니라서 무사하다) 필요하면 `app_config.version_name` 강제 업데이트로 확산을 강제한다.
+  - 토큰 발급은 headless WebView 라 **1.8~2.7초** 걸린다(시뮬레이터 debug 기준).
+    로그인·가입·익명 3개 경로가 그만큼 느려지지만 기존 로딩 오버레이 안에 들어간다.
+  - **토큰은 1회용이다.** `CaptchaRepository` 가 호출마다 인스턴스를 새로 만드는 이유다.
+    재사용하면 두 번째 요청이 `timeout-or-duplicate` 로 거절되는데, 화면에는
+    "비밀번호가 맞는데 로그인이 안 됨" 으로 보여서 원인을 찾기 어렵다.
+  - 패키지의 `getToken()` 은 **스스로 타임아웃하지 않는다.** 감싸지 않으면 로딩 오버레이가
+    영영 안 걷힌다. `CaptchaRepository._timeout` 이 그 방어막이다.
+  - Edge Function `delete-account` 도 영향을 받는다 — 위 "계정 삭제" 항목 참고.
+- **iOS 는 SPM + CocoaPods 하이브리드다.** 대부분의 플러그인과 Flutter 프레임워크는
+  Swift Package 로 공급되지만, `flutter_inappwebview_ios`(CAPTCHA 용) 는 podspec 만 제공해서
+  CocoaPods 도 함께 쓴다. `Podfile` · `Podfile.lock` · `Pods/` 가 있는 것이 정상이다.
+  - 빌드할 때마다 `The following plugins do not support Swift Package Manager for ios`
+    경고가 뜨는데 **정상이다.** 업스트림(플러그인 저자)이 SPM 을 채택해야 사라진다.
+  - `Podfile` 은 Flutter 가 만든 **표준 템플릿 그대로 두어야 한다.** 한 줄이라도 손대면
+    Flutter 가 바이트 단위 비교로 "non-standard Podfile" 이라 판단해 수동 마이그레이션을
+    안내한다. 배포 타깃은 `project.pbxproj` 의 `IPHONEOS_DEPLOYMENT_TARGET` 이 정한다.
+  - 한때 CocoaPods 를 완전히 걷어냈던 적이 있다(`6292137`). 그때는 팟이 `Flutter` 하나뿐이라
+    순수 오버헤드였지만, 지금은 실제 의존성이 있어 되돌렸다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
   `android/.idea/` 설정이 프로젝트와 따로 놀며 Gradle/JDK 불일치 오류가 난다.
 - **스플래시는 네이티브뿐이다.** Dart 쪽에 스플래시 화면도, `/splash` 라우트도 없다.
@@ -228,6 +250,8 @@ features/<feature>/
 | `lib/core/providers/session_provider.dart` | 세션 uid — 목록 재생성 트리거 |
 | `lib/features/auth/data/auth_repository.dart` | 회원가입/로그인/로그아웃/탈퇴/차단 · `AuthExceptionCode` |
 | `lib/core/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
+| `lib/core/data/captcha_repository.dart` | Turnstile CAPTCHA 토큰 발급 |
+| `lib/core/constants/turnstile_env.dart` | Turnstile sitekey · baseUrl (선택 설정) |
 | `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |
 | `lib/features/user/presentation/providers/user_me_provider.dart` | 전역 로그인 유저 상태 (`userMeProvider`) |
