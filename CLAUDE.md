@@ -70,6 +70,10 @@ lib/
 supabase/
 ├── config.toml                # Supabase CLI 설정
 └── functions/delete-account/  # 계정 삭제 Edge Function (Deno)
+
+asset/
+├── fonts/                     # NotoSans (앱 전역 폰트)
+└── img/splash.png             # 네이티브 스플래시 원본 (런타임 에셋 아님)
 ```
 
 각 feature 내부는 항상 동일한 3계층이다. (해당 계층이 없으면 폴더도 만들지 않는다)
@@ -185,6 +189,14 @@ features/<feature>/
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
   `android/.idea/` 설정이 프로젝트와 따로 놀며 Gradle/JDK 불일치 오류가 난다.
+- **스플래시는 네이티브다.** 비주얼은 `flutter_native_splash` 가 생성한 네이티브 리소스가
+  담당하고, Dart 쪽 `SplashScreen` 은 **보이지 않는 라우팅 관문**일 뿐이다.
+  - `main()` 이 `FlutterNativeSplash.preserve()` 로 붙잡고, 강제 업데이트 확인과 라우팅이
+    끝난 뒤 `SplashScreen` 이 `remove()` 한다. **`remove()` 를 빠뜨리면 앱이 스플래시에서 멈춘다.**
+  - 네이티브 스플래시 위에는 다이얼로그가 보이지 않는다. 그래서 종료 안내
+    다이얼로그는 `remove()` 를 먼저 부른다.
+  - 이미지/색을 바꾸면 `fvm dart run flutter_native_splash:create` 로 네이티브 리소스를 재생성한다.
+    Android 12+ 는 아이콘이 원으로 마스킹되므로 1152px 캔버스의 중앙 768px 안에 내용이 있어야 한다.
 
 ## 주요 파일
 
@@ -201,7 +213,7 @@ features/<feature>/
 | `lib/core/providers/session_provider.dart` | 세션 uid — 목록 재생성 트리거 |
 | `lib/features/auth/data/auth_repository.dart` | 회원가입/로그인/로그아웃/탈퇴/차단 · `AuthExceptionCode` |
 | `lib/features/splash/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
-| `lib/features/splash/presentation/screens/splash_screen.dart` | 강제 업데이트 확인 + 초기 라우팅 분기 |
+| `lib/features/splash/presentation/screens/splash_screen.dart` | 강제 업데이트 확인 + 초기 라우팅 (화면은 네이티브 스플래시에 가려 보이지 않는다) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |
 | `lib/features/user/presentation/providers/user_me_provider.dart` | 전역 로그인 유저 상태 (`userMeProvider`) |
 | `lib/core/widgets/default_layout.dart` | 공통 Scaffold (`DefaultLayout`) |

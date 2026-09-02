@@ -227,6 +227,7 @@ insert into public.app_config (key, value) values ('version_name', '1.4.0');
 - [riverpod_annotation](https://pub.dev/packages/riverpod_annotation)
 - [flutter_dotenv](https://pub.dev/packages/flutter_dotenv)
 - [package_info_plus](https://pub.dev/packages/package_info_plus)
+- [flutter_native_splash](https://pub.dev/packages/flutter_native_splash)
 
 ### Dev Dependencies
 
@@ -240,8 +241,24 @@ insert into public.app_config (key, value) values ('version_name', '1.4.0');
 | 경로 | 용도 |
 | --- | --- |
 | `asset/fonts/NotoSansKR-*.otf` | 앱 전역 기본 폰트 `NotoSans` (Thin 100 ~ Black 900) |
+| `asset/img/splash.png` | 네이티브 스플래시 원본 (1152×1152, 투명 배경) |
 
 폰트는 `AppTheme.light` 의 `fontFamily: 'NotoSans'` 로 전역 적용된다.
+스플래시 이미지는 **런타임 에셋이 아니라** 빌드 시점에 네이티브 리소스로 구워지므로
+`flutter: assets:` 에 선언하지 않는다.
+
+### 네이티브 스플래시
+
+`flutter_native_splash` 로 생성한다. 앱 실행 즉시 브랜드 색과 워드마크가 뜨고,
+흰 화면이 스치는 구간이 없다.
+
+```bash
+fvm dart run flutter_native_splash:create   # pubspec 의 flutter_native_splash 설정으로 재생성
+```
+
+`main()` 이 `FlutterNativeSplash.preserve()` 로 스플래시를 붙잡아 두고,
+강제 업데이트 확인과 초기 라우팅이 끝나면 `SplashScreen` 이 `remove()` 한다.
+따라서 네트워크 확인이 끝날 때까지 스플래시가 유지된다.
 
 ## 개발 규칙
 
