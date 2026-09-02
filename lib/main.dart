@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 로드 및 Firebase 초기화.
+  // .env 로드 및 Supabase 초기화.
   await Bootstrap.run();
 
   runApp(
