@@ -1,16 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ddai_community/core/data/pagination_repository.dart';
+import 'package:ddai_community/core/data/supabase_client.dart';
 import 'package:ddai_community/core/utils/logger.dart';
 import 'package:ddai_community/features/board/domain/comment_model.dart';
 import 'package:ddai_community/features/board/domain/comment_parameter.dart';
 
-/// 댓글(`board/{boardId}/comment` 하위 컬렉션) 관련 Firestore 연산.
+/// 댓글(`comment` 테이블) 관련 Supabase 연산.
 ///
-/// 목록 페이지네이션은 [PaginationRepository] 가 처리한다.
+/// Firestore 의 `board/{boardId}/comment` 하위 컬렉션을 `board_id` FK 로 대체했다.
+/// 목록 페이지네이션은 [PaginationRepository] 가 `parentColumn` 으로 범위를 좁혀 처리한다.
 class CommentRepository extends PaginationRepository<CommentModel> {
   CommentRepository()
       : super(
-          collectionPath: CollectionPath.comment,
+          table: TablePath.comment,
+          parentColumn: 'board_id',
           fromJson: (data) => CommentModel.fromJson(data),
         );
 
@@ -19,23 +21,12 @@ class CommentRepository extends PaginationRepository<CommentModel> {
     required AddCommentParams addCommentParams,
   }) async {
     try {
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-      final commentRef = firestore
-          .collection('board')
-          .doc(addCommentParams.searchId)
-          .collection('comment')
-          .doc();
-
-      Map<String, dynamic> commentData = CommentModel(
-        id: commentRef.id,
-        userName: addCommentParams.userName,
-        userUid: addCommentParams.userUid,
-        content: addCommentParams.content,
-        date: DateTime.now(),
-      ).toJson();
-
-      await commentRef.set(commentData);
+      await supabase.from('comment').insert({
+        'board_id': addCommentParams.searchId,
+        'content': addCommentParams.content,
+        'user_name': addCommentParams.userName,
+        'user_uid': addCommentParams.userUid,
+      });
 
       return true;
     } catch (error) {
