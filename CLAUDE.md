@@ -170,6 +170,9 @@ features/<feature>/
   이전 버전(예: 3.41.6/meta 1.17)에서는 analyzer 충돌로 설치 불가하니 Flutter 를 낮추지 말 것.
 - **build_runner**: 최신 버전에서 `--delete-conflicting-outputs` 플래그는 제거됐고 기본 동작이다.
 - **정적 분석**: `analysis_options.yaml` 에서 `use_build_context_synchronously` 를 `ignore` 로 설정해 두었다.
+- **포매터**: 같은 파일에 `formatter: trailing_commas: preserve` 를 켜 두었다.
+  Dart 3.7 부터 포매터가 trailing comma 를 무시하고 한 줄에 들어가면 접어버리는데,
+  이 설정이 없으면 저장할 때마다 위젯 트리가 뭉개진다.
 - **강제 업데이트**: `app_config` 테이블의 `version_name` 과 앱 버전(major/minor)을 비교한다. (`app/app_update.dart`)
   patch 차이는 허용하며, **조회나 파싱이 실패하면 안내 후 `exit(0)`** 으로 앱을 종료한다.
   즉 `app_config` 에 `version_name` 행이 없으면 앱이 뜨지 않는다.

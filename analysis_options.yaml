@@ -14,6 +14,14 @@ analyzer:
     use_build_context_synchronously: ignore
 include: package:flutter_lints/flutter.yaml
 
+# Dart 3.7 부터 포매터가 trailing comma 를 무시하고 한 줄에 들어가면 접어버린다.
+# 저장(format on save)할 때마다 위젯 트리가 뭉개지므로 `preserve` 로 고정한다.
+#   preserve — trailing comma 가 있으면 인자를 줄마다 펼친 채로 둔다.
+#              반대로 없으면 폭이 허용하는 한 한 줄로 합친다.
+# (Dart 3.8+ 지원. 이 프로젝트는 3.12.2)
+formatter:
+  trailing_commas: preserve
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

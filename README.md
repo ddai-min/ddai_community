@@ -280,6 +280,9 @@ Dart 쪽 스플래시 화면은 없다 — 네트워크 확인이 끝날 때까�
 - **문서 주석**: 공개 최상위 선언에는 `///` 주석을 단다.
 - **정적 분석**: `fvm flutter analyze` 가 0 issue 인 상태를 유지한다.
   (`analysis_options.yaml` 에서 `use_build_context_synchronously` 만 `ignore` 로 완화)
+- **포매터**: `analysis_options.yaml` 에 `formatter: trailing_commas: preserve` 를 켜 두었다.
+  Dart 3.7 부터 포매터가 trailing comma 를 무시하므로, 이 설정이 없으면
+  저장(format on save)할 때마다 인자들이 한 줄로 합쳐진다.
 - **버전**: `pubspec.yaml` 이 단일 출처다. iOS `project.pbxproj` 나 Android `build.gradle` 에
   버전을 적지 않는다. Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 기록되어
   pubspec 이 무시되므로 주의한다.
