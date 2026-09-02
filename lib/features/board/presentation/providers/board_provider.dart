@@ -21,9 +21,6 @@ class BoardList extends _$BoardList with PaginationMixin<BoardModel> {
   @override
   PaginationRepository<BoardModel> get paginationRepository =>
       ref.read(boardRepositoryProvider);
-
-  @override
-  CollectionPath get collectionPath => CollectionPath.board;
 }
 
 /// 게시글 단건 조회. searchId(게시글 id)별로 캐싱된다.

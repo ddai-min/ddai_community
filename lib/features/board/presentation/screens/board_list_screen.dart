@@ -53,31 +53,32 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
         ref.read(boardListProvider.notifier).refresh();
       },
       child: ListView.builder(
-          controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == boardList.items.length) {
-              return const Center(
-                child: DefaultCircularProgressIndicator(),
-              );
-            }
-
-            final board = boardList.items[index];
-
-            return BoardListItem(
-              title: board.title,
-              content: board.content,
-              onTap: () {
-                context.goNamed(
-                  BoardDetailScreen.routeName,
-                  pathParameters: {
-                    'id': board.id,
-                  },
-                );
-              },
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == boardList.items.length) {
+            return const Center(
+              child: DefaultCircularProgressIndicator(),
             );
-          }),
+          }
+
+          final board = boardList.items[index];
+
+          return BoardListItem(
+            title: board.title,
+            content: board.content,
+            onTap: () {
+              context.goNamed(
+                BoardDetailScreen.routeName,
+                pathParameters: {
+                  'id': board.id,
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 

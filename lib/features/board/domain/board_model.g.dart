@@ -10,10 +10,10 @@ BoardModel _$BoardModelFromJson(Map<String, dynamic> json) => BoardModel(
   id: json['id'] as String,
   title: json['title'] as String,
   content: json['content'] as String,
-  userName: json['userName'] as String,
-  userUid: json['userUid'] as String,
-  date: const TimestampConverter().fromJson(json['date'] as Timestamp),
-  commentList: (json['commentList'] as List<dynamic>?)
+  userName: json['user_name'] as String,
+  userUid: json['user_uid'] as String,
+  date: DateTime.parse(json['created_at'] as String),
+  commentList: (json['comment'] as List<dynamic>?)
       ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
@@ -23,8 +23,8 @@ Map<String, dynamic> _$BoardModelToJson(BoardModel instance) =>
       'id': instance.id,
       'title': instance.title,
       'content': instance.content,
-      'userName': instance.userName,
-      'userUid': instance.userUid,
-      'date': const TimestampConverter().toJson(instance.date),
-      'commentList': instance.commentList,
+      'user_name': instance.userName,
+      'user_uid': instance.userUid,
+      'created_at': instance.date.toIso8601String(),
+      'comment': instance.commentList,
     };

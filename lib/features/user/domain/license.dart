@@ -45,30 +45,10 @@ List<LicenseItem> license = [
     license: 'BSD-3-Clause',
   ),
   LicenseItem(
-    title: 'firebase_core',
-    url: 'https://pub.dev/packages/firebase_core',
-    copyright: 'Copyright 2017 The Chromium Authors. All rights reserved.',
-    license: 'BSD-3-Clause',
-  ),
-  LicenseItem(
-    title: 'firebase_auth',
-    url: 'https://pub.dev/packages/firebase_auth',
-    copyright: 'Copyright 2017 The Chromium Authors. All rights reserved.',
-    license: 'BSD-3-Clause',
-  ),
-  LicenseItem(
-    title: 'firebase_remote_config',
-    url: 'https://pub.dev/packages/firebase_remote_config',
-    copyright:
-        'Copyright 2018, the Chromium project authors. All rights reserved.',
-    license: 'BSD-3-Clause',
-  ),
-  LicenseItem(
-    title: 'cloud_firestore',
-    url: 'https://pub.dev/packages/cloud_firestore',
-    copyright:
-        'Copyright 2017, the Chromium project authors. All rights reserved.',
-    license: 'BSD-3-Clause',
+    title: 'supabase_flutter',
+    url: 'https://pub.dev/packages/supabase_flutter',
+    copyright: 'Copyright (c) 2020 Supabase',
+    license: 'MIT',
   ),
   LicenseItem(
     title: 'logger',

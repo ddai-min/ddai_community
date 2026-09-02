@@ -9,7 +9,6 @@ import 'package:ddai_community/features/auth/domain/auth_parameter.dart';
 import 'package:ddai_community/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
-import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,8 +46,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   void dispose() {
     passwordTextController.removeListener(_passwordTextControllerListener);
-    passwordVerifyTextController
-        .removeListener(_passwordTextControllerListener);
+    passwordVerifyTextController.removeListener(
+      _passwordTextControllerListener,
+    );
 
     emailTextController.dispose();
     passwordTextController.dispose();
@@ -132,7 +132,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     DefaultLoadingOverlay.hideLoading(context);
 
     if (!result.isSuccess) {
-      if (result.errorCode == FirebaseAuthExceptionCode.tooManyRequests) {
+      if (result.errorCode == AuthExceptionCode.tooManyRequests) {
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -148,28 +148,38 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             );
           },
         );
-      } else if (result.errorCode ==
-          FirebaseAuthExceptionCode.emailAlreadyInUse) {
+      } else if (result.errorCode == AuthExceptionCode.emailAlreadyInUse) {
         setState(() {
           emailErrorText = '이미 사용 중인 이메일입니다.';
         });
-      } else if (result.errorCode == FirebaseAuthExceptionCode.weakPassword) {
+      } else if (result.errorCode == AuthExceptionCode.weakPassword) {
         setState(() {
           passwordErrorText = '비밀번호를 10글자 이상 사용해주세요.';
         });
+      } else if (result.errorCode == AuthExceptionCode.emailNotConfirmed) {
+        // "Confirm email" 이 켜진 프로젝트에서는 계정만 만들어지고 세션이 없다.
+        // 메일 인증을 마쳐야 로그인할 수 있으므로 로그인 화면으로 돌려보낸다.
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return DefaultDialog(
+              contentText: '인증 메일을 보냈습니다.\n메일의 링크를 눌러\n가입을 완료해주세요.',
+              buttonText: '확인',
+              onPressed: () {
+                context.goNamed(
+                  LoginScreen.routeName,
+                );
+              },
+            );
+          },
+        );
       }
 
       return;
     }
 
-    ref.read(userMeProvider.notifier).update(
-          (model) => UserModel(
-            id: result.user!.uid,
-            userName: nicknameTextController.text,
-            isAnonymous: false,
-            email: emailTextController.text,
-          ),
-        );
+    ref.read(userMeProvider.notifier).update((model) => result.user!);
 
     showDialog(
       context: context,

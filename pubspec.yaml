@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.4.1+7
+version: 1.5.0+8
 
 environment:
   sdk: '>=3.12.0 <4.0.0'
@@ -40,17 +40,8 @@ dependencies:
   # JSON 직렬화 애너테이션 (@JsonSerializable)
   json_annotation: ^4.12.0
 
-  # Firebase 초기화 (필수)
-  firebase_core: ^4.12.1
-
-  # 인증 (이메일/익명 로그인)   
-  firebase_auth: ^6.5.6
-
-  # 원격 설정 (강제 업데이트 버전 확인)
-  firebase_remote_config: ^6.5.5
-
-  # NoSQL DB (게시판/채팅/유저/신고)
-  cloud_firestore: ^6.7.1
+  # Supabase 백엔드 (인증 · Postgres · Realtime · Edge Functions)
+  supabase_flutter: ^2.17.2
 
   # 디버그 로깅 
   logger: ^2.7.0
@@ -67,6 +58,9 @@ dependencies:
   # 앱 버전 조회 (강제 업데이트 비교)
   package_info_plus: ^10.2.1
 
+  # 네이티브 스플래시 생성 + 유지/해제 런타임 API
+  flutter_native_splash: ^2.4.8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -82,6 +76,27 @@ dev_dependencies:
 
   # Riverpod provider 코드 생성기
   riverpod_generator: ^4.0.4
+
+# 네이티브 스플래시 설정. 값을 바꾼 뒤에는 아래를 실행해 네이티브 리소스를 재생성한다.
+#   fvm dart run flutter_native_splash:create
+#
+# 주의: 생성기가 ios/Runner/Info.plist 를 통째로 재들여쓰기하고 무의미한
+# UIStatusBarHidden 키를 넣는다. 재실행 후 그 파일의 diff 는 되돌려도 된다.
+#
+# 이미지는 런타임 에셋이 아니라 빌드 시점에 네이티브 리소스로 구워지므로
+# flutter: assets: 에 넣지 않는다.
+flutter_native_splash:
+  color: "#5F9EA0"          # core/constants/colors.dart 의 primaryColor
+  image: asset/img/splash.png
+  android: true
+  ios: true
+  web: false
+
+  # Android 12+ 는 별도 스플래시 API 를 쓴다. 아이콘이 가운데 원으로 마스킹되므로
+  # 1152px 캔버스의 중앙 768px 원 안에 내용이 들어가야 한다.
+  android_12:
+    color: "#5F9EA0"
+    image: asset/img/splash.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

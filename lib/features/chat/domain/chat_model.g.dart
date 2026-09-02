@@ -9,15 +9,15 @@ part of 'chat_model.dart';
 ChatModel _$ChatModelFromJson(Map<String, dynamic> json) => ChatModel(
   id: json['id'] as String,
   content: json['content'] as String,
-  userName: json['userName'] as String,
-  userUid: json['userUid'] as String,
-  date: const TimestampConverter().fromJson(json['date'] as Timestamp),
+  userName: json['user_name'] as String,
+  userUid: json['user_uid'] as String,
+  date: DateTime.parse(json['created_at'] as String),
 );
 
 Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
   'id': instance.id,
   'content': instance.content,
-  'userName': instance.userName,
-  'userUid': instance.userUid,
-  'date': const TimestampConverter().toJson(instance.date),
+  'user_name': instance.userName,
+  'user_uid': instance.userUid,
+  'created_at': instance.date.toIso8601String(),
 };

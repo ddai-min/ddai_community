@@ -31,7 +31,8 @@ class DefaultElevatedButton extends StatelessWidget {
         padding: padding,
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        shape: shape ??
+        shape:
+            shape ??
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),

@@ -9,10 +9,10 @@ class AppTheme {
   const AppTheme._();
 
   static ThemeData get light => ThemeData(
-        fontFamily: 'NotoSans',
-        textSelectionTheme: const TextSelectionThemeData(
-          selectionColor: Colors.grey,
-          selectionHandleColor: primaryColor,
-        ),
-      );
+    fontFamily: 'NotoSans',
+    textSelectionTheme: const TextSelectionThemeData(
+      selectionColor: Colors.grey,
+      selectionHandleColor: primaryColor,
+    ),
+  );
 }
