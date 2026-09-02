@@ -28,14 +28,10 @@ class CommentList extends _$CommentList with PaginationMixin<CommentModel> {
   PaginationRepository<CommentModel> get paginationRepository =>
       ref.read(commentRepositoryProvider);
 
+  // Firestore 의 하위 컬렉션 대신 comment.board_id FK 로 범위를 좁힌다.
+  // (좁힐 컬럼 이름은 CommentRepository 가 parentColumn 으로 들고 있다)
   @override
-  CollectionPath get collectionPath => CollectionPath.board;
-
-  @override
-  CollectionPath? get subCollectionPath => CollectionPath.comment;
-
-  @override
-  String? get collectionId => _boardId;
+  String? get parentId => _boardId;
 }
 
 /// 댓글 작성. 결과로 성공 여부(bool)를 반환한다.

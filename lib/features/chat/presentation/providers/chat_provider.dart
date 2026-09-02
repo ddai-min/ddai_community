@@ -24,9 +24,6 @@ class ChatList extends _$ChatList with PaginationMixin<ChatModel> {
   @override
   PaginationRepository<ChatModel> get paginationRepository =>
       ref.read(chatRepositoryProvider);
-
-  @override
-  CollectionPath get collectionPath => CollectionPath.chat;
 }
 
 /// 채팅 메시지 전송.
