@@ -429,6 +429,36 @@ Stream<List<ChatModel>> streamData() => supabase
 
 `PaginationMixin.subscribeStream()` 은 그대로 두면 된다.
 
+#### 전송 반영 지연 — 낙관적 렌더링 *(후속 개선)*
+
+전환 직후에는 내가 보낸 메시지도 스트림을 타고 돌아와야 화면에 그려졌다. 실측하면:
+
+| 구간 | 평균 |
+| --- | --- |
+| `insert` 왕복 | 31ms |
+| Realtime 으로 되돌아와 화면에 반영 | **454ms** (160~616ms) |
+
+약 420ms 가 브로드캐스트 대기다. 눌러도 반응이 없는 것처럼 느껴져서 낙관적 렌더링을 넣었다.
+
+- `ChatList.sendChat` 이 임시 말풍선(`local-N`)을 **먼저** 상태에 넣고 전송한다.
+- `ChatRepository.addChat` 이 `.select()` 로 생성된 행을 되받아, 임시 항목을 진짜 행
+  (실제 `id`)으로 바꾼다. 이래야 스트림이 같은 행을 실어 왔을 때 id 로 대조해 중복 없이 걷힌다.
+- 임시 항목은 **스트림에서 그 행을 볼 때까지** 남긴다. insert 응답만 받고 지우면,
+  그 사이 다른 사람 메시지가 도착하는 순간 내 말풍선이 사라졌다 다시 나타난다.
+- 스트림은 매번 목록 전체를 내보내므로 그냥 교체하면 임시 항목이 지워진다.
+  그래서 `PaginationMixin` 에 `mergeStreamData(rows)` 훅을 두고 `ChatList` 가 override 한다.
+
+실측(시뮬레이터 debug) — 전송 후 상태 변화:
+
+```
+t=+4ms    n=11  local-0:PROBE_MSG     ← 임시 말풍선 (기존에는 여기가 +450ms)
+t=+69ms   n=11  2258134e:PROBE_MSG    ← insert 응답, 실제 id 로 교체 (개수 그대로)
+t=+161ms  n=11  2258134e:PROBE_MSG    ← 스트림 도착, 임시 항목 걷힘 (중복 없음)
+```
+
+전송 실패 시에는 임시 말풍선을 걷어내고 SnackBar 로 알린다. 안 그러면 말풍선이
+소리 없이 사라진다.
+
 확인할 것:
 - `alter publication supabase_realtime add table public.chat;` 실행 여부. 누락되면 채팅이 **조용히** 멈춘다.
 - Postgres Changes 는 구독자마다 이벤트를 RLS 로 검증하므로 차단 필터가 실시간에도 적용된다.

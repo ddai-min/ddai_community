@@ -55,14 +55,26 @@ final class ChatRepositoryProvider
 String _$chatRepositoryHash() => r'f387326596315816fc6945584a7f7d41b2cf70f2';
 
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
+///
+/// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
+/// 그동안 화면이 비어 보이지 않도록 **임시 말풍선을 먼저 그린다.**
+/// (낙관적 렌더링 — 실제 행이 도착하면 조용히 교체된다)
 
 @ProviderFor(ChatList)
 final chatListProvider = ChatListProvider._();
 
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
+///
+/// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
+/// 그동안 화면이 비어 보이지 않도록 **임시 말풍선을 먼저 그린다.**
+/// (낙관적 렌더링 — 실제 행이 도착하면 조용히 교체된다)
 final class ChatListProvider
     extends $NotifierProvider<ChatList, PaginationModel<ChatModel>> {
   /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
+  ///
+  /// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
+  /// 그동안 화면이 비어 보이지 않도록 **임시 말풍선을 먼저 그린다.**
+  /// (낙관적 렌더링 — 실제 행이 도착하면 조용히 교체된다)
   ChatListProvider._()
     : super(
         from: null,
@@ -90,9 +102,13 @@ final class ChatListProvider
   }
 }
 
-String _$chatListHash() => r'd993ba9cd9b437928d7aef152b4938657ce50f94';
+String _$chatListHash() => r'a4e6e633c8518639a9d3acd684fca54d17a61e9a';
 
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
+///
+/// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
+/// 그동안 화면이 비어 보이지 않도록 **임시 말풍선을 먼저 그린다.**
+/// (낙관적 렌더링 — 실제 행이 도착하면 조용히 교체된다)
 
 abstract class _$ChatList extends $Notifier<PaginationModel<ChatModel>> {
   PaginationModel<ChatModel> build();
@@ -115,82 +131,4 @@ abstract class _$ChatList extends $Notifier<PaginationModel<ChatModel>> {
             >;
     return element.handleCreate(ref, build);
   }
-}
-
-/// 채팅 메시지 전송.
-
-@ProviderFor(addChat)
-final addChatProvider = AddChatFamily._();
-
-/// 채팅 메시지 전송.
-
-final class AddChatProvider
-    extends $FunctionalProvider<AsyncValue<void>, void, FutureOr<void>>
-    with $FutureModifier<void>, $FutureProvider<void> {
-  /// 채팅 메시지 전송.
-  AddChatProvider._({
-    required AddChatFamily super.from,
-    required AddChatParams super.argument,
-  }) : super(
-         retry: null,
-         name: r'addChatProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$addChatHash();
-
-  @override
-  String toString() {
-    return r'addChatProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<void> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<void> create(Ref ref) {
-    final argument = this.argument as AddChatParams;
-    return addChat(ref, argument);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is AddChatProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$addChatHash() => r'295392303387e173e97c317f2aa4935a80b22abe';
-
-/// 채팅 메시지 전송.
-
-final class AddChatFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<void>, AddChatParams> {
-  AddChatFamily._()
-    : super(
-        retry: null,
-        name: r'addChatProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// 채팅 메시지 전송.
-
-  AddChatProvider call(AddChatParams params) =>
-      AddChatProvider._(argument: params, from: this);
-
-  @override
-  String toString() => r'addChatProvider';
 }

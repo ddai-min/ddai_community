@@ -1,7 +1,6 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
 import 'package:ddai_community/features/chat/domain/chat_model.dart';
-import 'package:ddai_community/features/chat/domain/chat_parameter.dart';
 import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/chat_text_field.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/my_chat_bubble.dart';
@@ -12,8 +11,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 전체 공개 실시간 채팅 화면. ([HomeTab] 의 두 번째 탭)
 ///
-/// Firestore 스트림([PaginationMixin.subscribeStream])으로 메시지를 실시간 수신하며,
+/// Supabase Realtime 스트림([PaginationMixin.subscribeStream])으로 메시지를 실시간 수신하며,
 /// 최신 메시지가 아래에 오도록 목록을 뒤집어(`reverse`) 렌더한다.
+///
+/// 전송한 메시지는 서버 왕복을 기다리지 않고 곧바로 그려진다.
+/// ([ChatList.sendChat] — 낙관적 렌더링)
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -59,25 +61,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _onChatPressed() {
+  void _onChatPressed() async {
     if (chatTextController.text.isEmpty) {
       return;
     }
 
-    ref.read(
-      addChatProvider(
-        AddChatParams(
+    final userMe = ref.read(userMeProvider);
+
+    // 임시 말풍선이 이 호출 안에서 곧바로 그려진다. (await 이전까지는 동기 실행)
+    final sending = ref
+        .read(chatListProvider.notifier)
+        .sendChat(
           content: chatTextController.text,
-          userName: ref.read(userMeProvider).userName,
-          userUid: ref.read(userMeProvider).id,
-        ),
-      ),
-    );
+          userName: userMe.userName,
+          userUid: userMe.id,
+        );
 
     chatTextController.text = '';
 
     if (scrollController.hasClients) {
       scrollController.jumpTo(0);
+    }
+
+    // 실패하면 임시 말풍선이 사라지므로, 왜 사라졌는지 알려준다.
+    if (!await sending && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('메시지를 보내지 못했습니다.'),
+        ),
+      );
     }
   }
 }

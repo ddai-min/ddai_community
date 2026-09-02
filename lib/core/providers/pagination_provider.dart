@@ -37,10 +37,17 @@ mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
     );
   }
 
+  /// 스트림이 내보낸 서버 목록을 상태에 반영하기 전에 가공한다.
+  ///
+  /// 기본은 그대로 통과시킨다. 채팅처럼 **서버 확인 전의 로컬 항목**을 함께 보여줘야 하는
+  /// 목록이 override 한다. 스트림은 매번 목록 전체를 내보내므로, 이 훅이 없으면
+  /// 로컬 항목이 다음 emit 에 그대로 지워진다. ([ChatList] 참고)
+  List<T> mergeStreamData(List<T> rows) => rows;
+
   /// 실시간 스트림을 구독해 새 데이터가 도착하면 목록을 교체한다. (`build()` 에서 호출)
   void subscribeStream() {
     final subscription = paginationRepository.streamData().listen((newData) {
-      state = state.copyWith(items: newData);
+      state = state.copyWith(items: mergeStreamData(newData));
     });
 
     // provider 가 재빌드/폐기될 때 구독을 해제한다.

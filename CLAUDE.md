@@ -114,6 +114,9 @@ features/<feature>/
   - 댓글처럼 부모 행으로 좁혀야 하면 `parentId` 를 추가로 override 한다.
     좁힐 컬럼(`board_id`)은 repository 의 `parentColumn` 이 들고 있다.
   - `build()` 는 `initialState()` 를 반환한다. 채팅은 `build()` 에서 `subscribeStream()` 을 추가 호출(실시간).
+  - `mergeStreamData(rows)` — 스트림이 내보낸 서버 목록을 상태에 넣기 **전에** 가공하는 훅.
+    기본은 그대로 통과. 스트림은 매번 목록 전체를 내보내므로, 이 훅 없이 로컬 항목을 얹으면
+    다음 emit 에 지워진다. `ChatList` 가 낙관적 렌더링용으로 override 한다.
   - 스크롤 시 `fetchData()`, 새로고침/작성·삭제 후 `refresh()` 를 호출한다. (mixin 이 제공)
   - family(댓글)는 `build(String boardId)` 로 인자를 받고, codegen 이 `commentListProvider(boardId)` 를 생성한다.
 - 각 도메인 repository 는 `PaginationRepository` 를 **상속**해 `table` 과 `fromJson`(+ 필요 시 `parentColumn`)만 지정한다.
@@ -191,6 +194,14 @@ features/<feature>/
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
 - **실시간 채팅**: `chat` 테이블이 `supabase_realtime` publication 에 있어야 한다.
   누락되면 **오류 없이 조용히** 멈춘다.
+  - **내가 보낸 메시지는 낙관적으로 먼저 그린다.** insert 왕복은 30ms 인데 그 행이
+    Realtime 을 타고 돌아오는 데 **평균 450ms** 가 걸려서, 기다렸다 그리면 눌러도
+    반응이 없는 것처럼 보인다. `ChatList.sendChat` 이 임시 말풍선을 먼저 넣고
+    `addChat` 이 `.select()` 로 되받은 진짜 행으로 바꿔치기한다.
+  - 임시 말풍선은 **스트림이 그 행을 실어 올 때까지** 남는다. insert 응답만 받고
+    지우면, 그 사이 다른 사람 메시지가 도착하는 순간 내 말풍선이 사라졌다 다시 나타난다.
+  - `chat` 에는 **DELETE 정책이 없다.** 클라이언트에서 `delete()` 를 불러도 조용히 0행이다.
+    테스트 데이터를 심었다면 계정 삭제(FK CASCADE)나 SQL 에디터로 지워야 한다.
 - **계정 삭제**: 클라이언트는 유저를 지울 수 없다. Edge Function `delete-account` 가
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
   - 비밀번호 재확인용 클라이언트(`checkClient`)는 **secret 키로 만들어야 한다.**

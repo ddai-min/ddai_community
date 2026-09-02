@@ -15,20 +15,30 @@ class ChatRepository extends PaginationRepository<ChatModel> {
         fromJson: (data) => ChatModel.fromJson(data),
       );
 
-  /// 채팅 메시지를 전송한다.
+  /// 채팅 메시지를 전송하고 **생성된 행**을 돌려준다. (실패 시 `null`)
   ///
-  /// 실시간 스트림으로 목록이 갱신되므로 별도 반환값은 없다.
-  static Future<void> addChat({
+  /// 실시간 스트림이 이 행을 다시 실어 보내주기까지 평균 450ms 가 걸린다.
+  /// 그동안 화면에 띄워 둔 임시 말풍선을 진짜 행으로 바꿔치기하려면 실제 `id` 가
+  /// 필요하므로 `.select()` 로 되받는다. ([ChatList.sendChat] 참고)
+  static Future<ChatModel?> addChat({
     required AddChatParams addChatParams,
   }) async {
     try {
-      await supabase.from('chat').insert({
-        'content': addChatParams.content,
-        'user_name': addChatParams.userName,
-        'user_uid': addChatParams.userUid,
-      });
+      final row = await supabase
+          .from('chat')
+          .insert({
+            'content': addChatParams.content,
+            'user_name': addChatParams.userName,
+            'user_uid': addChatParams.userUid,
+          })
+          .select()
+          .single();
+
+      return ChatModel.fromJson(row);
     } catch (error) {
       logger.e(error);
+
+      return null;
     }
   }
 }
