@@ -518,6 +518,10 @@ class BoardModel implements ModelWithId {
 > `shared_preferences_foundation` · `url_launcher_ios`)이 모두 여기 해당해
 > `pod install` 결과는 `Flutter` 팟 하나뿐이다. Xcode 프로젝트에 대한 SPM 마이그레이션은
 > 첫 `fvm flutter build ios` / `run` 때 툴이 자동으로 수행한다.
+>
+> **후속**: Flutter 프레임워크까지 SPM 으로 공급되어(`FlutterFramework` 패키지)
+> CocoaPods 가 완전히 불필요해졌다. `pod deintegrate` 로 걷어냈고
+> `Podfile` · `Podfile.lock` · `Pods/` 는 저장소에서 사라졌다.
 
 ---
 

@@ -286,6 +286,8 @@ Dart 쪽 스플래시 화면은 없다 — 네트워크 확인이 끝날 때까�
 - **버전**: `pubspec.yaml` 이 단일 출처다. iOS `project.pbxproj` 나 Android `build.gradle` 에
   버전을 적지 않는다. Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 기록되어
   pubspec 이 무시되므로 주의한다.
+- **iOS 의존성**: CocoaPods 를 쓰지 않는다. 플러그인과 Flutter 프레임워크 모두
+  Swift Package 로 공급되므로 `Podfile` 이 없는 것이 정상이다.
 - **Android Studio**: Flutter 프로젝트는 루트를 열어야 한다.
   `android/` 만 따로 열면 Gradle/JDK 설정이 프로젝트와 어긋난다.
 

@@ -192,6 +192,9 @@ features/<feature>/
   누락되면 **오류 없이 조용히** 멈춘다.
 - **계정 삭제**: 클라이언트는 유저를 지울 수 없다. Edge Function `delete-account` 가
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
+- **iOS 는 CocoaPods 를 쓰지 않는다.** 플러그인과 Flutter 프레임워크 모두 Swift Package 로
+  공급된다. `Podfile` · `Podfile.lock` · `Pods/` 가 없는 것이 정상이다.
+  CocoaPods 로만 배포되는 플러그인을 새로 넣으면 Flutter 가 `Podfile` 을 다시 만들어 준다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
   `android/.idea/` 설정이 프로젝트와 따로 놀며 Gradle/JDK 불일치 오류가 난다.
 - **스플래시는 네이티브뿐이다.** Dart 쪽에 스플래시 화면도, `/splash` 라우트도 없다.
