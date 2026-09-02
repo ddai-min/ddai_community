@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:ddai_community/core/constants/colors.dart';
+import 'package:ddai_community/core/utils/logger.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
+import 'package:ddai_community/features/splash/data/app_config_repository.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,65 +70,59 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     );
   }
 
-  /// Remote Config 의 `version_name` 과 현재 앱 버전을 비교해 강제 업데이트를 처리한다.
+  /// `app_config.version_name` 과 현재 앱 버전을 비교해 강제 업데이트를 처리한다.
   ///
   /// major 또는 minor 버전이 더 낮으면 업데이트를 안내하고 앱을 종료한다.
-  /// (patch 차이는 허용) 조회 자체가 실패하면 안전하게 앱을 종료한다.
+  /// (patch 차이는 허용) 조회나 파싱에 실패하면 업데이트 여부를 알 수 없으므로
+  /// 마찬가지로 안전하게 앱을 종료한다.
   Future<void> _checkUpdate() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await PackageInfo.fromPlatform();
+    final latestVersionName = await AppConfigRepository.getVersionName();
 
-    final remoteConfig = FirebaseRemoteConfig.instance;
+    if (latestVersionName == null) {
+      await _showExitDialog('업데이트를 확인할 수 없습니다.\n\n앱을 종료합니다.');
 
-    await remoteConfig.fetchAndActivate().then((value) async {
-      final currentVersionName = packageInfo.version;
-      final latestVersionName = remoteConfig.getString('version_name');
+      return;
+    }
 
-      // "x.y.z" 문자열을 정수 리스트로 변환해 자리별로 비교한다.
-      final currentVersionNameList = currentVersionName
-          .split('.')
-          .map(
-            (e) => int.parse(e),
-          )
-          .toList();
-      final latestVersionNameList = latestVersionName
-          .split('.')
-          .map(
-            (e) => int.parse(e),
-          )
-          .toList();
+    // "x.y.z" 문자열을 정수 리스트로 변환해 자리별로 비교한다.
+    final List<int> currentVersionNameList;
+    final List<int> latestVersionNameList;
 
-      // major 또는 minor 버전이 낮으면 강제 업데이트 대상이다. (patch 차이는 무시)
-      if (currentVersionNameList[0] < latestVersionNameList[0] ||
-          currentVersionNameList[1] < latestVersionNameList[1]) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return DefaultDialog(
-              contentText: '최신 버전으로 업데이트 해주세요.\n\n업데이트 후 이용 가능합니다.',
-              buttonText: '확인',
-              onPressed: () {
-                exit(0);
-              },
-            );
+    try {
+      currentVersionNameList =
+          packageInfo.version.split('.').map((e) => int.parse(e)).toList();
+      latestVersionNameList =
+          latestVersionName.split('.').map((e) => int.parse(e)).toList();
+    } catch (error) {
+      logger.e(error);
+
+      await _showExitDialog('업데이트를 확인할 수 없습니다.\n\n앱을 종료합니다.');
+
+      return;
+    }
+
+    // major 또는 minor 버전이 낮으면 강제 업데이트 대상이다. (patch 차이는 무시)
+    if (currentVersionNameList[0] < latestVersionNameList[0] ||
+        currentVersionNameList[1] < latestVersionNameList[1]) {
+      await _showExitDialog('최신 버전으로 업데이트 해주세요.\n\n업데이트 후 이용 가능합니다.');
+    }
+  }
+
+  /// 확인을 누르면 앱을 종료하는 안내 다이얼로그. (뒤로 닫을 수 없다)
+  Future<void> _showExitDialog(String contentText) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return DefaultDialog(
+          contentText: contentText,
+          buttonText: '확인',
+          onPressed: () {
+            exit(0);
           },
         );
-      }
-    }).catchError((error) async {
-      // Remote Config 조회 실패 시 업데이트 확인이 불가하므로 앱을 종료한다.
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return DefaultDialog(
-            contentText: '업데이트를 확인할 수 없습니다.\n\n앱을 종료합니다.',
-            buttonText: '확인',
-            onPressed: () {
-              exit(0);
-            },
-          );
-        },
-      );
-    });
+      },
+    );
   }
 }
