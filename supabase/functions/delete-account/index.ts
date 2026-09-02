@@ -33,7 +33,14 @@ Deno.serve(async (req) => {
       return json({ code: 'invalid_credentials' }, 401)
     }
 
-    const checkClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY)
+    // secret 키로 만든다. anon 키로 부르면 CAPTCHA 를 켰을 때 이 호출이 막힌다 —
+    // gotrue 는 signInWithPassword 도 captcha 보호 대상으로 잡는데, 여기서는
+    // 사람이 위젯을 푼 게 아니라 서버가 대조만 하는 것이라 낼 토큰이 없다.
+    // secret 키 클라이언트는 captcha 검증만 건너뛰고 비밀번호 대조는 그대로 수행한다.
+    // 세션은 대조용으로 한 번 쓰고 버리므로 저장/갱신을 끈다.
+    const checkClient = createClient(SUPABASE_URL, SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
     const { error } = await checkClient.auth.signInWithPassword({
       email: user.email!,
       password,

@@ -192,6 +192,13 @@ features/<feature>/
   누락되면 **오류 없이 조용히** 멈춘다.
 - **계정 삭제**: 클라이언트는 유저를 지울 수 없다. Edge Function `delete-account` 가
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
+  - 비밀번호 재확인용 클라이언트(`checkClient`)는 **secret 키로 만들어야 한다.**
+    anon 키로 만들면 CAPTCHA 를 켰을 때 이 `signInWithPassword` 가 captcha 보호에 걸려
+    비밀번호 있는 계정의 탈퇴가 통째로 막힌다. (익명 유저는 이 단계를 건너뛰므로
+    익명으로만 테스트하면 안 잡힌다) secret 키는 captcha 검증만 건너뛰고
+    비밀번호 대조는 그대로 수행한다 — 틀린 비밀번호는 여전히 거절된다.
+  - 반면 ① 신원 확인용 `userClient` 는 **anon 키 + 호출자 JWT** 그대로 두어야 한다.
+    "누가 부르는지"를 서버가 판정하는 자리라 secret 키로 바꾸면 의미가 없어진다.
 - **iOS 는 CocoaPods 를 쓰지 않는다.** 플러그인과 Flutter 프레임워크 모두 Swift Package 로
   공급된다. `Podfile` · `Podfile.lock` · `Pods/` 가 없는 것이 정상이다.
   CocoaPods 로만 배포되는 플러그인을 새로 넣으면 Flutter 가 `Podfile` 을 다시 만들어 준다.

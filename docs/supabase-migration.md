@@ -298,6 +298,22 @@ Dart 쪽은 `FunctionException.details['code']` 를 그대로 비교한다.
 처리 순서는 ① 호출자 JWT 로 신원 확인 → ② (익명이 아니면) 비밀번호 재확인 →
 ③ secret 키로 `auth.admin.deleteUser`. 연관 행은 FK CASCADE 로 함께 지워진다.
 
+②의 클라이언트는 처음에 anon 키로 만들었으나 **secret 키로 바꿨다.** CAPTCHA(§7) 를 켜면
+gotrue 가 `signInWithPassword` 도 보호 대상으로 잡는데, 이 호출은 사람이 위젯을 푼 게 아니라
+서버가 대조만 하는 것이라 낼 토큰이 없다. secret 키 클라이언트는 captcha 검증을 건너뛴다.
+①의 `userClient` 는 "누가 부르는지"를 판정하는 자리이므로 anon 키 + 호출자 JWT 그대로 둔다.
+
+secret 키가 비밀번호 대조까지 건너뛰지는 않는지 배포 후 실측했다.
+
+| # | 요청 | 결과 |
+| --- | --- | --- |
+| 2 | 틀린 비밀번호 | 401 `invalid_credentials` — 계정 생존 |
+| 3 | 빈 비밀번호 | 401 `invalid_credentials` |
+| 4 | 비밀번호 필드 누락 | 401 `invalid_credentials` |
+| 6 | 맞는 비밀번호 | 200 `{ok:true}` |
+| 7 | 삭제 후 재로그인 | 실패 (`invalid_credentials`) — 실제로 지워짐 |
+| 8 | 익명 유저, 비밀번호 없이 | 200 `{ok:true}` |
+
 Edge Function 런타임에는 신규 변수(`SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEYS` · `SUPABASE_SECRET_KEYS` · `SUPABASE_JWKS`)와
 레거시 변수(`SUPABASE_ANON_KEY` · `SUPABASE_SERVICE_ROLE_KEY`)가 **함께** 자동 주입된다.
 신규 변수명이 복수형이라 값이 단일 키가 아닐 수 있으므로, 위 코드는 형식이 확실한 레거시 변수명을 쓴다.
