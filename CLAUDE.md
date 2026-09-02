@@ -168,10 +168,15 @@ features/<feature>/
   patch 차이는 허용하며, **조회나 파싱이 실패하면 안내 후 `exit(0)`** 으로 앱을 종료한다.
   즉 `app_config` 에 `version_name` 행이 없으면 앱이 뜨지 않는다.
   `app_config` 의 SELECT 정책은 **`anon` 롤에도 열려 있어야 한다** — 스플래시가 로그인 전에 읽는다.
-- **iOS 앱 버전이 `pubspec` 을 무시한다**: `ios/Runner.xcodeproj/project.pbxproj` 에
-  `FLUTTER_BUILD_NAME = 1.5.0` / `FLUTTER_BUILD_NUMBER = 8` 이 빌드 설정으로 하드코딩돼
-  `Generated.xcconfig` 를 덮어쓴다. 그래서 iOS 앱은 자신을 **1.5.0** 으로 보고한다.
-  강제 업데이트를 걸려면 `version_name` 을 **1.6.0 이상**으로 올려야 한다. (기존 문제, 미수정)
+- **앱 버전의 단일 출처는 `pubspec.yaml` 이다.** 네이티브 쪽에 버전을 적지 않는다.
+  - iOS: `Info.plist` 가 `$(FLUTTER_BUILD_NAME)` / `$(FLUTTER_BUILD_NUMBER)` 를 참조하고,
+    Flutter 가 `Generated.xcconfig` 에 pubspec 값을 써 넣는다.
+    **`project.pbxproj` 에 `FLUTTER_BUILD_NAME` · `MARKETING_VERSION` 등을 넣지 말 것** —
+    프로젝트 빌드 설정이 xcconfig 를 이겨서 pubspec 이 무시된다.
+    (Xcode General 탭에서 버전을 고치면 정확히 이 상태가 된다. 실제로 한 번 겪었다)
+  - Android: `flutter.versionCode` / `flutter.versionName` 을 그대로 쓴다.
+    값이 없으면 조용히 틀린 버전으로 빌드하지 않고 Gradle 이 실패한다.
+  - 버전을 올릴 때는 **`pubspec.yaml` 한 줄만** 고치고, 필요하면 `app_config.version_name` 을 맞춘다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
 - **실시간 채팅**: `chat` 테이블이 `supabase_realtime` publication 에 있어야 한다.

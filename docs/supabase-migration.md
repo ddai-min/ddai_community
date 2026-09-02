@@ -861,36 +861,69 @@ await supabase.auth.signInWithPassword(email: email, password: password, captcha
 
 ---
 
-## ⚠️ 별건 발견 — iOS 앱 버전이 `pubspec` 을 무시한다
+## 별건 — 앱 버전 관리 정리 ✅ *(해결됨)*
 
 강제 업데이트를 검증하다 찾은 **기존 문제**다. (마이그레이션 이전 `7d044bb` 에도 있었다)
 
-`ios/Runner.xcodeproj/project.pbxproj` 에 빌드 설정이 하드코딩돼 있다.
+### 증상
+
+`pubspec.yaml` 을 바꿔도 iOS 앱 버전이 변하지 않았다. `Generated.xcconfig` 가 `1.4.1` 인데
+빌드된 앱은 `1.5.0` 을 보고했다. (클린 빌드로 확인)
+
+### 원인
+
+`ios/Runner.xcodeproj/project.pbxproj` 에 버전이 **빌드 설정으로 하드코딩**돼 있었다.
 
 ```
 FLUTTER_BUILD_NAME = 1.5.0;
 FLUTTER_BUILD_NUMBER = 8;
+MARKETING_VERSION = 1.5.0;
+CURRENT_PROJECT_VERSION = 8;
 ```
 
 `Info.plist` 는 `$(FLUTTER_BUILD_NAME)` 을 참조하고 Flutter 는 이 값을 `Generated.xcconfig` 에
-`pubspec` 기준으로 써 넣지만, **프로젝트 빌드 설정이 xcconfig 를 이긴다.**
-그래서 `pubspec` 을 바꿔도 iOS 앱 버전은 계속 `1.5.0` 이다. (클린 빌드로 확인)
+pubspec 기준으로 써 넣지만, **프로젝트 빌드 설정이 xcconfig 를 이긴다.**
+표준 Flutter iOS 템플릿에는 이 설정이 **아예 없다** — Xcode General 탭에서 버전을 고치면 생긴다.
 
-| 위치 | 값 |
+git 이력을 보면 원인이 분명하다. `1.3.0`·`1.4.0`·`1.4.1` 까지는 `pubspec` 과 `pbxproj` 가 항상 같이
+올라갔는데, 커밋 **`7192284 update: 1.5.0(8)`** 은 **`pbxproj` 만** 올리고 `pubspec` 을 빠뜨렸다.
+그 결과 iOS 는 `1.5.0(8)`, Android 는 `pubspec` 기준 `1.4.1(7)` 로 **서로 다른 버전이 나갔다.**
+
+Android 쪽도 `app/build.gradle` 이 `local.properties` 를 직접 파싱하고
+**폴백을 `"1.5.0"` / `"8"` 로 하드코딩**해 두어 같은 위험이 있었다.
+(`local.properties` 는 git 에 없으므로 새로 클론한 환경에서 폴백이 걸린다)
+
+### 조치
+
+`pubspec.yaml` 을 **단일 출처**로 만들었다.
+
+| 파일 | 조치 |
 | --- | --- |
-| `pubspec.yaml` | `1.4.1+7` |
-| `android/local.properties` (git 미추적) | `1.4.1` / `7` |
-| `android/app/build.gradle` 폴백 | `1.5.0` / `8` |
-| `ios/.../project.pbxproj` | **`1.5.0` / `8`** ← 실제 iOS 앱이 보고하는 값 |
-| `app_config.version_name` | `1.4.0` |
+| `pubspec.yaml` | `1.4.1+7` → **`1.5.0+8`** — iOS 가 실제로 내보내던 값에 맞춤 |
+| `ios/.../project.pbxproj` | 위 4개 설정 **12줄 제거** (표준 템플릿 상태로 복귀) |
+| `android/app/build.gradle` | `local.properties` 수동 파싱 + 하드코딩 폴백 제거 → `flutter.versionCode` / `flutter.versionName` |
 
-**강제 업데이트에 직접 영향이 있다.** 현재 iOS 앱은 자신을 `1.5.0` 으로 보고하므로,
-업데이트를 강제하려면 `app_config.version_name` 을 `1.6.0` 이상으로 올려야 한다.
-`1.5.x` 로 올려도 아무 일도 일어나지 않는다.
-`local.properties` 는 git 에 없으므로 **새로 클론한 환경의 Android 도 `1.5.0`** 으로 빌드된다.
+`1.4.1+7` 이 아니라 `1.5.0+8` 로 맞춘 이유: iOS 가 이미 `1.5.0(8)` 로 배포돼 있어,
+낮추면 스토어가 빌드 번호 역행으로 업로드를 거부한다.
 
-권장: `pbxproj` 의 두 줄을 지워 `pubspec` 이 단일 출처가 되게 하고,
-`build.gradle` 의 폴백도 실제 버전과 맞춘다. (이번 마이그레이션 범위 밖이라 손대지 않았다)
+`flutter.versionCode` / `versionName` 은 값이 없으면 `GradleException` 을 던진다.
+조용히 틀린 버전으로 빌드되는 것보다 낫다.
+
+### 검증
+
+`pubspec` 을 구분 가능한 값(`9.9.9+99`)으로 바꿔 양쪽을 빌드해 확인한 뒤 원복했다.
+
+| | 테스트 값 빌드 | 원복 후 |
+| --- | --- | --- |
+| Android APK | `versionCode='99' versionName='9.9.9'` | `versionCode='8' versionName='1.5.0'` |
+| iOS `Info.plist` | `9.9.9` / `99` | `1.5.0` / `8` |
+| `pubspec.yaml` | `9.9.9+99` | `1.5.0+8` |
+
+> 앞으로 버전을 올릴 때는 **`pubspec.yaml` 한 줄만** 고친다.
+> Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 다시 기록되어 같은 문제가 재발한다.
+
+> 현재 앱은 `1.5.0` 이므로 강제 업데이트를 걸려면
+> `app_config.version_name` 을 **1.6.0 이상**으로 올려야 한다. (현재 값 `1.4.0`)
 
 ---
 

@@ -211,9 +211,8 @@ insert into public.app_config (key, value) values ('version_name', '1.4.0');
 > 즉 `version_name` 행이 없으면 스플래시에서 앱이 뜨지 않는다.
 > `app_config` 의 SELECT 정책은 **`anon` 롤에도 열려 있어야 한다** — 스플래시가 로그인 전에 읽는다.
 
-> **주의**: iOS 앱 버전은 `pubspec.yaml`(`1.4.1`)이 아니라
-> `ios/Runner.xcodeproj/project.pbxproj` 에 하드코딩된 `FLUTTER_BUILD_NAME = 1.5.0` 을 따른다.
-> 업데이트를 강제하려면 `version_name` 을 **1.6.0 이상**으로 올려야 한다.
+> 현재 앱 버전은 `pubspec.yaml` 의 `1.5.0+8` 이다. 업데이트를 강제하려면
+> `version_name` 을 **1.6.0 이상**(major 또는 minor 가 더 큰 값)으로 올린다.
 
 ## 사용 패키지
 
@@ -262,6 +261,9 @@ insert into public.app_config (key, value) values ('version_name', '1.4.0');
 - **문서 주석**: 공개 최상위 선언에는 `///` 주석을 단다.
 - **정적 분석**: `fvm flutter analyze` 가 0 issue 인 상태를 유지한다.
   (`analysis_options.yaml` 에서 `use_build_context_synchronously` 만 `ignore` 로 완화)
+- **버전**: `pubspec.yaml` 이 단일 출처다. iOS `project.pbxproj` 나 Android `build.gradle` 에
+  버전을 적지 않는다. Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 기록되어
+  pubspec 이 무시되므로 주의한다.
 - **Android Studio**: Flutter 프로젝트는 루트를 열어야 한다.
   `android/` 만 따로 열면 Gradle/JDK 설정이 프로젝트와 어긋난다.
 

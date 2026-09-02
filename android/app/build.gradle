@@ -5,24 +5,6 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-if (flutterVersionCode == null) {
-    flutterVersionCode = "8"
-}
-
-def flutterVersionName = localProperties.getProperty("flutter.versionName")
-if (flutterVersionName == null) {
-    flutterVersionName = "1.5.0"
-}
-
 android {
     namespace = "com.ddai.ddai_community"
     compileSdk = 36
@@ -39,8 +21,10 @@ android {
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk = 26
         targetSdk = 36
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
+        // 버전은 pubspec.yaml 이 유일한 출처다. Flutter Gradle Plugin 이 local.properties
+        // 를 통해 값을 넘겨주며, 값이 없으면 조용히 틀린 버전으로 빌드하지 않고 실패한다.
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
