@@ -26,7 +26,8 @@ Flutter + Supabase 기반 커뮤니티 앱.
 - **커뮤니티 보호**: 게시글/작성자 신고, 유저 차단, EULA 약관 동의
   - 차단은 **RLS 정책이 서버에서 강제**한다. 차단한 유저의 글은 목록에서 사라지고,
     클라이언트를 조작해도 조회되지 않는다.
-- **강제 업데이트**: `app_config` 테이블의 최신 버전과 비교해 구버전이면 업데이트 유도
+- **강제 업데이트**: `app_config` 테이블의 최신 버전과 비교해 구버전이면 안내 후 종료
+  (`runApp()` 이전에 확인하므로 별도 스플래시 화면이 필요 없다)
 
 ## 프로젝트 구조
 
@@ -38,12 +39,13 @@ lib/
 ├── main.dart                     # 진입점 (Bootstrap 실행 → App 실행)
 │
 ├── app/                          # 앱 전역 조립
-│   ├── app.dart                  #   App 루트 위젯 — 인증 상태 동기화 + MaterialApp.router
+│   ├── app.dart                  #   App 루트 위젯 — 인증 동기화 · 라우터/차단 화면 분기
+│   ├── app_update.dart           #   강제 업데이트 확인 (UI 없는 순수 로직)
 │   └── bootstrap.dart            #   .env 로드 & Supabase 초기화
 │
 ├── core/                         # 기능에 종속되지 않는 공통 자산
 │   ├── constants/                #   색상 · Supabase 환경 변수
-│   ├── data/                     #   supabase 클라이언트 getter · PaginationRepository
+│   ├── data/                     #   supabase 클라이언트 getter · PaginationRepository · AppConfigRepository
 │   ├── models/                   #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/                #   PaginationMixin · sessionUidProvider
 │   ├── router/                   #   go_router 라우트 정의
@@ -56,7 +58,6 @@ lib/
     ├── board/                    #   게시글 · 댓글
     ├── chat/                     #   실시간 채팅
     ├── home/                     #   홈 탭 (게시판/채팅/프로필)
-    ├── splash/                   #   스플래시 + 강제 업데이트
     └── user/                     #   프로필 · 신고 · 전역 유저 상태 · 오픈소스 라이선스
 
 supabase/
@@ -123,7 +124,6 @@ Screen ──watch/read──▶ Provider(Riverpod) ──▶ Repository ──�
 
 | 경로 | 이름 | 화면 | 전달 값 |
 | --- | --- | --- | --- |
-| `/splash` | `splash` | `SplashScreen` | — |
 | `/login` | `login` | `LoginScreen` | — |
 | `/login/eula` | `eula` | `EulaScreen` | query `isAnonymous` |
 | `/login/sign_up` | `sign_up` | `SignUpScreen` | — |
@@ -133,7 +133,9 @@ Screen ──watch/read──▶ Provider(Riverpod) ──▶ Repository ──�
 | `/profile_edit` | `profile_edit` | `ProfileEditScreen` | query `userName`, `email` |
 | `/license` | `license` | `LicenseScreen` | — |
 
-앱은 항상 `/splash` 로 시작해, 강제 업데이트 확인 후 로그인 여부에 따라 `/` 또는 `/login` 으로 분기한다.
+**스플래시 라우트는 없다.** 강제 업데이트 확인은 `runApp()` 이전에 끝나고,
+시작 화면은 세션 유무에 따라 곧바로 `/` 또는 `/login` 이 된다.
+확인 결과가 정상이 아니면 라우터를 아예 띄우지 않고 안내 후 앱을 종료한다.
 
 ## 데이터 모델 (Postgres)
 
@@ -257,8 +259,8 @@ fvm dart run flutter_native_splash:create   # pubspec 의 flutter_native_splash 
 ```
 
 `main()` 이 `FlutterNativeSplash.preserve()` 로 스플래시를 붙잡아 두고,
-강제 업데이트 확인과 초기 라우팅이 끝나면 `SplashScreen` 이 `remove()` 한다.
-따라서 네트워크 확인이 끝날 때까지 스플래시가 유지된다.
+초기화와 강제 업데이트 확인이 끝나 **첫 화면이 그려진 뒤** `App` 이 `remove()` 한다.
+Dart 쪽 스플래시 화면은 없다 — 네트워크 확인이 끝날 때까지 네이티브 스플래시가 그대로 유지된다.
 
 ## 개발 규칙
 

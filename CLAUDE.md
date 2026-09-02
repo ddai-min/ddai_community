@@ -46,12 +46,13 @@ lib/
 ├── main.dart                  # 진입점 (Bootstrap 실행 → App 실행)
 │
 ├── app/                       # 앱 전역 조립
-│   ├── app.dart               #   App 루트 위젯 (인증 상태 동기화 + MaterialApp.router)
+│   ├── app.dart               #   App 루트 위젯 (인증 동기화 · 라우터/차단 화면 분기)
+│   ├── app_update.dart        #   강제 업데이트 확인 (UI 없는 순수 로직)
 │   └── bootstrap.dart         #   .env 로드 + Supabase 초기화
 │
 ├── core/                      # 기능에 종속되지 않는 공통 자산
 │   ├── constants/             #   colors · supabase_env
-│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository
+│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository
 │   ├── models/                #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/             #   PaginationMixin · sessionUidProvider
 │   ├── router/                #   go_router 라우트 정의
@@ -64,7 +65,6 @@ lib/
     ├── board/                 #   게시글 · 댓글
     ├── chat/                  #   실시간 채팅
     ├── home/                  #   홈 탭 (게시판/채팅/프로필)
-    ├── splash/                #   스플래시 + 강제 업데이트(app_config 조회)
     └── user/                  #   프로필 · 신고 · 전역 유저 상태 · 라이선스
 
 supabase/
@@ -92,8 +92,10 @@ features/<feature>/
   **역참조 예외는 없다.** (예전에는 `pagination_provider` 가 차단 필터용 uid 때문에
   `features/user` 의 `userMeProvider` 를 참조했으나, 차단이 RLS 로 옮겨가면서 해소됐다.
   목록 재생성 트리거는 core 안의 `sessionUidProvider` 가 담당한다)
-- 진입점: `main.dart` → `app/bootstrap.dart`(`.env` 로드 + `Supabase.initialize`) → `app/app.dart`
-  → `MaterialApp.router`(초기 경로 `/splash`)
+- 진입점: `main.dart` → `app/bootstrap.dart`(`.env` 로드 + `Supabase.initialize`)
+  → `app/app_update.dart`(강제 업데이트 확인) → `app/app.dart`
+- **스플래시 화면(Dart)은 없다.** 시작에 필요한 판단은 `runApp()` **이전에** 끝내고,
+  첫 화면을 곧바로 목적지(`/` 또는 `/login`)로 띄운다. 그동안 보이는 것은 네이티브 스플래시다.
 
 ### 핵심 패턴: 제네릭 페이지네이션
 
@@ -168,7 +170,7 @@ features/<feature>/
   이전 버전(예: 3.41.6/meta 1.17)에서는 analyzer 충돌로 설치 불가하니 Flutter 를 낮추지 말 것.
 - **build_runner**: 최신 버전에서 `--delete-conflicting-outputs` 플래그는 제거됐고 기본 동작이다.
 - **정적 분석**: `analysis_options.yaml` 에서 `use_build_context_synchronously` 를 `ignore` 로 설정해 두었다.
-- **강제 업데이트**: `app_config` 테이블의 `version_name` 과 앱 버전(major/minor)을 비교한다. (`splash_screen.dart`)
+- **강제 업데이트**: `app_config` 테이블의 `version_name` 과 앱 버전(major/minor)을 비교한다. (`app/app_update.dart`)
   patch 차이는 허용하며, **조회나 파싱이 실패하면 안내 후 `exit(0)`** 으로 앱을 종료한다.
   즉 `app_config` 에 `version_name` 행이 없으면 앱이 뜨지 않는다.
   `app_config` 의 SELECT 정책은 **`anon` 롤에도 열려 있어야 한다** — 스플래시가 로그인 전에 읽는다.
@@ -189,12 +191,12 @@ features/<feature>/
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
   `android/.idea/` 설정이 프로젝트와 따로 놀며 Gradle/JDK 불일치 오류가 난다.
-- **스플래시는 네이티브다.** 비주얼은 `flutter_native_splash` 가 생성한 네이티브 리소스가
-  담당하고, Dart 쪽 `SplashScreen` 은 **보이지 않는 라우팅 관문**일 뿐이다.
-  - `main()` 이 `FlutterNativeSplash.preserve()` 로 붙잡고, 강제 업데이트 확인과 라우팅이
-    끝난 뒤 `SplashScreen` 이 `remove()` 한다. **`remove()` 를 빠뜨리면 앱이 스플래시에서 멈춘다.**
-  - 네이티브 스플래시 위에는 다이얼로그가 보이지 않는다. 그래서 종료 안내
-    다이얼로그는 `remove()` 를 먼저 부른다.
+- **스플래시는 네이티브뿐이다.** Dart 쪽에 스플래시 화면도, `/splash` 라우트도 없다.
+  - `main()` 이 `FlutterNativeSplash.preserve()` 로 붙잡고, `App` 이 **첫 프레임 이후**
+    `remove()` 한다. **`remove()` 를 빠뜨리면 앱이 스플래시에서 멈춘다.**
+  - 시작 화면은 `supabase.auth.currentSession` 으로 정한다. `Supabase.initialize` 가
+    저장된 세션 복원까지 마친 뒤라 이 값은 이미 정확하다.
+    (`userMeProvider` 는 인증 리스너가 비동기로 채우므로 이 시점엔 아직 비어 있을 수 있다)
   - 이미지/색을 바꾸면 `fvm dart run flutter_native_splash:create` 로 네이티브 리소스를 재생성한다.
     Android 12+ 는 아이콘이 원으로 마스킹되므로 1152px 캔버스의 중앙 768px 안에 내용이 있어야 한다.
 
@@ -212,8 +214,8 @@ features/<feature>/
 | `lib/core/providers/pagination_provider.dart` | 목록 공통 로직 (`PaginationMixin`) |
 | `lib/core/providers/session_provider.dart` | 세션 uid — 목록 재생성 트리거 |
 | `lib/features/auth/data/auth_repository.dart` | 회원가입/로그인/로그아웃/탈퇴/차단 · `AuthExceptionCode` |
-| `lib/features/splash/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
-| `lib/features/splash/presentation/screens/splash_screen.dart` | 강제 업데이트 확인 + 초기 라우팅 (화면은 네이티브 스플래시에 가려 보이지 않는다) |
+| `lib/core/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
+| `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |
 | `lib/features/user/presentation/providers/user_me_provider.dart` | 전역 로그인 유저 상태 (`userMeProvider`) |
 | `lib/core/widgets/default_layout.dart` | 공통 Scaffold (`DefaultLayout`) |

@@ -4,7 +4,6 @@ import 'package:ddai_community/features/auth/presentation/screens/sign_up_screen
 import 'package:ddai_community/features/board/presentation/screens/board_create_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_detail_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
-import 'package:ddai_community/features/splash/presentation/screens/splash_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -13,13 +12,9 @@ import 'package:go_router/go_router.dart';
 ///
 /// 로그인 플로우(`/login` 하위의 `/eula`·`/sign_up`)와 메인 플로우
 /// (`/` 하위의 게시글 상세/작성, 프로필 수정, 라이선스)로 구성된다.
+/// 시작 위치는 세션 유무에 따라 `app/app.dart` 가 정한다. (스플래시 라우트는 없다)
 /// 화면 간 값 전달은 path parameter(`:id`)와 query parameter(`isAnonymous` 등)를 사용한다.
 List<GoRoute> routes = [
-  GoRoute(
-    path: '/splash',
-    name: SplashScreen.routeName,
-    builder: (_, _) => const SplashScreen(),
-  ),
   GoRoute(
     path: '/login',
     name: LoginScreen.routeName,
