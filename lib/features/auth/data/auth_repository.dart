@@ -215,9 +215,12 @@ class AuthRepository {
         ),
       );
 
-      await supabase.from('profile').update({
-        'user_name': userName,
-      }).eq('id', user.id);
+      await supabase
+          .from('profile')
+          .update({
+            'user_name': userName,
+          })
+          .eq('id', user.id);
 
       return true;
     } catch (error) {
@@ -320,16 +323,14 @@ class AuthRepository {
 
     return switch (error.code) {
       'user_already_exists' ||
-      'email_exists' =>
-        AuthExceptionCode.emailAlreadyInUse,
+      'email_exists' => AuthExceptionCode.emailAlreadyInUse,
       'weak_password' => AuthExceptionCode.weakPassword,
       'invalid_credentials' => AuthExceptionCode.invalidCredential,
       'email_not_confirmed' => AuthExceptionCode.emailNotConfirmed,
       'anonymous_provider_disabled' => AuthExceptionCode.anonymousDisabled,
       'session_not_found' || 'session_missing' => AuthExceptionCode.noUser,
       'over_request_rate_limit' ||
-      'over_email_send_rate_limit' =>
-        AuthExceptionCode.tooManyRequests,
+      'over_email_send_rate_limit' => AuthExceptionCode.tooManyRequests,
       _ => AuthExceptionCode.unknownError,
     };
   }

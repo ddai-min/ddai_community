@@ -66,7 +66,7 @@ class ProfileScreen extends ConsumerWidget {
               color: Colors.grey[600],
               fontSize: 14.0,
             ),
-          )
+          ),
         ],
       ),
     );

@@ -12,10 +12,10 @@ part 'user_me_provider.g.dart';
 class UserMe extends _$UserMe {
   @override
   UserModel build() => UserModel(
-        id: '',
-        userName: '',
-        isAnonymous: false,
-      );
+    id: '',
+    userName: '',
+    isAnonymous: false,
+  );
 
   /// 콜백으로 현재 상태를 변환해 갱신한다.
   void update(UserModel Function(UserModel state) cb) => state = cb(state);

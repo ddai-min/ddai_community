@@ -53,7 +53,9 @@ class _AppState extends ConsumerState<App> {
 
       if (user == null) {
         // 로그아웃(비로그인) 상태: 빈 유저로 초기화한다.
-        ref.read(userMeProvider.notifier).update(
+        ref
+            .read(userMeProvider.notifier)
+            .update(
               (userModel) => UserModel(
                 id: '',
                 userName: '',

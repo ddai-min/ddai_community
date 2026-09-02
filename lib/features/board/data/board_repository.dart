@@ -10,10 +10,10 @@ import 'package:ddai_community/features/board/domain/board_parameter.dart';
 /// 단건 조회·생성·삭제는 정적 메서드로 제공한다.
 class BoardRepository extends PaginationRepository<BoardModel> {
   BoardRepository()
-      : super(
-          table: TablePath.board,
-          fromJson: (data) => BoardModel.fromJson(data),
-        );
+    : super(
+        table: TablePath.board,
+        fromJson: (data) => BoardModel.fromJson(data),
+      );
 
   /// 게시글 1건과 그 댓글 목록(오래된 순)을 함께 조회한다.
   ///
@@ -70,8 +70,11 @@ class BoardRepository extends PaginationRepository<BoardModel> {
     required String searchId,
   }) async {
     try {
-      final deletedRows =
-          await supabase.from('board').delete().eq('id', searchId).select('id');
+      final deletedRows = await supabase
+          .from('board')
+          .delete()
+          .eq('id', searchId)
+          .select('id');
 
       return deletedRows.isNotEmpty;
     } catch (error) {

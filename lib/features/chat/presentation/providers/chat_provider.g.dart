@@ -90,7 +90,7 @@ final class ChatListProvider
   }
 }
 
-String _$chatListHash() => r'e41ac7cd3b0ea09acc4a57ff19942d77a2d960c4';
+String _$chatListHash() => r'd993ba9cd9b437928d7aef152b4938657ce50f94';
 
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
 

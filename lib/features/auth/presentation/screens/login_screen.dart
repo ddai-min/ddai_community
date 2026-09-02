@@ -43,7 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final appBar = AppBar();
-    final availableHeight = MediaQuery.of(context).size.height -
+    final availableHeight =
+        MediaQuery.of(context).size.height -
         appBar.preferredSize.height -
         MediaQuery.of(context).padding.top;
 

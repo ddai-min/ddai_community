@@ -74,10 +74,9 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
           barrierDismissible: false,
           builder: (context) {
             return DefaultDialog(
-              contentText:
-                  result.errorCode == AuthExceptionCode.tooManyRequests
-                      ? '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.'
-                      : '오류가 발생했습니다.\n다시 시도해주세요.',
+              contentText: result.errorCode == AuthExceptionCode.tooManyRequests
+                  ? '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.'
+                  : '오류가 발생했습니다.\n다시 시도해주세요.',
               buttonText: '확인',
               onPressed: () {
                 context.goNamed(
@@ -107,18 +106,21 @@ class _Body extends StatelessWidget {
         children: [
           _sectionTitle('최종 사용자 사용권 계약 (EULA)'),
           const TextSpan(
-            text: '\n본 앱을 설치하고 사용하는 경우, 귀하는 아래의 조건에 동의하는 것으로 간주됩니다. '
+            text:
+                '\n본 앱을 설치하고 사용하는 경우, 귀하는 아래의 조건에 동의하는 것으로 간주됩니다. '
                 '본 약관에 동의하지 않는 경우 앱을 사용하지 마십시오.\n\n',
           ),
           _sectionTitle('1. 사용자 의무'),
           const TextSpan(
-            text: '- 귀하는 본 앱을 합법적이고 책임 있는 방식으로 사용해야 합니다.\n'
+            text:
+                '- 귀하는 본 앱을 합법적이고 책임 있는 방식으로 사용해야 합니다.\n'
                 '- 타인의 권리를 침해하거나 불쾌감을 주는 콘텐츠를 생성, 공유, 게시하거나 '
                 '타 사용자에게 피해를 주는 행위를 해서는 안 됩니다.\n\n',
           ),
           _sectionTitle('2. 금지된 행위'),
           const TextSpan(
-            text: '본 앱은 다음 행위를 엄격히 금지합니다:\n'
+            text:
+                '본 앱은 다음 행위를 엄격히 금지합니다:\n'
                 '- 욕설, 혐오 표현, 폭력적 또는 선정적인 콘텐츠 게시\n'
                 '- 타인을 괴롭히거나, 차별하거나, 학대하는 행위\n'
                 '- 사칭, 허위 정보 유포\n'
@@ -135,7 +137,8 @@ class _Body extends StatelessWidget {
           ),
           _sectionTitle('4. 사용자 콘텐츠 책임'),
           const TextSpan(
-            text: '사용자가 앱 내에 게시한 모든 콘텐츠는 사용자의 책임 하에 있으며, '
+            text:
+                '사용자가 앱 내에 게시한 모든 콘텐츠는 사용자의 책임 하에 있으며, '
                 '운영자는 콘텐츠의 적절성, 신뢰성, 법적 책임 등에 대해 어떠한 보증도 하지 않습니다.\n'
                 '불쾌하거나 위법한 콘텐츠는 신고 기능을 통해 제보해주시기 바랍니다.\n\n',
           ),

@@ -46,8 +46,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   void dispose() {
     passwordTextController.removeListener(_passwordTextControllerListener);
-    passwordVerifyTextController
-        .removeListener(_passwordTextControllerListener);
+    passwordVerifyTextController.removeListener(
+      _passwordTextControllerListener,
+    );
 
     emailTextController.dispose();
     passwordTextController.dispose();
@@ -147,8 +148,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             );
           },
         );
-      } else if (result.errorCode ==
-          AuthExceptionCode.emailAlreadyInUse) {
+      } else if (result.errorCode == AuthExceptionCode.emailAlreadyInUse) {
         setState(() {
           emailErrorText = '이미 사용 중인 이메일입니다.';
         });

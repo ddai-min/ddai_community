@@ -91,7 +91,7 @@ final class BoardListProvider
   }
 }
 
-String _$boardListHash() => r'9c16274a64ccd28c4191a82e4362b5860bcde95a';
+String _$boardListHash() => r'7acc66d82b2354707901cc7c6f3a57c839cb0464';
 
 /// 게시글 목록(페이지네이션) Notifier.
 

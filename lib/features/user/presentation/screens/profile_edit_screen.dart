@@ -164,8 +164,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 barrierDismissible: false,
                 builder: (context) {
                   return DefaultDialog(
-                    contentText: result.errorCode ==
-                            AuthExceptionCode.invalidCredential
+                    contentText:
+                        result.errorCode == AuthExceptionCode.invalidCredential
                         ? '비밀번호가\n일치하지 않습니다.'
                         : '계정 삭제 중 오류가 발생했습니다.\n다시 시도해주세요.',
                     buttonText: '확인',

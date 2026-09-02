@@ -10,10 +10,10 @@ import 'package:ddai_community/features/chat/domain/chat_parameter.dart';
 /// (Realtime 이 켜져 있어야 한다 — `alter publication supabase_realtime add table public.chat`)
 class ChatRepository extends PaginationRepository<ChatModel> {
   ChatRepository()
-      : super(
-          table: TablePath.chat,
-          fromJson: (data) => ChatModel.fromJson(data),
-        );
+    : super(
+        table: TablePath.chat,
+        fromJson: (data) => ChatModel.fromJson(data),
+      );
 
   /// 채팅 메시지를 전송한다.
   ///

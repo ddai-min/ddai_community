@@ -35,10 +35,14 @@ class AppUpdate {
       final packageInfo = await PackageInfo.fromPlatform();
 
       // "x.y.z" 문자열을 정수 리스트로 변환해 자리별로 비교한다.
-      final currentVersionNameList =
-          packageInfo.version.split('.').map((e) => int.parse(e)).toList();
-      final latestVersionNameList =
-          latestVersionName.split('.').map((e) => int.parse(e)).toList();
+      final currentVersionNameList = packageInfo.version
+          .split('.')
+          .map((e) => int.parse(e))
+          .toList();
+      final latestVersionNameList = latestVersionName
+          .split('.')
+          .map((e) => int.parse(e))
+          .toList();
 
       // major 또는 minor 버전이 낮으면 강제 업데이트 대상이다.
       if (currentVersionNameList[0] < latestVersionNameList[0] ||
