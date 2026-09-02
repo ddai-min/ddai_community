@@ -1,11 +1,11 @@
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
+import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -112,7 +112,7 @@ class ProfileScreen extends ConsumerWidget {
           contentText: '정말로 로그아웃 하시겠습니까?',
           buttonText: '로그아웃',
           onPressed: () async {
-            await FirebaseAuth.instance.signOut();
+            await AuthRepository.logout();
 
             context.goNamed(
               LoginScreen.routeName,

@@ -6,7 +6,6 @@ import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/eula_screen.dart';
 import 'package:ddai_community/features/auth/presentation/widgets/login_text_field.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
-import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,14 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         isLoginError = false;
       });
 
-      ref.read(userMeProvider.notifier).update(
-            (model) => UserModel(
-              id: result.user!.uid,
-              userName: result.user!.displayName ?? result.user!.email!,
-              isAnonymous: false,
-              email: result.user!.email,
-            ),
-          );
+      ref.read(userMeProvider.notifier).update((model) => result.user!);
 
       context.goNamed(
         HomeTab.routeName,

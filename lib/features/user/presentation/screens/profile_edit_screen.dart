@@ -9,7 +9,6 @@ import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -138,7 +137,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             DefaultLoadingOverlay.showLoading(context);
 
             final result = await AuthRepository.deleteUser(
-              email: widget.email,
               password: passwordTextController.text,
             );
 
@@ -167,7 +165,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 builder: (context) {
                   return DefaultDialog(
                     contentText: result.errorCode ==
-                            FirebaseAuthExceptionCode.invalidCredential
+                            AuthExceptionCode.invalidCredential
                         ? '비밀번호가\n일치하지 않습니다.'
                         : '계정 삭제 중 오류가 발생했습니다.\n다시 시도해주세요.',
                     buttonText: '확인',
@@ -185,20 +183,36 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   void _editProfile() async {
-    DefaultLoadingOverlay.showLoading(context);
-
-    if (widget.userName != nicknameTextController.text) {
-      if (!formKey.currentState!.validate()) {
-        DefaultLoadingOverlay.hideLoading(context);
-
-        return;
-      }
-
-      await FirebaseAuth.instance.currentUser
-          ?.updateDisplayName(nicknameTextController.text);
+    // 수정하기 버튼은 닉네임이 바뀐 경우에만 활성화되므로 값 비교는 생략한다.
+    if (!formKey.currentState!.validate()) {
+      return;
     }
 
+    DefaultLoadingOverlay.showLoading(context);
+
+    final isSuccess = await AuthRepository.updateUserName(
+      userName: nicknameTextController.text,
+    );
+
     DefaultLoadingOverlay.hideLoading(context);
+
+    if (!isSuccess) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return DefaultDialog(
+            contentText: '프로필 수정 중\n오류가 발생했습니다.\n다시 시도해주세요.',
+            buttonText: '확인',
+            onPressed: () {
+              context.pop();
+            },
+          );
+        },
+      );
+
+      return;
+    }
 
     showDialog(
       context: context,

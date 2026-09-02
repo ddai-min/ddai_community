@@ -1,4 +1,3 @@
-import 'package:ddai_community/core/utils/data_utils.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
@@ -7,7 +6,6 @@ import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
-import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,15 +59,7 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
       final result = await AuthRepository.loginAnonymous();
 
       if (result.isSuccess) {
-        ref.read(userMeProvider.notifier).update(
-              (user) => UserModel(
-                id: result.user!.uid,
-                userName: DataUtils.setAnonymousName(
-                  uid: result.user!.uid,
-                ),
-                isAnonymous: true,
-              ),
-            );
+        ref.read(userMeProvider.notifier).update((user) => result.user!);
 
         DefaultLoadingOverlay.hideLoading(context);
 
@@ -85,7 +75,7 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
           builder: (context) {
             return DefaultDialog(
               contentText:
-                  result.errorCode == FirebaseAuthExceptionCode.tooManyRequests
+                  result.errorCode == AuthExceptionCode.tooManyRequests
                       ? '너무 많은 익명 생성 요청이 발생했습니다.\n회원가입을 하시거나\n잠시 후 다시 시도해주세요.'
                       : '오류가 발생했습니다.\n다시 시도해주세요.',
               buttonText: '확인',

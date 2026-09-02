@@ -1,17 +1,18 @@
+import 'package:ddai_community/core/data/supabase_client.dart';
 import 'package:ddai_community/core/router/router.dart';
 import 'package:ddai_community/core/theme/app_theme.dart';
-import 'package:ddai_community/core/utils/data_utils.dart';
 import 'package:ddai_community/core/utils/logger.dart';
+import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 앱 루트 위젯.
 ///
-/// Firebase 인증 상태를 전역 유저 상태([userMeProvider])에 동기화하고,
+/// Supabase 인증 상태를 전역 유저 상태([userMeProvider])에 동기화하고,
 /// 라우터([routes])와 테마([AppTheme])를 주입한 `MaterialApp.router` 를 구성한다.
 class App extends ConsumerStatefulWidget {
   const App({super.key});
@@ -25,8 +26,12 @@ class _AppState extends ConsumerState<App> {
   void initState() {
     super.initState();
 
-    // Firebase 인증 상태 변화를 구독해 전역 유저 상태(userMeProvider)를 동기화한다.
-    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    // Supabase 인증 상태 변화를 구독해 전역 유저 상태(userMeProvider)를 동기화한다.
+    // 앱 시작 시 저장된 세션 복원(initialSession), 로그인/로그아웃뿐 아니라
+    // 프로필 수정(userUpdated) 때도 이벤트가 오므로 표시 이름이 자동으로 따라온다.
+    supabase.auth.onAuthStateChange.listen((AuthState authState) {
+      final user = authState.session?.user;
+
       if (user == null) {
         // 로그아웃(비로그인) 상태: 빈 유저로 초기화한다.
         ref.read(userMeProvider.notifier).update(
@@ -37,31 +42,13 @@ class _AppState extends ConsumerState<App> {
               ),
             );
       } else {
-        if (user.isAnonymous) {
-          // 익명 로그인: uid 기반의 익명 표시 이름을 부여한다.
-          ref.read(userMeProvider.notifier).update(
-                (userModel) => UserModel(
-                  id: user.uid,
-                  userName: DataUtils.setAnonymousName(
-                    uid: user.uid,
-                  ),
-                  isAnonymous: true,
-                ),
-              );
-        } else {
-          // 이메일 로그인: displayName(없으면 email)을 표시 이름으로 사용한다.
-          ref.read(userMeProvider.notifier).update(
-                (userModel) => UserModel(
-                  id: user.uid,
-                  userName: user.displayName ?? user.email!,
-                  isAnonymous: false,
-                  email: user.email,
-                ),
-              );
-        }
+        // 익명/이메일 분기는 repository 가 담당한다. (표시 이름 규칙을 한곳에 둔다)
+        ref
+            .read(userMeProvider.notifier)
+            .update((userModel) => AuthRepository.userModelFrom(user));
       }
 
-      logger.d(user);
+      logger.d('${authState.event} / ${user?.id}');
     });
   }
 
