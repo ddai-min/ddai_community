@@ -1165,6 +1165,69 @@ TRUNCATE 를 발행하지 않아 실제 도달 경로는 없다.
 
 ---
 
+## 별건 — 세션 저장소를 보안 저장소로 ✅ *(해결됨)*
+
+"비밀번호가 어떻게 저장되나" 를 확인하다 나온 건이다. 비밀번호는 앱 어디에도 없었지만
+**세션(refresh token)이 평문으로 디스크에 남아 있었다.**
+
+### 원래 상태
+
+| | |
+| --- | --- |
+| 비밀번호 | `auth.users.encrypted_password` — bcrypt `$2a$`, cost 10, 60자 (GoTrue v2.196.0) |
+| 앱의 비밀번호 보관 | 없음. `TextEditingController` 에만 있다가 `dispose()` |
+| 세션 | `SharedPreferences` — **평문** |
+
+`Supabase.initialize` 를 옵션 없이 부르면 `persistSession: true` 기본값이 적용되고
+supabase_flutter 가 `SharedPreferencesLocalStorage` 를 꽂는다. 키는
+`sb-hheykxxgboqjeomfhgsd-auth-token`, 저장은 `SharedPreferences.setString` 이라
+iOS `NSUserDefaults` plist · Android SharedPreferences XML 에 세션 JSON 이 그대로 들어간다.
+
+비밀번호는 서버에만 있으니 안전하지만, **지속되는 자격증명은 사실 이쪽**이다.
+
+### 조치
+
+`core/data/secure_local_storage.dart` 의 `SecureLocalStorage` 를 `authOptions` 로 주입한다
+(`app/bootstrap.dart`). iOS Keychain / Android Keystore 를 쓰고, **기존 세션은 첫 실행에
+한 번 옮겨온다.**
+
+마이그레이션이 핵심이다. 그냥 갈아끼우면 업데이트하는 순간 로그인이 전부 풀리는데,
+익명 계정은 이메일도 비밀번호도 없어 되찾을 수단이 없다 — 계정과 쓴 글이 통째로 사라진다.
+그래서 저장 키를 supabase_flutter 기본 구현과 **똑같이** 맞춰 예전 값을 찾아온다.
+
+`flutter_secure_storage` 11.0.0 이 `compileSdk 37` 컴파일을 요구해서
+`android/app/build.gradle` 도 36 → 37 로 올렸다. `targetSdk` 는 36 그대로라 런타임 동작은
+변하지 않는다. iOS 는 `flutter_secure_storage_darwin` 이 SPM 을 지원해 CocoaPods 부담이 없다.
+
+### 검증
+
+| 확인 항목 | iOS 시뮬레이터 | Android 에뮬레이터 |
+| --- | --- | --- |
+| 마이그레이션 | 실제 기존 세션이 Keychain 으로 이동 | 심어둔 값이 Keystore 로 이동 |
+| 평문 원본 삭제 | `legacy_left=null` | `legacy_after=null` |
+| 이동 직후 복원 | 같은 uid + `AuthChangeEvent.tokenRefreshed` | — |
+| 로그인 → 저장 | — | 익명 로그인 후 세션 저장 확인 |
+| **콜드 스타트** | SharedPreferences 가 빈 상태에서 Keychain 단독 복원 | Keystore 단독 복원 (uid 일치) |
+| 평문 잔여물 | 앱 컨테이너 plist 에 `refresh_token` **0건** | — |
+| 빌드 | SPM, pod 추가 없음 | compileSdk 37, 플러그인 경고 0 |
+
+> 로그인 직후에 저장소를 읽으면 아직 예전 값이 보인다. supabase_flutter 는
+> `signInAnonymously()` 가 반환된 **뒤에** 인증 이벤트 리스너에서 `persistSession` 을 부른다.
+> 검증할 때 이걸 버그로 오해하기 쉽다 — 콜드 스타트로 확인해야 한다.
+
+### 남는 트레이드오프
+
+- **Android 는 기기를 바꾸면 로그아웃된다.** 자동 백업이 암호화된 파일만 옮기고 Keystore 키는
+  안 옮겨서 복호화가 깨진다. 예전(평문 SharedPreferences)에는 유지됐던 동작이다.
+  `resetOnError` 기본값(true)이 예외 대신 값을 비워주므로 앱이 죽지는 않는다.
+  익명 계정 사용자는 그 시점에 계정을 잃는다.
+- iOS 는 `KeychainAccessibility.first_unlock` 이라 기기 백업으로 옮겨간다.
+  `*_this_device` 로 조이면 iOS 에서도 같은 문제가 생겨서 일부러 피했다.
+- PKCE code verifier(`pkceAsyncStorage`)는 여전히 SharedPreferences 다. 이 앱은 OAuth·매직링크를
+  쓰지 않아 값이 실제로 들어가지 않는다.
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |

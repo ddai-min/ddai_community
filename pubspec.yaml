@@ -62,6 +62,9 @@ dependencies:
   flutter_native_splash: ^2.4.8
   cloudflare_turnstile: ^3.8.1
 
+  # 세션(refresh token) 보관 — iOS Keychain · Android Keystore
+  flutter_secure_storage: ^11.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -52,7 +52,8 @@ lib/
 │
 ├── core/                      # 기능에 종속되지 않는 공통 자산
 │   ├── constants/             #   colors · supabase_env · turnstile_env
-│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository · CaptchaRepository
+│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository
+│   │                          #   · CaptchaRepository · SecureLocalStorage
 │   ├── models/                #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/             #   PaginationMixin · sessionUidProvider
 │   ├── router/                #   go_router 라우트 정의
@@ -190,6 +191,23 @@ features/<feature>/
   - Android: `flutter.versionCode` / `flutter.versionName` 을 그대로 쓴다.
     값이 없으면 조용히 틀린 버전으로 빌드하지 않고 Gradle 이 실패한다.
   - 버전을 올릴 때는 **`pubspec.yaml` 한 줄만** 고치고, 필요하면 `app_config.version_name` 을 맞춘다.
+- **세션은 보안 저장소에 넣는다**: `app/bootstrap.dart` 가 `Supabase.initialize` 에
+  `SecureLocalStorage` 를 주입한다. supabase_flutter 기본값(`SharedPreferencesLocalStorage`)은
+  세션 JSON 을 iOS `NSUserDefaults` plist · Android SharedPreferences XML 에 **평문으로** 남긴다.
+  비밀번호는 앱에 저장하지 않지만, 이 refresh token 이 사실상 지속되는 자격증명이다.
+  - **저장 키(`sb-<host 첫 라벨>-auth-token`)를 바꾸지 말 것.** supabase_flutter 기본 구현이 쓰던
+    키이고, 이걸로 예전 세션을 찾아 한 번 옮겨온다. 키를 바꾸면 업데이트하는 순간 기존 로그인이
+    전부 풀리는데, **익명 계정은 되찾을 방법이 없어 계정과 쓴 글이 통째로 사라진다.**
+  - iOS 는 `KeychainAccessibility.first_unlock`. `*_this_device` 변형은 기기 백업으로 넘어가지
+    않아서, 폰을 바꾼 익명 유저가 계정을 잃는다.
+  - **Android 는 기기를 바꾸면 로그아웃된다.** 자동 백업이 암호화 파일만 옮기고 Keystore 키는
+    안 옮겨 복호화가 깨진다. `resetOnError` 기본값(true)이 예외 대신 값을 비워서 앱이 죽지는
+    않는다. 예전(평문 SharedPreferences)에는 유지됐던 동작이다.
+  - 읽기(`accessToken`·`hasAccessToken`)만 예외를 삼킨다. 여기서 던지면 `Supabase.initialize` 가
+    실패해 앱이 아예 안 켜진다. 반면 쓰기·삭제는 삼키지 않는다 — 조용히 실패하면 로그아웃했는데
+    세션이 디스크에 남는다.
+  - PKCE code verifier(`pkceAsyncStorage`)는 여전히 SharedPreferences 다. 이 앱은 OAuth·매직링크를
+    쓰지 않아 값이 실제로 들어가지 않는다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
 - **SECURITY DEFINER 함수는 `private` 스키마에 둔다**: `is_blocked()` · `handle_new_user()` 는
@@ -264,7 +282,7 @@ features/<feature>/
 | --- | --- |
 | `lib/main.dart` | 진입점 (`Bootstrap.run()` 후 `App` 실행) |
 | `lib/app/app.dart` | 앱 루트 위젯 — `onAuthStateChange` 동기화, 라우터/테마 주입 |
-| `lib/app/bootstrap.dart` | `.env` 로드 + `Supabase.initialize` |
+| `lib/app/bootstrap.dart` | `.env` 로드 + `Supabase.initialize` (세션 저장소 주입) |
 | `lib/core/data/supabase_client.dart` | 전역 `supabase` 클라이언트 getter |
 | `lib/core/router/router.dart` | 전체 라우트 정의 |
 | `lib/core/theme/app_theme.dart` | 앱 전역 테마 |
@@ -274,6 +292,7 @@ features/<feature>/
 | `lib/features/auth/data/auth_repository.dart` | 회원가입/로그인/로그아웃/탈퇴/차단 · `AuthExceptionCode` |
 | `lib/core/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
 | `lib/core/data/captcha_repository.dart` | Turnstile CAPTCHA 토큰 발급 |
+| `lib/core/data/secure_local_storage.dart` | 세션 저장소 — Keychain/Keystore + 구버전 이전 |
 | `lib/core/constants/turnstile_env.dart` | Turnstile sitekey · baseUrl (선택 설정) |
 | `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |

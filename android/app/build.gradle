@@ -7,7 +7,9 @@ plugins {
 
 android {
     namespace = "com.ddai.ddai_community"
-    compileSdk = 36
+    // flutter_secure_storage 가 SDK 37 컴파일을 요구한다. compileSdk 는 '무엇에 대고
+    // 컴파일하는가' 일 뿐이고 런타임 동작은 targetSdk 가 정하므로 하위 호환이다.
+    compileSdk = 37
     ndkVersion = "29.0.14033849"
 
     compileOptions {
