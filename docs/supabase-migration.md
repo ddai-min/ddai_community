@@ -61,6 +61,11 @@ REST · `package:supabase` 스크립트로 이미 확인했다.
 ```sql
 create extension if not exists "pgcrypto";   -- gen_random_uuid()
 
+-- SECURITY DEFINER 헬퍼 함수 전용 스키마. PostgREST 는 public 만 노출하므로
+-- 여기 있는 함수는 /rest/v1/rpc 로 호출되지 않는다. usage 도 주지 않는다.
+create schema if not exists private;
+revoke all on schema private from public;
+
 -- auth.users 1:1 확장 테이블
 create table public.profile (
   id           uuid primary key references auth.users(id) on delete cascade,
@@ -71,7 +76,7 @@ create table public.profile (
 );
 
 -- 회원가입 시 profile 자동 생성
-create or replace function public.handle_new_user()
+create or replace function private.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = ''
@@ -93,7 +98,7 @@ $$;
 
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute function public.handle_new_user();
+  for each row execute function private.handle_new_user();
 ```
 
 ### 1-2. 게시글 · 댓글 · 채팅
@@ -188,7 +193,7 @@ alter table public.app_config enable row level security;
 ### 2-1. 차단 판정 함수
 
 ```sql
-create or replace function public.is_blocked(target_uid uuid)
+create or replace function private.is_blocked(target_uid uuid)
 returns boolean
 language sql
 stable
@@ -211,14 +216,14 @@ create policy profile_update_own  on public.profile for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 
 -- board / comment / chat: 차단하지 않은 유저의 글만 조회, 본인 글만 작성
-create policy board_select      on public.board   for select to authenticated using (not public.is_blocked(user_uid));
+create policy board_select      on public.board   for select to authenticated using (not private.is_blocked(user_uid));
 create policy board_insert_own  on public.board   for insert to authenticated with check (user_uid = auth.uid());
 create policy board_delete_own  on public.board   for delete to authenticated using (user_uid = auth.uid());
 
-create policy comment_select     on public.comment for select to authenticated using (not public.is_blocked(user_uid));
+create policy comment_select     on public.comment for select to authenticated using (not private.is_blocked(user_uid));
 create policy comment_insert_own on public.comment for insert to authenticated with check (user_uid = auth.uid());
 
-create policy chat_select        on public.chat    for select to authenticated using (not public.is_blocked(user_uid));
+create policy chat_select        on public.chat    for select to authenticated using (not private.is_blocked(user_uid));
 create policy chat_insert_own    on public.chat    for insert to authenticated with check (user_uid = auth.uid());
 
 -- block_user: 본인 차단 목록만
@@ -1072,6 +1077,91 @@ Android 쪽도 `app/build.gradle` 이 `local.properties` 를 직접 파싱하고
 
 > 현재 앱은 `1.5.0` 이므로 강제 업데이트를 걸려면
 > `app_config.version_name` 을 **1.6.0 이상**으로 올려야 한다. (현재 값 `1.4.0`)
+
+---
+
+## 별건 — Security Advisor 경고 정리 ✅ *(해결됨)*
+
+2026-09-03 Supabase Advisors 가 올린 10건을 분류했다. **고친 것은 4건**, 5건은 의도된 동작,
+1건은 플랜 제약이다.
+
+### `*_security_definer_function_executable` (4건) — 조치함
+
+`public.is_blocked` · `public.handle_new_user` 가 걸렸다. 린터(splinter 0028/0029) 판정식은
+`prosecdef = true` **AND** `anon`/`authenticated` 에 EXECUTE **AND** PostgREST 노출 스키마(`public`),
+세 조건의 곱이다.
+
+실제 노출도는 낮았다. `is_blocked` 를 rpc 로 직접 불러도 "내가 이 uid 를 차단했나" bool 하나뿐이고
+(`anon` 은 `auth.uid()` 가 null 이라 항상 false, 로그인 유저는 `block_user` 에서 이미 보는 자기 정보다),
+`handle_new_user` 는 `returns trigger` 라 직접 호출하면 `NEW` 가 없어 에러난다. 그래도 `public` 에
+SECURITY DEFINER 함수를 두는 패턴 자체가, 나중에 위험한 함수를 부주의하게 하나 추가하면
+그대로 권한 상승 통로가 된다.
+
+**EXECUTE 회수는 답이 아니다.** `is_blocked` 는 `board_select`·`chat_select`·`comment_select`
+정책 안에서 **호출자 롤(`authenticated`) 권한으로** 평가된다. Postgres 는 실행 시점에 호출자의
+EXECUTE 를 검사하므로, 회수하면 게시판·채팅·댓글 조회가 통째로
+`permission denied for function is_blocked` 로 죽는다.
+(Supabase 안내문이 revoke 옆에 "move it out of your exposed API schema" 를 같이 적어둔 이유다)
+
+그래서 스키마를 옮겼다. 정책과 트리거는 함수를 이름이 아니라 **OID** 로 붙들고 있어 그대로 동작한다.
+
+```sql
+create schema if not exists private;
+revoke all on schema private from public;
+
+alter function public.is_blocked(uuid)  set schema private;
+alter function public.handle_new_user() set schema private;
+```
+
+검증 결과:
+
+| 확인 항목 | 결과 |
+| --- | --- |
+| 함수 위치 | `private.is_blocked` · `private.handle_new_user` |
+| 정책 재바인딩 | `board`/`chat`/`comment` 의 qual 이 `NOT private.is_blocked(user_uid)` 로 자동 변경 |
+| 트리거 재바인딩 | `on_auth_user_created` → `private.handle_new_user` |
+| RLS 평가 | `set role authenticated` + `has_schema_privilege('private','USAGE') = false` 에서도 조회 정상 |
+| PostgREST 경유 조회 | 익명 JWT 로 `GET /rest/v1/{board,chat,comment,profile}` 전부 200 |
+| rpc 노출 차단 | `POST /rest/v1/rpc/is_blocked` · `.../handle_new_user` → **404 PGRST202** |
+| 회원가입 트리거 | 익명 가입 1건으로 `profile` 자동 생성 확인 (`익명820879`) 후 계정 삭제 |
+| Realtime 채팅 | 익명 구독 + `chat` INSERT 2건 → `postgres_changes` 로 479ms · 247ms 만에 수신 |
+| 린터 판정식 재현 | 0행 |
+
+되돌리려면 `alter function private.<name> set schema public;` 한 줄이면 된다.
+
+> Realtime 을 스크립트로 검증할 때 주의. `phx_join` 의 `phx_reply` 가 와도 아직 구독이 살아 있지 않다.
+> 실제로 붙는 시점은 그 **약 200ms 뒤** 도착하는 `system` 이벤트
+> (`"message":"Subscribed to PostgreSQL"`)다. 그 전에 insert 하면 이벤트를 놓쳐서
+> 마치 Realtime 이 죽은 것처럼 보인다. (첫 프로브가 이걸로 헛짚었다)
+
+### `auth_allow_anonymous_sign_ins` (5건) — 조치하지 않음 *(의도된 동작)*
+
+"익명 로그인이 켜져 있다"는 사실 자체를 잡는 린트다. Supabase 익명 유저는 영구 유저와
+**같은 `authenticated` 롤**을 쓴다. 권장 수정인
+`using ((select (auth.jwt()->>'is_anonymous')::boolean) is false)` 를 정책에 붙이면
+익명 유저가 게시판·채팅을 못 읽는다 — EULA 화면에서 `signInAnonymously` 로 시작하는
+이 앱에선 제품을 부수는 변경이다.
+
+잡힌 8개 정책은 전부 `TO authenticated` 전용 + `USING` 절이 있는 것들이다. 이미 `anon` 에도 열린
+`app_config_select` 와, `WITH CHECK` 만 있는 INSERT 정책(`*_insert_own` · `report_insert`)은 빠졌다.
+모두 자기 행만 건드리는 정책이라 문제 없다. → 대시보드 Advisors 에서 dismiss.
+
+### `auth_leaked_password_protection` (1건) — 보류 *(Pro 플랜 필요)*
+
+HaveIBeenPwned 대조는 Pro 이상 기능이라 Free 에서는 토글이 없다.
+
+무료로 되는 인접 조치는 대시보드의 Password Requirements 다. 지금 비밀번호 규칙
+(영소문자 + 숫자 + 특수문자)은 `RegUtils.isValidPassword` 로 **클라이언트에서만** 걸려서
+REST 를 직접 때리면 우회된다. 서버에도 같은 규칙을 걸어두면 그 구멍이 막힌다.
+
+> `supabase config push` 로 대신 켜려 하지 말 것. 로컬 `config.toml`(기본 템플릿 그대로)을
+> 통째로 밀어버려서 CAPTCHA 등 원격 설정이 날아간다.
+
+### 린터가 잡지 않은 것
+
+`anon` 롤이 모든 테이블에 DELETE/INSERT/UPDATE/**TRUNCATE** 권한을 갖고 있다
+(Supabase 클라우드 기본값). RLS 가 막지만 TRUNCATE 는 RLS 를 우회한다. PostgREST 가
+TRUNCATE 를 발행하지 않아 실제 도달 경로는 없다.
 
 ---
 

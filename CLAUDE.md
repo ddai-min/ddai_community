@@ -192,6 +192,18 @@ features/<feature>/
   - 버전을 올릴 때는 **`pubspec.yaml` 한 줄만** 고치고, 필요하면 `app_config.version_name` 을 맞춘다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
+- **SECURITY DEFINER 함수는 `private` 스키마에 둔다**: `is_blocked()` · `handle_new_user()` 는
+  `public` 이 아니라 `private` 에 있다. `public` 에 있으면 PostgREST 가 `/rest/v1/rpc/<name>` 으로
+  노출해서 Security Advisor 가 경고한다. 새 헬퍼 함수도 `private` 에 만든다.
+  - **EXECUTE 를 회수해서 막으면 안 된다.** `is_blocked()` 는 `board_select`·`chat_select`·
+    `comment_select` 정책 안에서 **호출자 롤(`authenticated`) 권한으로** 평가되므로,
+    회수하면 게시판·채팅·댓글 조회가 통째로 `permission denied for function is_blocked` 로 죽는다.
+  - 정책·트리거는 함수를 이름이 아니라 **OID** 로 붙들고 있어 스키마를 옮겨도 그대로 동작한다.
+    `private` 에 usage 를 주지 않아도 정책 평가는 된다 (이름 해석을 하지 않으므로).
+- **익명 로그인 경고는 의도된 것**: Advisor 의 `auth_allow_anonymous_sign_ins` 는 익명 유저가
+  영구 유저와 같은 `authenticated` 롤을 쓴다는 사실을 잡는다. 익명 로그인이 이 앱의 기능이므로
+  정책에 `is_anonymous` 조건을 넣으면 안 된다. dismiss 대상이다.
+  (분류 전문은 `docs/supabase-migration.md` 의 "별건 — Security Advisor 경고 정리")
 - **실시간 채팅**: `chat` 테이블이 `supabase_realtime` publication 에 있어야 한다.
   누락되면 **오류 없이 조용히** 멈춘다.
   - **내가 보낸 메시지는 낙관적으로 먼저 그린다.** insert 왕복은 30ms 인데 그 행이
