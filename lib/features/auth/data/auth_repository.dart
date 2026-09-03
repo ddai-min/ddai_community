@@ -207,9 +207,12 @@ class AuthRepository {
 
   /// 표시 이름을 변경한다.
   ///
-  /// `user_metadata` 와 `profile` 두 곳을 함께 갱신한다. 세션(JWT)에는 `user_metadata` 가
-  /// 실려 화면이 그 값을 읽고, 게시글·댓글 조인은 `profile` 을 읽기 때문에
-  /// 한쪽만 바꾸면 표시 이름이 화면마다 달라진다.
+  /// `profile` 과 `user_metadata` 두 곳을 함께 갱신한다. 화면은 세션(JWT)에 실린
+  /// `user_metadata` 를 읽고, **새로 쓰는 글의 작성자 이름은 트리거가 `profile` 에서
+  /// 가져오므로** 한쪽만 바꾸면 표시 이름이 어긋난다.
+  ///
+  /// `profile` 을 먼저 쓴다. 이쪽이 실패하면 아무것도 바뀌지 않은 채로 끝나지만,
+  /// 순서를 뒤집으면 화면 이름만 바뀌고 글쓴이 이름은 옛날 값으로 남는다.
   static Future<bool> updateUserName({
     required String userName,
   }) async {
@@ -220,6 +223,13 @@ class AuthRepository {
         return false;
       }
 
+      await supabase
+          .from('profile')
+          .update({
+            'user_name': userName,
+          })
+          .eq('id', user.id);
+
       await supabase.auth.updateUser(
         UserAttributes(
           data: {
@@ -227,13 +237,6 @@ class AuthRepository {
           },
         ),
       );
-
-      await supabase
-          .from('profile')
-          .update({
-            'user_name': userName,
-          })
-          .eq('id', user.id);
 
       return true;
     } catch (error) {

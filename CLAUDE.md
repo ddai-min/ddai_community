@@ -208,6 +208,24 @@ features/<feature>/
     세션이 디스크에 남는다.
   - PKCE code verifier(`pkceAsyncStorage`)는 여전히 SharedPreferences 다. 이 앱은 OAuth·매직링크를
     쓰지 않아 값이 실제로 들어가지 않는다.
+- **작성자 표시 이름은 서버가 정한다**: `board`/`chat`/`comment`/`report` 의 `user_name` 계열 컬럼은
+  `BEFORE INSERT` 트리거(`private.set_author_name` · `private.set_report_names`)가 `profile` 값으로
+  덮어쓴다. 클라이언트가 보낸 값은 **무시된다.** 정책이 `user_uid = auth.uid()` 만 검사해서,
+  REST 를 직접 부르면 아무 이름으로나 글을 쓸 수 있었기 때문이다.
+  - 여전히 payload 에 `user_name` 을 담아 보내는 건 무해하다(덮어써진다). 빼도 된다.
+  - 닉네임을 바꿔도 **이미 쓴 글의 이름은 안 바뀐다.** 비정규화된 스냅샷이다.
+  - `AuthRepository.updateUserName` 은 **`profile` 을 먼저** 쓰고 `user_metadata` 를 나중에 쓴다.
+    순서를 뒤집으면 앞이 실패했을 때 화면 이름만 바뀌고 글쓴이 이름은 옛날 값으로 남는다.
+- **`profile` 은 앱 입장에서 사실상 쓰기 전용이다**: SELECT 는 본인 행만, UPDATE 는 `user_name`
+  컬럼만 허용된다(컬럼 단위 grant). 목록에 필요한 닉네임은 각 테이블에 비정규화돼 있어서
+  앱은 `profile` 을 읽지 않는다. **profile 에 컬럼을 추가하고 앱에서 읽으려 하면 막힌다** —
+  정책과 grant 를 함께 손봐야 한다.
+- **길이 제한이 DB 에도 있다**: `board.title` 30 · `board.content` 500 · `chat`/`comment` 100 ·
+  `profile.user_name` 2~12 · `report.report_reason` 500. **UI 의 `maxLength` 와 같은 값이므로
+  UI 를 바꾸면 CHECK 제약도 같이 바꿔야 한다.** 어긋나면 입력은 되는데 저장만 실패해서
+  원인을 찾기 어렵다.
+- **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
+  `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
 - **SECURITY DEFINER 함수는 `private` 스키마에 둔다**: `is_blocked()` · `handle_new_user()` 는

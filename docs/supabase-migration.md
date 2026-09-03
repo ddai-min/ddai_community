@@ -211,7 +211,7 @@ $$;
 
 ```sql
 -- profile: 로그인 유저는 모두 조회, 본인만 수정
-create policy profile_select      on public.profile for select to authenticated using (true);
+create policy profile_select      on public.profile for select to authenticated using (id = auth.uid());
 create policy profile_update_own  on public.profile for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 
@@ -1225,6 +1225,151 @@ iOS `NSUserDefaults` plist · Android SharedPreferences XML 에 세션 JSON 이 
   `*_this_device` 로 조이면 iOS 에서도 같은 문제가 생겨서 일부러 피했다.
 - PKCE code verifier(`pkceAsyncStorage`)는 여전히 SharedPreferences 다. 이 앱은 OAuth·매직링크를
   쓰지 않아 값이 실제로 들어가지 않는다.
+
+---
+
+## 별건 — 보안 점검 후속 조치 ✅ *(해결됨)*
+
+Advisor 경고와 세션 저장소를 정리한 뒤 나머지 표면을 훑어서 나온 4건이다.
+**전부 DB 쪽이라 앱 코드는 한 줄도 바뀌지 않았다.** 위 스키마·정책에 이어서 적용한다.
+
+### 1. 표시 이름 위조 (사칭) — 가장 컸던 구멍
+
+`board_insert_own` · `chat_insert_own` · `comment_insert_own` 은 `user_uid = auth.uid()` **만**
+검사하고 `user_name` 은 클라이언트가 준 값을 그대로 저장했다. publishable 키는 앱 바이너리에서
+뽑히고 익명 가입은 무료·무제한이라, REST 를 직접 부르면 **누구 이름으로든** 글·채팅·댓글을
+쓸 수 있었다. 커뮤니티 앱에서 제일 아픈 종류다.
+
+`BEFORE INSERT` 트리거로 서버가 이름을 정한다. RLS 의 `WITH CHECK` 는 BEFORE 트리거 **뒤에**
+평가되므로 `user_uid` 위조 방어는 그대로 살아 있다.
+
+```sql
+create or replace function private.set_author_name()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  select p.user_name into new.user_name
+  from public.profile p
+  where p.id = new.user_uid;
+
+  if new.user_name is null then
+    raise exception 'profile not found for user_uid %', new.user_uid
+      using errcode = '23503';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger board_set_author_name   before insert on public.board
+  for each row execute function private.set_author_name();
+create trigger chat_set_author_name    before insert on public.chat
+  for each row execute function private.set_author_name();
+create trigger comment_set_author_name before insert on public.comment
+  for each row execute function private.set_author_name();
+
+-- report 는 컬럼 이름이 달라 따로 둔다. 신고 사유는 사용자 입력 그대로 둔다.
+create or replace function private.set_report_names()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  new.reporter_user_name := coalesce(
+    (select p.user_name from public.profile p where p.id = new.reporter_user_uid),
+    '(알 수 없음)');
+  new.reported_user_name := coalesce(
+    (select p.user_name from public.profile p where p.id = new.reported_user_uid),
+    '(탈퇴한 사용자)');
+  return new;
+end;
+$$;
+
+create trigger report_set_names before insert on public.report
+  for each row execute function private.set_report_names();
+```
+
+### 2. `profile` 은 닉네임만 수정할 수 있다
+
+`profile_update_own` 은 **어느 행**만 제한하고 **어느 컬럼**은 제한하지 않았다.
+본인 행의 `email` 과 `is_anonymous` 를 아무 값으로나 바꿀 수 있었다 —
+`profile` 이 `auth.users` 를 미러링한다는 전제가 무너진다. 컬럼 단위 grant 로 막는다.
+
+```sql
+revoke update on public.profile from anon, authenticated;
+grant  update (user_name) on public.profile to authenticated;
+```
+
+### 3. `profile` 은 본인 행만 조회한다
+
+`profile_select` 이 `using (true)` 라 로그인한 누구나(익명 포함) **전체 이메일**을 읽을 수 있었다.
+당시엔 전원 익명이라 실제 유출은 0이었지만, 이메일 가입이 하나 생기는 순간 활성화되는 문제다.
+앱은 `profile` 을 읽지 않는다 — 목록에 필요한 닉네임은 `board`/`chat`/`comment` 에 비정규화돼 있다.
+
+```sql
+drop policy profile_select on public.profile;
+create policy profile_select on public.profile
+  for select to authenticated
+  using (id = auth.uid());
+```
+
+### 4. 길이 제한을 서버에도 건다
+
+CHECK 제약이 하나도 없어서 UI 제한(30·500·100자, 닉네임 2~12)이 클라이언트에만 있었다.
+REST 를 직접 때리면 게이트웨이 요청 크기 한도까지 들어간다. 닉네임이 특히 문제인데,
+그 값이 그 사람이 쓰는 **모든** 글·채팅 행에 복제되고, 거대한 채팅 한 줄은 Realtime 으로
+접속 중인 전원에게 브로드캐스트된다.
+
+```sql
+alter table public.board   add constraint board_title_len       check (char_length(title)         between 1 and 30);
+alter table public.board   add constraint board_content_len     check (char_length(content)       between 1 and 500);
+alter table public.chat    add constraint chat_content_len      check (char_length(content)       between 1 and 100);
+alter table public.comment add constraint comment_content_len   check (char_length(content)       between 1 and 100);
+alter table public.profile add constraint profile_user_name_len check (char_length(user_name)     between 2 and 12);
+alter table public.report  add constraint report_reason_len     check (char_length(report_reason) between 1 and 500);
+```
+
+> 값은 UI 의 `maxLength` 와 맞춰 두었다. **UI 를 바꾸면 제약도 같이 바꿔야 한다.**
+> 어긋나면 사용자는 입력이 되는데 저장만 실패하는, 원인을 알기 어려운 상태가 된다.
+
+### 검증 — 공격자와 같은 경로(익명 계정 + REST 직접 호출)
+
+| 시도 | 결과 |
+| --- | --- |
+| `user_name: '관리자'` 로 글·채팅·댓글 작성 | 저장된 값은 실제 닉네임 `익명c03168` (3곳 모두) |
+| 실존하는 다른 유저 uid 로 작성 | **403** — RLS `WITH CHECK` 위반 |
+| 없는 uid 로 작성 | **409** — 트리거의 `23503` |
+| 신고 이름 3개 위조 | 저장된 값은 서버가 조회한 실제 이름 |
+| 다른 사람 `profile` 조회 | 본인 1행만 반환 |
+| 본인 `email` · `is_anonymous` 수정 | **403** permission denied |
+| 본인 닉네임 수정 | **200** (정상 동작 유지) |
+| 100자 초과 채팅 · 50자 닉네임 | **400** `23514` check 위반 |
+| 정상 길이 채팅 · 앱 경로 신고 | **201** |
+
+> `report` 는 SELECT 정책이 없어서 `Prefer: return=representation` 을 붙이면
+> `INSERT ... RETURNING` 이 403 으로 막힌다. 앱은 `.select()` 없이 insert 하므로
+> `return=minimal` 이라 무관하다. 검증 스크립트에서 헷갈리기 쉬운 지점.
+
+### 함께 확인했으나 문제 없던 것
+
+- 테이블 7개 전부 RLS on + 정책 있음
+- `logger` 는 릴리즈에서 완전히 침묵한다 — 기본 `DevelopmentFilter` 가 `assert` 안에서만 로그해서
+  릴리즈 빌드에는 호출 자체가 남지 않는다
+- Edge Function `verify_jwt` 기본값 true — 게이트웨이가 먼저 막고, 함수도 자체 검사
+- `block_user` PK 가 `(blocker_uid, blocked_uid)` — 중복 차단 불가
+- 딥링크 스킴이 없어 `detectSessionInUri` 를 통한 세션 주입 경로가 없다
+- `.env` 는 gitignore 되어 있고 저장소 이력에도 없다
+- Flutter `Text` 렌더링이라 XSS 없음
+
+### 아직 남은 것
+
+- **Android 릴리즈가 디버그 키로 서명된다** — `signingConfig = signingConfigs.debug`,
+  Flutter 템플릿 TODO 그대로. 스토어가 거부하므로 실제 배포는 다른 경로일 것이나 저장소 상태로는 함정.
+- **iOS 가 안 쓰는 권한 3개를 선언한다** — 카메라·마이크·사진 라이브러리. pubspec 에 해당 패키지가 없다.
+- `mailer_autoconfirm = true` — 이메일 소유 증명 없이 가입된다.
+- `anon` 롤의 TRUNCATE 권한 — PostgREST 가 발행하지 않아 도달 경로는 없다.
 
 ---
 
