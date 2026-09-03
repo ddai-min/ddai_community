@@ -13,7 +13,8 @@ class CommentListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      // 가로 여백은 [DefaultLayout.contentPadding] 이 준다. 여기서 또 주면 본문과 어긋난다.
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

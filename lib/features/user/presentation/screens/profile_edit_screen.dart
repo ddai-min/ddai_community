@@ -52,59 +52,50 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '프로필 수정',
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 8.0,
-            right: 8.0,
-            top: 16.0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Form(
-                        key: formKey,
-                        child: _Input(
-                          controller: nicknameTextController,
-                          validator: _nicknameValidator,
-                          onChanged: (value) {
-                            setState(() {});
-                          },
-                          labelText: '닉네임',
-                          hintText: '닉네임',
-                        ),
-                      ),
-                      _Input(
-                        controller: emailTextController,
-                        labelText: '이메일',
-                        hintText: '이메일',
-                        readOnly: true,
-                      ),
-                    ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Form(
+                    key: formKey,
+                    child: _Input(
+                      controller: nicknameTextController,
+                      validator: _nicknameValidator,
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                      labelText: '닉네임',
+                      hintText: '닉네임',
+                    ),
                   ),
-                ),
+                  _Input(
+                    controller: emailTextController,
+                    labelText: '이메일',
+                    hintText: '이메일',
+                    readOnly: true,
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: _deleteUser,
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
-                child: const Text('계정 삭제'),
-              ),
-              const SizedBox(height: 10),
-              DefaultElevatedButton(
-                onPressed: widget.userName == nicknameTextController.text
-                    ? null
-                    : _editProfile,
-                text: '수정하기',
-              ),
-            ],
+            ),
           ),
-        ),
+          TextButton(
+            onPressed: _deleteUser,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('계정 삭제'),
+          ),
+          const SizedBox(height: 10),
+          DefaultElevatedButton(
+            onPressed: widget.userName == nicknameTextController.text
+                ? null
+                : _editProfile,
+            text: '수정하기',
+          ),
+        ],
       ),
     );
   }

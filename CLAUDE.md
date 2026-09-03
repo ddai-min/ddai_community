@@ -147,6 +147,12 @@ features/<feature>/
   `supabase.auth.onAuthStateChange` 리스너에서 이루어진다.
   Supabase `User` → `UserModel` 변환은 **`AuthRepository.userModelFrom()` 한 곳**에만 둔다.
 - **화면 공통 레이아웃**: `DefaultLayout`(공통 Scaffold). `title` 을 주면 브랜드 색 AppBar 가 렌더된다.
+  본문 여백도 여기서 준다 — `padding` 파라미터, 기본값 `DefaultLayout.contentPadding`(가로 24 · 세로 16).
+  **화면에서 `Padding` 을 덧씌우지 않는다.** 더해져서 화면끼리 어긋난다. 다르게 줘야 하면 `padding` 으로 넘긴다.
+  말풍선·다이얼로그처럼 위젯 **안쪽** 여백은 별개이고, 리스트 아이템은 세로 간격만 갖는다.
+  - **`HomeTab` 은 `padding: EdgeInsets.zero` 다.** 게시판·채팅 목록이 화면 끝까지 닿아야 하는데
+    세 탭이 레이아웃 하나를 공유하기 때문이다. 그래서 **`ProfileScreen` 만** `DefaultLayout.contentPadding` 을
+    직접 쓴다. 탭을 추가할 때 여백이 필요하면 같은 방식으로 그 화면이 직접 준다.
 - **라우팅**: go_router 명명 라우트. 각 화면은 `static get routeName` 을 노출한다.
   값 전달은 path parameter(`:id`)와 query parameter(`isAnonymous`, `userName` 등) 사용.
 - **인증 예외**: `AuthExceptionCode` enum 으로 매핑하고, 미분류 예외는 `unknownError` 로 처리한다.

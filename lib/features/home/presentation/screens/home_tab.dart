@@ -89,6 +89,9 @@ class _HomeTabState extends ConsumerState<HomeTab>
 
     return DefaultLayout(
       title: 'DDAI Community',
+      // 게시판·채팅은 목록이 화면 끝까지 닿아야 하고 프로필만 여백이 필요하다.
+      // 세 탭이 레이아웃 하나를 공유하므로 여백은 각 탭이 직접 준다.
+      padding: EdgeInsets.zero,
       floatingActionButton: renderFloatingActionButton(),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
@@ -119,6 +122,7 @@ class _HomeTabState extends ConsumerState<HomeTab>
       child: TabBarView(
         controller: tabController,
         physics: const NeverScrollableScrollPhysics(),
+        clipBehavior: Clip.none,
         children: const [
           BoardListScreen(),
           ChatScreen(),

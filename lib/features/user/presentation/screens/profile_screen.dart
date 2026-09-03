@@ -1,4 +1,5 @@
 import 'package:ddai_community/core/widgets/default_dialog.dart';
+import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
 import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
@@ -20,8 +21,9 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userMe = ref.watch(userMeProvider);
 
+    // [HomeTab] 의 레이아웃이 여백을 주지 않으므로(게시판·채팅은 0) 여기서 공통 값을 쓴다.
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: DefaultLayout.contentPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -55,17 +57,6 @@ class ProfileScreen extends ConsumerWidget {
                 context: context,
               );
             },
-          ),
-          const Expanded(
-            child: SizedBox(),
-          ),
-          Text(
-            '문의사항은 yoda3714@gmail.com으로\n연락주시기 바랍니다.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14.0,
-            ),
           ),
         ],
       ),

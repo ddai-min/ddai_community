@@ -62,47 +62,42 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '회원가입',
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const _GuideText(),
-                const SizedBox(height: 20),
-                _Input(
-                  text: '이메일',
-                  controller: emailTextController,
-                  validator: _emailValidator,
-                  forceErrorText: emailErrorText,
-                ),
-                _Input(
-                  text: '비밀번호',
-                  controller: passwordTextController,
-                  validator: _passwordValidator,
-                  obscureText: true,
-                  forceErrorText: passwordErrorText,
-                ),
-                _Input(
-                  text: '비밀번호 확인',
-                  controller: passwordVerifyTextController,
-                  validator: _passwordValidator,
-                  obscureText: true,
-                  forceErrorText: passwordVerifyErrorText,
-                ),
-                _Input(
-                  text: '닉네임',
-                  controller: nicknameTextController,
-                  validator: _nicknameValidator,
-                ),
-                _BottomButton(
-                  onPressed: _onSignUp,
-                ),
-              ],
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _GuideText(),
+            const SizedBox(height: 20),
+            _Input(
+              text: '이메일',
+              controller: emailTextController,
+              validator: _emailValidator,
+              forceErrorText: emailErrorText,
             ),
-          ),
+            _Input(
+              text: '비밀번호',
+              controller: passwordTextController,
+              validator: _passwordValidator,
+              obscureText: true,
+              forceErrorText: passwordErrorText,
+            ),
+            _Input(
+              text: '비밀번호 확인',
+              controller: passwordVerifyTextController,
+              validator: _passwordValidator,
+              obscureText: true,
+              forceErrorText: passwordVerifyErrorText,
+            ),
+            _Input(
+              text: '닉네임',
+              controller: nicknameTextController,
+              validator: _nicknameValidator,
+            ),
+            _BottomButton(
+              onPressed: _onSignUp,
+            ),
+          ],
         ),
       ),
     );

@@ -12,6 +12,8 @@ class DefaultTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final FormFieldValidator<String>? validator;
   final bool readOnly;
+
+  /// 위아래 여백. 필드를 세로로 쌓았을 때의 간격이다. (가로 여백은 화면이 준다)
   final double padding;
   final int maxLines;
   final int maxLength;
@@ -53,7 +55,9 @@ class DefaultTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(padding),
+      // 가로 여백은 [DefaultLayout.contentPadding] 이 준다.
+      // 여기서 또 주면 이 필드만 버튼·본문보다 안쪽으로 들어간다.
+      padding: EdgeInsets.symmetric(vertical: padding),
       child: TextFormField(
         controller: controller,
         selectionControls: materialTextSelectionControls,

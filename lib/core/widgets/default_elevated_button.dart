@@ -28,7 +28,7 @@ class DefaultElevatedButton extends StatelessWidget {
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        padding: padding,
+        padding: padding ?? EdgeInsets.symmetric(vertical: 14),
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
         shape:

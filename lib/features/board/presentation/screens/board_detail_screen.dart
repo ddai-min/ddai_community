@@ -76,25 +76,23 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
         child: SingleChildScrollView(
           controller: scrollController,
-          child: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16.0),
-                _Writing(
-                  title: data.title,
-                  userName: data.userName,
-                  content: data.content,
-                ),
-                const SizedBox(height: 16.0),
-                CommentTextField(
-                  controller: commentTextController,
-                  onPressed: _addComment,
-                ),
-                _CommentList(
-                  commentList: commentList,
-                ),
-              ],
-            ),
+          child: Column(
+            children: [
+              const SizedBox(height: 16.0),
+              _Writing(
+                title: data.title,
+                userName: data.userName,
+                content: data.content,
+              ),
+              const SizedBox(height: 16.0),
+              CommentTextField(
+                controller: commentTextController,
+                onPressed: _addComment,
+              ),
+              _CommentList(
+                commentList: commentList,
+              ),
+            ],
           ),
         ),
       ),
@@ -172,40 +170,37 @@ class _Writing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          '작성자: $userName',
+          style: TextStyle(
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        const Divider(),
+        const SizedBox(height: 16.0),
+        Container(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height * 0.5,
+          ),
+          child: Text(
+            content,
             style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+              fontSize: 20,
             ),
           ),
-          Text(
-            '작성자: $userName',
-            style: TextStyle(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 16.0),
-          const Divider(),
-          const SizedBox(height: 16.0),
-          Container(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
-            child: Text(
-              content,
-              style: const TextStyle(
-                fontSize: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

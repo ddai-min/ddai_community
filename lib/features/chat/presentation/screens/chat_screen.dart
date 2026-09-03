@@ -105,38 +105,46 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      controller: scrollController,
-      // 최신 메시지가 하단에 오도록 리스트를 뒤집어 렌더링한다.
-      reverse: true,
-      itemCount: chatList.items.length,
-      itemBuilder: (context, index) {
-        // 바로 다음(더 이전 시각) 메시지. 같은 사람의 연속 발화인지 판단하는 데 쓴다.
-        ChatModel? postChatItem;
-        if (index < chatList.items.length - 1) {
-          postChatItem = chatList.items[index + 1];
-        }
-        final chatItem = chatList.items[index];
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: ListView.builder(
+        controller: scrollController,
+        clipBehavior: Clip.none,
+        // 최신 메시지가 하단에 오도록 리스트를 뒤집어 렌더링한다.
+        reverse: true,
+        itemCount: chatList.items.length,
+        itemBuilder: (context, index) {
+          // 바로 다음(더 이전 시각) 메시지. 뒤집어 그리므로 화면에서는 **바로 위**에 온다.
+          // 같은 사람의 연속 발화인지 판단하는 데 쓴다.
+          ChatModel? postChatItem;
+          if (index < chatList.items.length - 1) {
+            postChatItem = chatList.items[index + 1];
+          }
+          final chatItem = chatList.items[index];
+          final isSayAgain = postChatItem?.userUid == chatItem.userUid;
 
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 내 메시지는 오른쪽, 상대 메시지는 왼쪽 말풍선으로 표시한다.
-              // (상대가 연속으로 보낸 경우 isSayAgain=true 로 이름을 생략)
-              if (chatItem.userUid == ref.read(userMeProvider).id)
-                MyChatBubble(message: chatItem.content)
-              else
-                OtherChatBubble(
-                  isSayAgain: postChatItem?.userUid == chatItem.userUid,
-                  userName: chatItem.userName,
-                  message: chatItem.content,
-                ),
-            ],
-          ),
-        );
-      },
+          return Padding(
+            // 간격을 위쪽에만 주어 이웃한 항목의 여백이 더해지지 않게 한다.
+            // 같은 사람이 연달아 말한 경우 한 덩어리로 보이도록 좁힌다.
+            padding: EdgeInsets.only(top: isSayAgain ? 4 : 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 내 메시지는 오른쪽, 상대 메시지는 왼쪽 말풍선으로 표시한다.
+                // (상대가 연속으로 보낸 경우 isSayAgain=true 로 이름을 생략)
+                if (chatItem.userUid == ref.read(userMeProvider).id)
+                  MyChatBubble(message: chatItem.content)
+                else
+                  OtherChatBubble(
+                    isSayAgain: isSayAgain,
+                    userName: chatItem.userName,
+                    message: chatItem.content,
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

@@ -47,7 +47,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final availableHeight =
         MediaQuery.of(context).size.height -
         appBar.preferredSize.height -
-        MediaQuery.of(context).padding.top;
+        MediaQuery.of(context).padding.top -
+        DefaultLayout.contentPadding.vertical;
 
     return DefaultLayout(
       title: 'DDAI Community',
@@ -56,35 +57,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           constraints: BoxConstraints(
             minHeight: availableHeight,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const _Title(),
-                const SizedBox(height: 15),
-                if (loginErrorCode != null)
-                  _ErrorText(errorCode: loginErrorCode!),
-                const SizedBox(height: 15),
-                Form(
-                  key: formKey,
-                  child: _Inputs(
-                    idTextController: idTextController,
-                    passwordTextController: passwordTextController,
-                    idValidator: _idValidator,
-                    passwordValidator: _passwordValidator,
-                  ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _Title(),
+              const SizedBox(height: 15),
+              if (loginErrorCode != null)
+                _ErrorText(errorCode: loginErrorCode!),
+              const SizedBox(height: 15),
+              Form(
+                key: formKey,
+                child: _Inputs(
+                  idTextController: idTextController,
+                  passwordTextController: passwordTextController,
+                  idValidator: _idValidator,
+                  passwordValidator: _passwordValidator,
                 ),
-                _Buttons(
-                  onLogin: _onLogin,
-                  onSignUp: _onSignUp,
-                  onAnonymous: _onAnonymous,
-                ),
-              ],
-            ),
+              ),
+              _Buttons(
+                onLogin: _onLogin,
+                onSignUp: _onSignUp,
+                onAnonymous: _onAnonymous,
+              ),
+            ],
           ),
         ),
       ),
@@ -256,31 +252,26 @@ class _Buttons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8.0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DefaultElevatedButton(
-            onPressed: onLogin,
-            text: '로그인',
-          ),
-          DefaultTextButton(
-            onPressed: onSignUp,
-            text: '회원가입',
-          ),
-          const Text(
-            '또는',
-            textAlign: TextAlign.center,
-          ),
-          DefaultTextButton(
-            onPressed: onAnonymous,
-            text: '익명으로 시작하기',
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DefaultElevatedButton(
+          onPressed: onLogin,
+          text: '로그인',
+        ),
+        DefaultTextButton(
+          onPressed: onSignUp,
+          text: '회원가입',
+        ),
+        const Text(
+          '또는',
+          textAlign: TextAlign.center,
+        ),
+        DefaultTextButton(
+          onPressed: onAnonymous,
+          text: '익명으로 시작하기',
+        ),
+      ],
     );
   }
 }

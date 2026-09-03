@@ -15,37 +15,32 @@ class LicenseScreen extends StatelessWidget {
     return DefaultLayout(
       title: '오픈소스 라이센스',
       child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Column(
-            children: [
-              ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: license.length,
-                itemBuilder: (context, index) => _LicenseItem(
-                  title: license[index].title,
-                  url: license[index].url,
-                  copyright: license[index].copyright,
-                  license: license[index].license,
-                ),
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
+        child: Column(
+          children: [
+            ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: license.length,
+              itemBuilder: (context, index) => _LicenseItem(
+                title: license[index].title,
+                url: license[index].url,
+                copyright: license[index].copyright,
+                license: license[index].license,
               ),
-              const SizedBox(height: 20),
-              ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: licenseDescription.length,
-                itemBuilder: (context, index) => _LicenseDescriptionItem(
-                  title: licenseDescription[index].title,
-                  description: licenseDescription[index].description,
-                ),
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 20),
+            ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: licenseDescription.length,
+              itemBuilder: (context, index) => _LicenseDescriptionItem(
+                title: licenseDescription[index].title,
+                description: licenseDescription[index].description,
               ),
-            ],
-          ),
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+            ),
+          ],
         ),
       ),
     );
