@@ -306,6 +306,11 @@ class AuthRepository {
   /// 차단된 유저의 글은 이후 목록 조회에서 제외된다. Firestore 때와 달리
   /// 클라이언트가 거르지 않고 RLS 정책(`is_blocked()`)이 서버에서 강제한다.
   /// 이미 차단한 유저를 다시 차단해도 실패하지 않도록 upsert 를 쓴다.
+  ///
+  /// **`ignoreDuplicates` 를 반드시 켜야 한다.** 기본 upsert 는
+  /// `ON CONFLICT DO UPDATE` 로 나가는데 `block_user` 에는 UPDATE 정책이 없어서,
+  /// 두 번째 차단이 RLS 위반(403)으로 막힌다. `ignoreDuplicates` 는
+  /// `ON CONFLICT DO NOTHING` 이라 INSERT 정책만으로 통과한다.
   static Future<bool> blockUser({
     required String blockUserUid,
   }) async {
@@ -319,7 +324,7 @@ class AuthRepository {
       await supabase.from('block_user').upsert({
         'blocker_uid': user.id,
         'blocked_uid': blockUserUid,
-      });
+      }, ignoreDuplicates: true);
 
       return true;
     } catch (error) {

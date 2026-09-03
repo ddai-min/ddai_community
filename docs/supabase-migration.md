@@ -1363,13 +1363,102 @@ alter table public.report  add constraint report_reason_len     check (char_leng
 - `.env` 는 gitignore 되어 있고 저장소 이력에도 없다
 - Flutter `Text` 렌더링이라 XSS 없음
 
-### 아직 남은 것
+### 후속 — 나머지 항목 처리
 
-- **Android 릴리즈가 디버그 키로 서명된다** — `signingConfig = signingConfigs.debug`,
-  Flutter 템플릿 TODO 그대로. 스토어가 거부하므로 실제 배포는 다른 경로일 것이나 저장소 상태로는 함정.
-- **iOS 가 안 쓰는 권한 3개를 선언한다** — 카메라·마이크·사진 라이브러리. pubspec 에 해당 패키지가 없다.
-- `mailer_autoconfirm = true` — 이메일 소유 증명 없이 가입된다.
-- `anon` 롤의 TRUNCATE 권한 — PostgREST 가 발행하지 않아 도달 경로는 없다.
+| 항목 | 결과 |
+| --- | --- |
+| Android 릴리즈가 디버그 키로 서명 | `key.properties` 기반으로 교체. 없으면 릴리즈 빌드 **실패** |
+| iOS 미사용 권한 3개 | 제거 (카메라·마이크·사진 라이브러리) |
+| `NSAllowsLocalNetworking` | **유지** — 로컬 Supabase 개발용. 인터넷 구간 ATS 는 그대로 |
+| `block_user` upsert | 실제 버그였음 → 수정 |
+| `updateUserName` 순서 | `profile` 을 먼저 쓰도록 교체 |
+| `mailer_autoconfirm` | **보류** — 커스텀 SMTP 가 선행 조건 |
+| anon/authenticated 과잉 권한 | SQL 준비, **미적용** |
+
+#### Android 릴리즈 서명
+
+`signingConfig = signingConfigs.debug` 가 Flutter 템플릿 TODO 그대로 남아 있었다.
+디버그 키는 모든 개발 머신이 똑같이 갖고 있는 공개된 키라 서명의 의미가 없다.
+
+`android/key.properties`(gitignore 됨)에서 읽도록 바꾸고, **파일이 없으면 릴리즈 빌드를
+실패시킨다.** 조용히 디버그 키로 떨어지면 그게 다시 함정이 되기 때문이다 — 버전 처리와 같은
+원칙이다. 설정 단계가 아니라 `gradle.taskGraph.whenReady` 에서 검사하므로 debug 빌드는 영향이 없다.
+
+| 확인 항목 | 결과 |
+| --- | --- |
+| `key.properties` 없이 `flutter build apk --release` | **실패** + 안내 메시지 |
+| 임시 keystore 로 릴리즈 빌드 | 성공 · `Signer #1 certificate DN: CN=THROWAWAY PROBE` (디버그 키 아님) |
+| `flutter build apk --debug` | 정상 — 릴리즈 검사에 안 걸림 |
+
+> keystore 는 **소유자가 직접 만들어야 한다.** 스토어에 이미 올린 앱이면 반드시 기존 키를
+> 그대로 써야 하고, 잃어버리면 업데이트를 올릴 수 없다. `android/key.properties.example` 참고.
+
+#### `block_user` upsert — 실제로 있던 버그
+
+`blockUser` 의 주석은 "이미 차단한 유저를 다시 차단해도 실패하지 않도록 upsert 를 쓴다" 였는데,
+기본 upsert 는 `ON CONFLICT DO UPDATE` 로 나가고 `block_user` 에는 **UPDATE 정책이 없다.**
+실측 결과:
+
+```
+[upsert(merge)  1회차] http=201
+[upsert(merge)  2회차] http=403  42501 new row violates row-level security policy (USING expression)
+[upsert(ignore) 1회차] http=201
+[upsert(ignore) 2회차] http=201
+```
+
+`ignoreDuplicates: true`(= `ON CONFLICT DO NOTHING`)로 고쳤다. INSERT 정책만으로 통과한다.
+
+#### `mailer_autoconfirm` — 지금 켜면 안 된다
+
+이메일 확인이 꺼져 있어 소유 증명 없이 가입된다. 다만 **그냥 켜면 이메일 가입이 통째로 막힌다.**
+Supabase 기본 메일 서비스는 시간당 2통이고, **프로젝트 팀 멤버가 아닌 주소로는 발송을 거부한다.**
+
+순서는 ① Authentication → SMTP Settings 에 커스텀 SMTP(Resend·SendGrid·SES 등) 설정
+② 그 다음 Confirm email 활성화다.
+
+앱 쪽은 이미 준비돼 있다 — `AuthRepository.signUp` 이 `session == null` 을 잡아
+`emailNotConfirmed` 로 내리고, 가입 화면이 "인증 메일을 보냈습니다" 를 띄운 뒤 로그인 화면으로
+보낸다. 지금은 실행되지 않는 죽은 코드지만 켜는 순간 살아난다.
+
+#### 과잉 권한 정리 *(SQL 준비 · 미적용)*
+
+Supabase 클라우드 기본값은 `public` 의 모든 테이블에 `anon`·`authenticated` 로 7가지 권한을
+전부 준다. RLS 가 막아주지만 **TRUNCATE 는 RLS 를 우회하고**(PostgREST 가 발행하지 않아 지금
+도달 경로는 없다), 정책 없는 명령까지 권한만 열려 있으면 정책 하나 잘못 추가하는 순간 구멍이 된다.
+권한을 정책과 1:1 로 맞춘다.
+
+```sql
+-- anon: 로그인 전 강제 업데이트 확인(app_config SELECT)만 남긴다
+revoke delete, insert, references, trigger, truncate, update on public.app_config from anon;
+revoke delete, insert, references, select, trigger, truncate, update
+  on public.block_user, public.board, public.chat, public.comment,
+     public.profile, public.report
+  from anon;
+
+-- authenticated: 정책이 있는 명령만 남긴다
+revoke delete, insert, references, trigger, truncate, update on public.app_config from authenticated;
+revoke references, trigger, truncate, update                 on public.block_user from authenticated;
+revoke references, trigger, truncate, update                 on public.board      from authenticated;
+revoke delete, references, trigger, truncate, update         on public.chat       from authenticated;
+revoke delete, references, trigger, truncate, update         on public.comment    from authenticated;
+revoke delete, insert, references, trigger, truncate         on public.profile    from authenticated;
+revoke delete, references, select, trigger, truncate, update on public.report     from authenticated;
+```
+
+적용하면 남는 권한:
+
+| 테이블 | `anon` | `authenticated` |
+| --- | --- | --- |
+| `app_config` | SELECT | SELECT |
+| `block_user` | — | SELECT · INSERT · DELETE |
+| `board` | — | SELECT · INSERT · DELETE |
+| `chat` | — | SELECT · INSERT |
+| `comment` | — | SELECT · INSERT |
+| `profile` | — | SELECT · UPDATE(user_name) |
+| `report` | — | INSERT |
+
+> 새 테이블을 만들면 Supabase 이벤트 트리거가 다시 ALL 을 준다. 테이블을 추가할 때마다
+> 같은 정리를 해줘야 한다.
 
 ---
 

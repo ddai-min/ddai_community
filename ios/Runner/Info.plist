@@ -26,17 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- 로컬 네트워크에 한해 평문 HTTP 를 허용한다. `supabase start` 로 띄운
+	     로컬 스택(127.0.0.1)에 붙기 위한 것이고, 인터넷 구간 ATS 는 그대로라
+	     운영 트래픽은 https 로만 나간다. 로컬 개발을 안 하게 되면 지워도 된다. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>이 앱은 카메라에 접근하여 사진을 촬영합니다.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>이 앱은 마이크에 접근하여 음성을 녹음합니다.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>이 앱은 사진 라이브러리에 접근하여 사진을 업로드합니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -226,6 +226,17 @@ features/<feature>/
   원인을 찾기 어렵다.
 - **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
   `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
+- **릴리즈 서명**: `android/key.properties` 가 있어야 릴리즈 빌드가 된다. 없으면
+  **디버그 키로 조용히 서명하지 않고 Gradle 이 실패한다** (`android/app/build.gradle` 의
+  `taskGraph.whenReady` 검사). 템플릿은 `android/key.properties.example`.
+  - 디버그 키는 모든 개발 머신이 똑같이 갖고 있는 공개된 키다. 그걸로 서명한 산출물은
+    스토어도 거부한다. 예전엔 `signingConfig = signingConfigs.debug` 가 그대로 있었다.
+  - **keystore 를 잃어버리면 같은 앱으로 업데이트를 올릴 수 없다.** 반드시 백업한다.
+  - `key.properties` 와 `*.jks` · `*.keystore` 는 `android/.gitignore` 에 등록되어 있다.
+- **`blockUser` 의 `ignoreDuplicates: true` 를 빼지 말 것**: 기본 upsert 는
+  `ON CONFLICT DO UPDATE` 로 나가는데 `block_user` 에는 UPDATE 정책이 없어서
+  **이미 차단한 유저를 다시 차단하면 403** 으로 막힌다. (주석은 "실패하지 않는다" 였지만
+  실제로는 실패하고 있었다) `ignoreDuplicates` 는 `ON CONFLICT DO NOTHING` 이라 통과한다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
 - **SECURITY DEFINER 함수는 `private` 스키마에 둔다**: `is_blocked()` · `handle_new_user()` 는

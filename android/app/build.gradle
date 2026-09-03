@@ -1,8 +1,36 @@
+import java.util.Properties
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+}
+
+// 릴리즈 서명 정보는 android/key.properties 에서 읽는다. 이 파일과 keystore 는
+// android/.gitignore 에 등록되어 있으니 절대 커밋하지 않는다.
+// 채워야 할 항목은 android/key.properties.example 참고.
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
+// 서명 정보가 없으면 **조용히 디버그 키로 서명하지 않고 릴리즈 빌드를 실패시킨다.**
+// 디버그 키는 모든 개발 머신이 똑같이 갖고 있는 공개된 키라 서명의 의미가 없고,
+// 그 상태로 만든 산출물은 스토어도 거부한다. (버전 처리와 같은 원칙 — pubspec 참고)
+// 설정 단계에서 던지면 debug 빌드까지 막히므로 릴리즈 태스크가 실제로 잡힐 때만 막는다.
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any {
+        it.name == "assembleRelease" || it.name == "bundleRelease"
+    }
+    if (wantsRelease && !keystorePropertiesFile.exists()) {
+        throw new GradleException(
+            "android/key.properties 가 없어 릴리즈 서명을 할 수 없습니다.\n" +
+            "android/key.properties.example 을 복사해 실제 keystore 경로와 비밀번호를 채우세요.\n" +
+            "keystore 를 잃어버리면 스토어에 업데이트를 올릴 수 없으니 반드시 백업하세요."
+        )
+    }
 }
 
 android {
@@ -29,11 +57,24 @@ android {
         versionName = flutter.versionName
     }
 
+    if (keystorePropertiesFile.exists()) {
+        signingConfigs {
+            release {
+                storeFile = file(keystoreProperties["storeFile"])
+                storePassword = keystoreProperties["storePassword"]
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // 파일이 없을 때는 signingConfig 를 비워 둔다. 위 taskGraph 검사가
+            // 먼저 걸리므로 서명 없는 산출물이 만들어질 일은 없다.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.release
+            }
         }
     }
 }

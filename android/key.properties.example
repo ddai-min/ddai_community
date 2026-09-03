@@ -1,0 +1,17 @@
+# 릴리즈 서명 설정 템플릿.
+#
+# 이 파일을 같은 디렉터리에 `key.properties` 로 복사한 뒤 실제 값을 채운다.
+# `key.properties` 와 keystore 파일은 android/.gitignore 에 등록되어 있다 — 커밋하지 않는다.
+#
+# keystore 가 아직 없다면 (스토어에 이미 올린 앱이라면 기존 키를 그대로 써야 한다):
+#
+#   keytool -genkey -v -keystore ~/ddai-upload-keystore.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# ⚠️ 이 keystore 를 잃어버리면 같은 앱으로 업데이트를 올릴 수 없다. 반드시 백업할 것.
+#    (Play App Signing 을 쓰면 업로드 키는 재발급이 가능하지만, 그것도 신청 절차가 필요하다)
+
+storeFile=/Users/사용자이름/ddai-upload-keystore.jks
+storePassword=여기에_keystore_비밀번호
+keyAlias=upload
+keyPassword=여기에_키_비밀번호
