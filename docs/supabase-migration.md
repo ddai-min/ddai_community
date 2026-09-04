@@ -1638,6 +1638,25 @@ for each row execute function supabase_functions.http_request(
 > `x-webhook-secret` 이 유일한 관문이니 짧게 잡지 말 것. 함수는 이 값을 상수 시간으로 비교한다.
 > 메일 발송이 실패해도 신고 저장 자체는 이미 끝난 뒤다 — 웹훅은 `pg_net` 으로 비동기 실행된다.
 
+### 4. 신고 대상 종류 — `report.report_content_type`
+
+신고를 게시글 밖(댓글·채팅)으로 넓히면서 필요해졌다. `report_content_id` 만으로는
+운영자가 **어느 테이블의 id 인지 알 수 없다.** 기존 행은 전부 게시글 신고라 기본값이 맞다.
+
+```sql
+alter table public.report
+  add column if not exists report_content_type text not null default 'board';
+
+alter table public.report
+  drop constraint if exists report_content_type_valid;
+alter table public.report
+  add constraint report_content_type_valid
+  check (report_content_type in ('board', 'comment', 'chat'));
+```
+
+> 값 목록은 앱의 `ReportContentType` enum 과 **같아야 한다.** 한쪽만 늘리면
+> insert 가 CHECK 위반으로 막히는데, `report` 는 조용히 실패하는 자리라 찾기 어렵다.
+
 ### 적용 확인
 
 ```sql

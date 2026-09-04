@@ -3,18 +3,17 @@ import 'package:flutter/material.dart';
 
 /// 게시글 상세 화면의 댓글 한 줄.
 ///
-/// [isMine] 이면 삭제 버튼을 함께 보여준다. 화면에서 감추는 것은 안내일 뿐이고,
-/// 실제 권한은 RLS(`comment_delete_own`)가 서버에서 강제한다.
+/// 오른쪽 메뉴 버튼은 항상 보이고, 무엇이 뜰지는 호출부가 정한다.
+/// (내 댓글이면 삭제, 남의 댓글이면 신고·차단)
+/// 실제 권한은 RLS 가 서버에서 강제하므로 화면의 구분은 안내일 뿐이다.
 class CommentListItem extends StatelessWidget {
   final CommentModel commentModel;
-  final bool isMine;
-  final VoidCallback onDelete;
+  final VoidCallback onMenuPressed;
 
   const CommentListItem({
     super.key,
     required this.commentModel,
-    required this.isMine,
-    required this.onDelete,
+    required this.onMenuPressed,
   });
 
   @override
@@ -37,16 +36,13 @@ class CommentListItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (isMine)
-                TextButton(
-                  onPressed: onDelete,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.grey[600],
-                    visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(fontSize: 13),
-                  ),
-                  child: const Text('삭제'),
-                ),
+              IconButton(
+                onPressed: onMenuPressed,
+                visualDensity: VisualDensity.compact,
+                iconSize: 20.0,
+                color: Colors.grey[600],
+                icon: const Icon(Icons.more_vert),
+              ),
             ],
           ),
           Text(commentModel.content),

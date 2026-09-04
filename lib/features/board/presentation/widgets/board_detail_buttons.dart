@@ -1,12 +1,9 @@
 import 'package:ddai_community/core/widgets/default_dialog.dart';
-import 'package:ddai_community/core/widgets/text_field_dialog.dart';
-import 'package:ddai_community/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
+import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
 import 'package:ddai_community/features/user/domain/report_parameter.dart';
-import 'package:ddai_community/features/user/domain/user_model.dart';
-import 'package:ddai_community/features/user/presentation/providers/report_provider.dart';
-import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:ddai_community/features/user/presentation/widgets/report_block_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,8 +64,8 @@ class _BoardDeleteButtonState extends ConsumerState<BoardDeleteButton> {
 
 /// 게시글 신고 버튼. (작성자 본인이 아닐 때 노출)
 ///
-/// 신고 사유를 입력받아 `report` 컬렉션에 기록한다.
-class BoardReportButton extends ConsumerStatefulWidget {
+/// 실제 동작은 [showReportDialog] 가 맡는다. 채팅·댓글의 신고와 같은 구현이다.
+class BoardReportButton extends ConsumerWidget {
   final String userUid;
   final String userName;
   final String boardId;
@@ -81,39 +78,16 @@ class BoardReportButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BoardReportButton> createState() => _BoardReportButtonState();
-}
-
-class _BoardReportButtonState extends ConsumerState<BoardReportButton> {
-  TextEditingController reportTextController = TextEditingController();
-
-  @override
-  void dispose() {
-    reportTextController.dispose();
-
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextButton(
       onPressed: () {
-        showDialog(
+        showReportDialog(
           context: context,
-          builder: (_) {
-            return TextFieldDialog(
-              textController: reportTextController,
-              contentText: '신고 사유를 입력해주세요.',
-              hintText: '신고 사유',
-              buttonText: '신고',
-              onPressed: () {
-                _reportBoard(
-                  userName: widget.userName,
-                  userUid: widget.userUid,
-                );
-              },
-            );
-          },
+          ref: ref,
+          contentType: ReportContentType.board,
+          contentId: boardId,
+          userUid: userUid,
+          userName: userName,
         );
       },
       style: TextButton.styleFrom(
@@ -122,78 +96,38 @@ class _BoardReportButtonState extends ConsumerState<BoardReportButton> {
       child: const Text('신고'),
     );
   }
-
-  void _reportBoard({
-    required String userName,
-    required String userUid,
-  }) async {
-    final isReportSuccess = await ref.read(
-      reportProvider(
-        ReportParams(
-          reporterUserName: ref.read(userMeProvider).userName,
-          reporterUserUid: ref.read(userMeProvider).id,
-          reportedUserName: userName,
-          reportedUserUid: userUid,
-          reportReason: reportTextController.text,
-          reportContentId: widget.boardId,
-        ),
-      ).future,
-    );
-
-    if (isReportSuccess) {
-      reportTextController.text = '';
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) {
-          return DefaultDialog(
-            titleText: '신고 완료',
-            contentText: '신고가 완료되었습니다.',
-            buttonText: '확인',
-            onPressed: () {
-              context.pop();
-              context.pop();
-            },
-          );
-        },
-      );
-    }
-  }
 }
 
 /// 작성자 차단 버튼. (작성자 본인이 아닐 때 노출)
 ///
-/// 차단하면 `user/{uid}/blockUser` 에 기록되어 이후 목록 조회에서 해당 유저의 글이 제외된다.
-class BoardBlockButton extends ConsumerStatefulWidget {
+/// 차단하면 이후 목록 조회에서 RLS(`is_blocked()`)가 그 유저의 글을 제외한다.
+/// 이미 받아 둔 목록에는 반영되지 않으므로 차단 후 목록을 다시 받는다.
+class BoardBlockButton extends ConsumerWidget {
   final String userUid;
+  final String userName;
 
   const BoardBlockButton({
     super.key,
     required this.userUid,
+    required this.userName,
   });
 
   @override
-  ConsumerState<BoardBlockButton> createState() => _BoardBlockButtonState();
-}
-
-class _BoardBlockButtonState extends ConsumerState<BoardBlockButton> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextButton(
       onPressed: () {
-        showDialog(
+        showBlockDialog(
           context: context,
-          builder: (_) {
-            return DefaultDialog(
-              contentText: '작성자를 차단하시겠습니까?',
-              buttonText: '차단',
-              onPressed: () {
-                _blockUser(
-                  userMe: ref.read(userMeProvider),
-                  blockUserUid: widget.userUid,
-                );
-              },
+          ref: ref,
+          userUid: userUid,
+          userName: userName,
+          onBlocked: () {
+            ref.read(boardListProvider.notifier).refresh();
+            // 채팅은 구독을 다시 맺어야 이전 메시지까지 새 판정으로 받아온다.
+            ref.invalidate(chatListProvider);
+
+            context.goNamed(
+              HomeTab.routeName,
             );
           },
         );
@@ -203,56 +137,5 @@ class _BoardBlockButtonState extends ConsumerState<BoardBlockButton> {
       ),
       child: const Text('차단'),
     );
-  }
-
-  void _blockUser({
-    required UserModel userMe,
-    required String blockUserUid,
-  }) async {
-    if (userMe.isAnonymous) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) {
-          return DefaultDialog(
-            contentText: '로그인 후\n차단할 수 있습니다.',
-            buttonText: '확인',
-            onPressed: () {
-              context.pop();
-              context.pop();
-            },
-          );
-        },
-      );
-
-      return;
-    }
-
-    final isBlockSuccess = await ref.read(
-      blockUserProvider(
-        blockUserUid,
-      ).future,
-    );
-
-    if (isBlockSuccess) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) {
-          return DefaultDialog(
-            titleText: '차단 완료',
-            contentText: '차단이 완료되었습니다.',
-            buttonText: '확인',
-            onPressed: () {
-              ref.read(boardListProvider.notifier).refresh();
-
-              context.goNamed(
-                HomeTab.routeName,
-              );
-            },
-          );
-        },
-      );
-    }
   }
 }

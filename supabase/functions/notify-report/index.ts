@@ -44,10 +44,18 @@ Deno.serve(async (req) => {
     return json({ code: 'bad_request' }, 400)
   }
 
+  const CONTENT_LABEL: Record<string, string> = {
+    board: '게시글',
+    comment: '댓글',
+    chat: '채팅',
+  }
+  const contentType = record.report_content_type ?? 'board'
+
   const body = [
     '새 신고가 접수되었습니다.',
     '',
     `접수 시각   : ${record.created_at}`,
+    `대상 종류   : ${CONTENT_LABEL[contentType] ?? contentType} (${contentType})`,
     `신고자      : ${record.reporter_user_name} (${record.reporter_user_uid})`,
     `피신고자    : ${record.reported_user_name} (${record.reported_user_uid})`,
     `대상 콘텐츠 : ${record.report_content_id}`,
@@ -56,6 +64,7 @@ Deno.serve(async (req) => {
     '--------',
     record.report_reason,
     '',
+    `대상 행: ${contentType} 테이블의 id = ${record.report_content_id}`,
     'report 테이블은 앱에서 조회할 수 없다. 확인과 조치는 Supabase 대시보드에서 한다.',
   ].join('\n')
 
@@ -68,7 +77,8 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: ALERT_FROM,
       to: [ALERT_TO],
-      subject: `[DDAI] 신고 접수 — ${record.reported_user_name}`,
+      subject:
+        `[DDAI] ${CONTENT_LABEL[contentType] ?? contentType} 신고 — ${record.reported_user_name}`,
       // 신고 사유는 이용자가 쓴 자유 입력이다. html 로 보내면 메일 본문에 마크업이
       // 그대로 주입되므로 text 로만 보낸다.
       text: body,

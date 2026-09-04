@@ -22,6 +22,7 @@ class ReportRepository {
         'reported_user_uid': reportParams.reportedUserUid,
         'report_reason': reportParams.reportReason,
         'report_content_id': reportParams.reportContentId,
+        'report_content_type': reportParams.reportContentType.value,
       });
 
       return true;

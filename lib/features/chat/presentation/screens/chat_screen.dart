@@ -1,12 +1,16 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
+import 'package:ddai_community/core/widgets/content_action_sheet.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/features/chat/domain/chat_model.dart';
 import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/chat_text_field.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/my_chat_bubble.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/other_chat_bubble.dart';
+import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
+import 'package:ddai_community/features/user/domain/report_parameter.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:ddai_community/features/user/presentation/widgets/report_block_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -145,7 +149,7 @@ class _Body extends ConsumerWidget {
                     onLongPress: ChatList.isPending(chatItem.id)
                         ? null
                         : () {
-                            _confirmDelete(
+                            _showMyActions(
                               context: context,
                               ref: ref,
                               chatId: chatItem.id,
@@ -157,12 +161,90 @@ class _Body extends ConsumerWidget {
                     isSayAgain: isSayAgain,
                     userName: chatItem.userName,
                     message: chatItem.content,
+                    onLongPress: () {
+                      _showOtherActions(
+                        context: context,
+                        ref: ref,
+                        chat: chatItem,
+                      );
+                    },
                   ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  /// 내 메시지를 길게 눌렀을 때. 지울 수 있는 것은 내 것뿐이다.
+  void _showMyActions({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String chatId,
+  }) {
+    showContentActionSheet(
+      context: context,
+      actions: [
+        ContentAction(
+          label: '삭제',
+          icon: Icons.delete_outline,
+          isDestructive: true,
+          onPressed: () {
+            _confirmDelete(
+              context: context,
+              ref: ref,
+              chatId: chatId,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// 남의 메시지를 길게 눌렀을 때. 신고·차단 진입점이다.
+  void _showOtherActions({
+    required BuildContext context,
+    required WidgetRef ref,
+    required ChatModel chat,
+  }) {
+    showContentActionSheet(
+      context: context,
+      actions: [
+        ContentAction(
+          label: '신고',
+          icon: Icons.flag_outlined,
+          onPressed: () {
+            showReportDialog(
+              context: context,
+              ref: ref,
+              contentType: ReportContentType.chat,
+              contentId: chat.id,
+              userUid: chat.userUid,
+              userName: chat.userName,
+            );
+          },
+        ),
+        ContentAction(
+          label: '차단',
+          icon: Icons.block,
+          isDestructive: true,
+          onPressed: () {
+            showBlockDialog(
+              context: context,
+              ref: ref,
+              userUid: chat.userUid,
+              userName: chat.userName,
+              onBlocked: () {
+                // 차단은 RLS 가 조회 시점에 거른다. 스트림을 다시 맺어야
+                // 이미 받아 둔 메시지까지 걷힌다.
+                ref.invalidate(chatListProvider);
+                ref.read(boardListProvider.notifier).refresh();
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 

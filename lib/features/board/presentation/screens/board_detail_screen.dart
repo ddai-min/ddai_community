@@ -1,4 +1,5 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
+import 'package:ddai_community/core/widgets/content_action_sheet.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_list_placeholder.dart';
@@ -10,7 +11,10 @@ import 'package:ddai_community/features/board/presentation/providers/comment_pro
 import 'package:ddai_community/features/board/presentation/widgets/board_detail_buttons.dart';
 import 'package:ddai_community/features/board/presentation/widgets/comment_list_item.dart';
 import 'package:ddai_community/features/board/presentation/widgets/comment_text_field.dart';
+import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
+import 'package:ddai_community/features/user/domain/report_parameter.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:ddai_community/features/user/presentation/widgets/report_block_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -135,6 +139,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
         BoardBlockButton(
           userUid: userUid,
+          userName: userName,
         ),
       ];
     }
@@ -272,18 +277,80 @@ class _CommentList extends ConsumerWidget {
 
           return CommentListItem(
             commentModel: comment,
-            isMine: comment.userUid == myUid,
-            onDelete: () {
-              _confirmDelete(
+            onMenuPressed: () {
+              _showActions(
                 context: context,
                 ref: ref,
-                commentId: comment.id,
+                comment: comment,
+                isMine: comment.userUid == myUid,
               );
             },
           );
         },
       );
     }
+  }
+
+  /// 댓글 오른쪽 메뉴. 내 댓글이면 삭제만, 남의 댓글이면 신고·차단이 뜬다.
+  void _showActions({
+    required BuildContext context,
+    required WidgetRef ref,
+    required CommentModel comment,
+    required bool isMine,
+  }) {
+    showContentActionSheet(
+      context: context,
+      actions: isMine
+          ? [
+              ContentAction(
+                label: '삭제',
+                icon: Icons.delete_outline,
+                isDestructive: true,
+                onPressed: () {
+                  _confirmDelete(
+                    context: context,
+                    ref: ref,
+                    commentId: comment.id,
+                  );
+                },
+              ),
+            ]
+          : [
+              ContentAction(
+                label: '신고',
+                icon: Icons.flag_outlined,
+                onPressed: () {
+                  showReportDialog(
+                    context: context,
+                    ref: ref,
+                    contentType: ReportContentType.comment,
+                    contentId: comment.id,
+                    userUid: comment.userUid,
+                    userName: comment.userName,
+                  );
+                },
+              ),
+              ContentAction(
+                label: '차단',
+                icon: Icons.block,
+                isDestructive: true,
+                onPressed: () {
+                  showBlockDialog(
+                    context: context,
+                    ref: ref,
+                    userUid: comment.userUid,
+                    userName: comment.userName,
+                    onBlocked: () {
+                      // 차단은 RLS 가 조회 시점에 거른다. 목록을 다시 받아야 걷힌다.
+                      ref.read(commentListProvider(boardId).notifier).refresh();
+                      ref.read(boardListProvider.notifier).refresh();
+                      ref.invalidate(chatListProvider);
+                    },
+                  );
+                },
+              ),
+            ],
+    );
   }
 
   void _confirmDelete({
