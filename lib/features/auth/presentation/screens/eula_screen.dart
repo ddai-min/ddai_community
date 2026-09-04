@@ -1,3 +1,6 @@
+import 'package:ddai_community/core/constants/app_links.dart';
+import 'package:ddai_community/core/constants/colors.dart';
+import 'package:ddai_community/core/utils/link_utils.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
@@ -115,7 +118,7 @@ class _Body extends StatelessWidget {
           _sectionTitle('최종 사용자 사용권 계약 (EULA)'),
           const TextSpan(
             text:
-                '\n최종 수정일: 2026년 9월 3일\n\n'
+                '\n최종 수정일: 2026년 9월 4일\n\n'
                 '본 앱(이하 "서비스")을 설치하고 사용하는 경우, 귀하는 아래의 조건에 동의하는 것으로 간주됩니다. '
                 '본 약관에 동의하지 않는 경우 서비스를 사용하지 마십시오.\n\n',
           ),
@@ -224,8 +227,12 @@ class _Body extends StatelessWidget {
                 '- 수집한 정보는 이용자의 동의 없이 제3자에게 제공하지 않습니다. '
                 '다만 법령에 따른 적법한 요구가 있는 경우는 예외로 합니다.\n'
                 '- 신고 기능을 이용하면 신고자와 피신고자의 닉네임 및 식별자, 신고 사유가 '
-                '신고 처리 목적으로 운영자에게 전달되어 보관됩니다.\n\n',
+                '신고 처리 목적으로 운영자에게 전달되어 보관됩니다.\n'
+                '- 수집 항목과 보유 기간, 처리 위탁 및 국외 이전, 이용자의 권리 등 자세한 사항은 '
+                '개인정보처리방침에서 확인하실 수 있습니다.\n',
           ),
+          _privacyPolicyLink(context),
+          const TextSpan(text: '\n\n'),
           _sectionTitle('12. 제3자 서비스'),
           const TextSpan(
             text:
@@ -248,9 +255,11 @@ class _Body extends StatelessWidget {
             text:
                 '- 이용자는 프로필 > 프로필 관리 > 계정 삭제에서 언제든지 계정을 삭제할 수 있습니다. '
                 '이메일 계정은 본인 확인을 위해 비밀번호 재확인 절차를 거칩니다.\n'
-                '- 계정을 삭제하면 해당 계정이 작성한 게시글, 댓글, 채팅, 신고 및 차단 기록이 함께 삭제되며 '
+                '- 계정을 삭제하면 해당 계정이 작성한 게시글, 댓글, 채팅과 차단 기록이 함께 삭제되며 '
                 '복구할 수 없습니다.\n'
-                '- 삭제된 계정의 정보는 관계 법령에 따른 보존 의무가 있는 경우를 제외하고 지체 없이 파기됩니다.\n\n',
+                '- 다만 신고 기록은 반복 위반 확인과 분쟁 대응을 위해 신고 접수일로부터 3년간 보관합니다. '
+                '탈퇴 시점에 계정 식별자와의 연결은 즉시 제거되어, 이후에는 특정 개인을 알아볼 수 없는 형태로만 남습니다.\n'
+                '- 그 밖의 정보는 관계 법령에 따른 보존 의무가 있는 경우를 제외하고 지체 없이 파기됩니다.\n\n',
           ),
           _sectionTitle('15. 보증의 부인'),
           const TextSpan(
@@ -289,11 +298,62 @@ class _Body extends StatelessWidget {
           ),
           _sectionTitle('20. 동의'),
           const TextSpan(
-            text: '본 앱을 설치하고 사용하는 경우, 귀하는 본 계약의 모든 조항에 동의한 것으로 간주됩니다.\n\n',
+            text:
+                '본 앱을 설치하고 사용하는 경우, 귀하는 본 계약의 모든 조항에 동의한 것으로 간주됩니다.\n'
+                '또한 "동의하고 계속하기" 를 누르면 개인정보처리방침을 확인하였으며, '
+                '서비스 제공에 필요한 범위에서 개인정보를 수집·이용하는 데 동의하는 것으로 봅니다.\n\n',
           ),
         ],
       ),
     );
+  }
+
+  /// 개인정보처리방침으로 나가는 인라인 링크.
+  ///
+  /// [TextSpan] + `TapGestureRecognizer` 가 아니라 [WidgetSpan] 을 쓴다.
+  /// recognizer 는 직접 dispose 해야 해서 이 위젯을 stateful 로 바꿔야 하는데,
+  /// 링크 하나 때문에 그럴 이유가 없다.
+  WidgetSpan _privacyPolicyLink(BuildContext context) {
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: GestureDetector(
+        onTap: () {
+          _openPrivacyPolicy(context);
+        },
+        child: const Text(
+          '개인정보처리방침 전문 보기',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: primaryColor,
+            decoration: TextDecoration.underline,
+            decorationColor: primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 방침 전문을 외부 브라우저로 연다.
+  ///
+  /// 가입 전에는 프로필 화면에 갈 수 없으므로, 동의 시점에 방침을 볼 수 있는 곳은 여기뿐이다.
+  void _openPrivacyPolicy(BuildContext context) async {
+    final isOpened = await LinkUtils.open(privacyPolicyUrl);
+
+    if (!isOpened) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return DefaultDialog(
+            contentText: '브라우저를 열 수 없습니다.\n잠시 후 다시 시도해주세요.',
+            buttonText: '확인',
+            onPressed: () {
+              context.pop();
+            },
+          );
+        },
+      );
+    }
   }
 
   TextSpan _sectionTitle(String title) {

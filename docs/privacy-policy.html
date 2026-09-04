@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDAI Community 개인정보처리방침</title>
+<meta name="description" content="DDAI Community 앱의 개인정보처리방침입니다.">
+<style>
+  :root {
+    --accent: #5F9EA0;
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #6a737d;
+    --line: #e3e6ea;
+    --box: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a;
+      --fg: #e6e9ec;
+      --muted: #9aa4ad;
+      --line: #2c3238;
+      --box: #1c2126;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 80px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+                 "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 {
+    font-size: 1.6rem;
+    line-height: 1.4;
+    margin: 0 0 8px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid var(--accent);
+  }
+  h2 {
+    font-size: 1.12rem;
+    margin: 40px 0 12px;
+    padding-left: 10px;
+    border-left: 4px solid var(--accent);
+    scroll-margin-top: 24px;
+  }
+  p, li { margin: 8px 0; }
+  ul { padding-left: 22px; }
+  ul ul { margin: 4px 0; }
+  a { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 0.9rem; margin: 0 0 28px; }
+  .lead {
+    background: var(--box);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 0 0 8px;
+  }
+  nav.toc {
+    background: var(--box);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 28px 0 0;
+    font-size: 0.94rem;
+  }
+  nav.toc ol { margin: 8px 0 0; padding-left: 22px; }
+  nav.toc li { margin: 2px 0; }
+  nav.toc strong { font-size: 1rem; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--box); font-weight: 600; white-space: nowrap; }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: var(--box);
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.94rem;
+  }
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>DDAI Community 개인정보처리방침</h1>
+<p class="meta">시행일: 2026년 9월 4일 · 버전 1.0</p>
+
+<p class="lead">
+  DDAI Community(이하 &ldquo;서비스&rdquo;)의 운영자는 「개인정보 보호법」 제30조에 따라
+  정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하게 처리할 수 있도록
+  다음과 같이 개인정보처리방침을 수립·공개합니다.
+</p>
+
+<nav class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#a1">처리하는 개인정보의 항목 및 수집 방법</a></li>
+    <li><a href="#a2">개인정보의 처리 목적</a></li>
+    <li><a href="#a3">개인정보의 보유 및 이용 기간</a></li>
+    <li><a href="#a4">개인정보의 파기 절차 및 방법</a></li>
+    <li><a href="#a5">개인정보의 제3자 제공</a></li>
+    <li><a href="#a6">개인정보 처리업무의 위탁</a></li>
+    <li><a href="#a7">개인정보의 국외 이전</a></li>
+    <li><a href="#a8">정보주체와 법정대리인의 권리·의무 및 행사 방법</a></li>
+    <li><a href="#a9">개인정보의 안전성 확보 조치</a></li>
+    <li><a href="#a10">개인정보 자동 수집 장치의 설치·운영 및 거부</a></li>
+    <li><a href="#a11">만 14세 미만 아동의 개인정보</a></li>
+    <li><a href="#a12">개인정보 보호책임자</a></li>
+    <li><a href="#a13">권익침해 구제 방법</a></li>
+    <li><a href="#a14">개인정보처리방침의 변경</a></li>
+  </ol>
+</nav>
+
+<h2 id="a1">제1조 (처리하는 개인정보의 항목 및 수집 방법)</h2>
+<p>서비스는 아래의 개인정보를 처리합니다. 모든 정보는 이용자가 서비스를 이용하는 과정에서
+   직접 입력하거나 자동으로 생성되며, 운영자가 이용자 외의 경로로 수집하는 정보는 없습니다.</p>
+<ul>
+  <li><strong>이메일 회원가입 시(필수)</strong> — 이메일 주소, 비밀번호, 닉네임<br>
+      비밀번호는 복호화할 수 없는 형태로 암호화되어 저장되며 운영자는 원문을 알 수 없습니다.</li>
+  <li><strong>익명 로그인 시</strong> — 자동으로 생성된 닉네임과 계정 식별자<br>
+      익명 계정은 이메일 주소 등 이용자를 특정할 수 있는 정보를 <strong>수집하지 않습니다.</strong></li>
+  <li><strong>서비스 이용 과정에서 생성되는 정보</strong> — 이용자가 작성한 게시글·댓글·채팅 메시지의
+      내용, 작성 시점의 닉네임, 작성 일시</li>
+  <li><strong>신고·차단 이용 시</strong> — 신고자와 피신고자의 닉네임 및 계정 식별자, 신고 사유,
+      신고 대상 콘텐츠의 식별자, 차단한 이용자의 계정 식별자</li>
+  <li><strong>자동으로 생성·수집되는 정보</strong> — 접속 IP 주소, 접속 일시, 자동 가입 방지 확인
+      과정에서 생성되는 기기·브라우저 신호</li>
+</ul>
+<div class="note">
+  서비스는 광고 식별자(IDFA·ADID), 위치정보, 연락처, 사진, 카메라, 통화 기록 등
+  기기의 어떠한 개인 정보에도 접근하지 않으며, 광고 또는 이용 행태 분석을 위한
+  별도의 소프트웨어(SDK)를 탑재하고 있지 않습니다.
+</div>
+
+<h2 id="a2">제2조 (개인정보의 처리 목적)</h2>
+<p>수집한 개인정보는 아래 목적으로만 이용하며, 목적이 변경되는 경우에는
+   「개인정보 보호법」 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행합니다.</p>
+<ul>
+  <li>회원 식별과 인증, 로그인 상태 유지</li>
+  <li>게시판·댓글·채팅 등 커뮤니티 기능의 제공 및 작성자 표시</li>
+  <li>신고 접수와 처리, 이용약관 위반에 대한 조치, 반복 위반 계정의 확인</li>
+  <li>자동 가입과 부정 이용의 방지</li>
+  <li>서비스 장애 대응, 문의·이의 제기에 대한 회신</li>
+</ul>
+
+<h2 id="a3">제3조 (개인정보의 보유 및 이용 기간)</h2>
+<p>개인정보는 수집·이용 목적이 달성되면 지체 없이 파기하며, 구체적인 보유 기간은 다음과 같습니다.</p>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>구분</th><th>보유 기간</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>계정 정보<br>(이메일·비밀번호·닉네임·계정 식별자)</td>
+      <td>회원 탈퇴 시까지</td>
+    </tr>
+    <tr>
+      <td>이용자가 작성한 게시글·댓글·채팅</td>
+      <td>회원 탈퇴 시까지<br>(탈퇴 시 작성물이 모두 함께 삭제됩니다)</td>
+    </tr>
+    <tr>
+      <td>차단 기록</td>
+      <td>이용자가 차단을 해제하거나 회원 탈퇴할 때까지</td>
+    </tr>
+    <tr>
+      <td>신고 기록</td>
+      <td><strong>신고 접수일로부터 3년</strong><br>
+          반복 위반 계정의 확인과 분쟁 대응을 위해 신고자 또는 피신고자가 탈퇴한 뒤에도
+          위 기간 동안 보관합니다. 다만 탈퇴 시점에 계정 식별자와의 연결이 즉시 제거되어,
+          이후에는 특정 개인을 알아볼 수 없는 형태로만 남습니다.</td>
+    </tr>
+    <tr>
+      <td>접속·인증 기록(IP 주소 등)</td>
+      <td>제6조의 수탁자가 운영하는 인증 서비스의 로그 보존 정책에 따라 단기간 보관된 후
+          자동으로 삭제됩니다. 운영자는 이 정보를 별도로 내려받아 보관하지 않습니다.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>법령에서 별도의 보존 의무를 정한 경우에는 해당 법령이 정한 기간 동안 보관한 후 파기합니다.</p>
+
+<h2 id="a4">제4조 (개인정보의 파기 절차 및 방법)</h2>
+<ul>
+  <li>이용자는 앱의 <em>프로필 &gt; 프로필 관리 &gt; 계정 삭제</em>에서 언제든지 직접 계정을 삭제할 수 있습니다.
+      이메일 계정은 본인 확인을 위해 비밀번호 재확인 절차를 거칩니다.</li>
+  <li>계정을 삭제하면 계정 정보와 해당 계정이 작성한 게시글·댓글·채팅, 차단 기록이
+      데이터베이스에서 <strong>즉시 함께 삭제</strong>되며 복구할 수 없습니다.</li>
+  <li>신고 기록은 제3조의 기간이 지나면 자동으로 삭제됩니다.</li>
+  <li>전자적 파일 형태의 개인정보는 재생할 수 없는 방법으로 영구 삭제합니다.
+      서비스는 종이 문서 형태로 개인정보를 보관하지 않습니다.</li>
+</ul>
+
+<h2 id="a5">제5조 (개인정보의 제3자 제공)</h2>
+<p>운영자는 이용자의 개인정보를 제3자에게 제공하지 않습니다.
+   다만 다음의 경우에는 예외로 합니다.</p>
+<ul>
+  <li>이용자가 사전에 별도로 동의한 경우</li>
+  <li>법령에 특별한 규정이 있거나, 수사기관이 법령에 정해진 절차와 방법에 따라
+      적법하게 요구하는 경우</li>
+</ul>
+<div class="note">
+  이용자가 게시판과 채팅에 작성한 글은 서비스를 이용하는 다른 이용자에게 닉네임과 함께
+  공개됩니다. 이는 서비스의 기능 그 자체이며 제3자 제공에 해당하지 않습니다.
+  <strong>공개를 원하지 않는 개인정보나 민감한 내용은 작성하지 마시기 바랍니다.</strong>
+</div>
+
+<h2 id="a6">제6조 (개인정보 처리업무의 위탁)</h2>
+<p>운영자는 안정적인 서비스 제공을 위해 아래와 같이 개인정보 처리업무를 위탁하고 있습니다.
+   위탁계약 시 개인정보의 안전한 관리와 재위탁 제한 등을 계약 내용에 반영하고 있습니다.</p>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>수탁자</th><th>위탁 업무</th><th>보유·이용 기간</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Supabase, Inc.<br>
+          <a href="https://supabase.com/privacy" target="_blank" rel="noopener">개인정보처리방침</a></td>
+      <td>회원 인증, 데이터베이스 보관, 실시간 통신, 계정 삭제 기능의 서버 실행</td>
+      <td>회원 탈퇴 또는 위탁계약 종료 시까지</td>
+    </tr>
+    <tr>
+      <td>Cloudflare, Inc.<br>
+          <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">개인정보처리방침</a></td>
+      <td>자동 가입 방지(CAPTCHA) 확인</td>
+      <td>확인 완료 즉시 파기</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>위탁 업무의 내용이나 수탁자가 변경되는 경우에는 이 방침을 통해 공개합니다.</p>
+
+<h2 id="a7">제7조 (개인정보의 국외 이전)</h2>
+<p>서비스는 제6조의 수탁자를 통해 아래와 같이 개인정보를 국외로 이전(처리위탁·보관)합니다.
+   「개인정보 보호법」 제28조의8 제1항 제3호에 따라 아래 사항을 공개합니다.</p>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>이전받는 자</th><th>이전 국가 / 저장 위치</th><th>이전 항목</th>
+      <th>이전 일시 및 방법</th><th>이용 목적</th><th>보유·이용 기간</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Supabase, Inc.<br>(미국 법인)</td>
+      <td>법인 소재: 미국<br><strong>데이터 저장 위치: 대한민국 서울<br>(AWS ap-northeast-2)</strong></td>
+      <td>제1조의 항목 전부</td>
+      <td>서비스 이용 시점에 정보통신망을 통해 전송</td>
+      <td>회원 인증, 데이터 보관, 실시간 통신</td>
+      <td>회원 탈퇴 또는 위탁계약 종료 시까지</td>
+    </tr>
+    <tr>
+      <td>Cloudflare, Inc.<br>(미국 법인)</td>
+      <td>미국 등 사업자의 글로벌 네트워크</td>
+      <td>IP 주소, 기기·브라우저 신호</td>
+      <td>회원가입·로그인 시도 시 정보통신망을 통해 전송</td>
+      <td>자동 가입 방지 확인</td>
+      <td>확인 완료 즉시 파기</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>이용자는 개인정보의 국외 이전을 거부할 수 있습니다. 다만 위 이전은 서비스의 인증과
+   데이터 보관에 필수적이므로, 거부하는 경우 회원가입과 서비스 이용이 불가능합니다.
+   거부를 원하시는 경우 제12조의 연락처로 요청하시면 계정과 개인정보를 삭제해 드립니다.</p>
+
+<h2 id="a8">제8조 (정보주체와 법정대리인의 권리·의무 및 행사 방법)</h2>
+<p>이용자는 언제든지 자신의 개인정보에 대한 열람·정정·삭제·처리정지를 요구할 수 있습니다.</p>
+<ul>
+  <li><strong>앱에서 직접 할 수 있는 것</strong>
+    <ul>
+      <li>닉네임 변경 — <em>프로필 &gt; 프로필 관리</em></li>
+      <li>게시글 삭제 — 해당 게시글 상세 화면</li>
+      <li>계정 및 작성물 전체 삭제 — <em>프로필 &gt; 프로필 관리 &gt; 계정 삭제</em></li>
+    </ul>
+  </li>
+  <li><strong>그 밖의 요구</strong>는 제12조의 이메일로 접수해 주시면, 접수일로부터 10일 이내에
+      조치하고 그 결과를 알려 드립니다. 요구를 거절하는 경우 그 사유와 이의 제기 방법을 함께 안내합니다.</li>
+  <li>이용자는 대리인을 통해서도 위 권리를 행사할 수 있으며, 이 경우 위임장을 제출해야 합니다.</li>
+</ul>
+<div class="note">
+  이미 게시된 글에 표시되는 작성자 닉네임은 <strong>작성 시점의 값으로 보존</strong>되며,
+  이후 닉네임을 변경해도 지난 게시물에는 소급 적용되지 않습니다.
+  지난 게시물의 표시를 지우려면 해당 게시물을 삭제하거나 계정을 삭제해야 합니다.
+</div>
+
+<h2 id="a9">제9조 (개인정보의 안전성 확보 조치)</h2>
+<ul>
+  <li><strong>비밀번호 암호화</strong> — 비밀번호는 복호화할 수 없는 방식으로 암호화하여 저장합니다.</li>
+  <li><strong>전송 구간 암호화</strong> — 앱과 서버 사이의 모든 통신은 TLS(HTTPS)로 암호화합니다.</li>
+  <li><strong>접근 권한의 서버 강제</strong> — 데이터베이스에 행 수준 보안(Row Level Security) 정책을
+      적용하여, 이용자가 자신의 권한을 벗어난 데이터를 조회하거나 수정할 수 없도록
+      앱이 아닌 <strong>서버에서 차단</strong>합니다.</li>
+  <li><strong>기기 내 인증정보 보호</strong> — 로그인 상태를 유지하기 위한 인증 정보는 기기의
+      보안 저장소(iOS 키체인 / Android 키스토어)에 암호화하여 보관합니다.</li>
+  <li><strong>취급자의 최소화</strong> — 개인정보에 접근할 수 있는 사람은 운영자 본인으로 한정합니다.</li>
+</ul>
+
+<h2 id="a10">제10조 (개인정보 자동 수집 장치의 설치·운영 및 거부)</h2>
+<p>서비스는 쿠키를 사용하지 않으며, 이용자의 이용 행태를 추적하거나 맞춤형 광고를 제공하기 위한
+   자동 수집 장치를 설치·운영하지 않습니다.</p>
+<p>다만 자동 가입 방지 확인 과정에서 IP 주소와 기기·브라우저 신호가 자동으로 수집됩니다.
+   이는 부정 가입을 막기 위한 최소한의 절차로 개별적인 거부 설정을 제공하지 않으며,
+   확인이 끝나면 즉시 파기됩니다.</p>
+
+<h2 id="a11">제11조 (만 14세 미만 아동의 개인정보)</h2>
+<p>서비스는 만 14세 이상만 이용할 수 있으며, 만 14세 미만 아동의 개인정보를 수집하지 않습니다.
+   만 14세 미만 아동의 가입이 확인되는 경우 해당 계정과 개인정보를 지체 없이 삭제합니다.</p>
+
+<h2 id="a12">제12조 (개인정보 보호책임자)</h2>
+<p>운영자는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 이용자의
+   문의·불만 처리 및 피해 구제를 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
+<div class="table-wrap">
+<table>
+  <tbody>
+    <tr><th>개인정보 보호책임자</th><td>권택민</td></tr>
+    <tr><th>연락처</th><td><a href="mailto:yoda3714@gmail.com">yoda3714@gmail.com</a></td></tr>
+  </tbody>
+</table>
+</div>
+<p>개인정보 보호와 관련한 문의, 불만 처리, 피해 구제에 관한 사항을 위 연락처로 문의하실 수 있으며,
+   운영자는 지체 없이 답변하고 처리하겠습니다.</p>
+
+<h2 id="a13">제13조 (권익침해 구제 방법)</h2>
+<p>이용자는 개인정보 침해로 인한 구제를 받기 위하여 아래 기관에 분쟁 해결이나 상담을
+   신청할 수 있습니다.</p>
+<ul>
+  <li>개인정보분쟁조정위원회 — 1833-6972 (<a href="https://www.kopico.go.kr" target="_blank" rel="noopener">www.kopico.go.kr</a>)</li>
+  <li>개인정보침해신고센터 — 118 (<a href="https://privacy.kisa.or.kr" target="_blank" rel="noopener">privacy.kisa.or.kr</a>)</li>
+  <li>대검찰청 사이버수사과 — 1301 (<a href="https://www.spo.go.kr" target="_blank" rel="noopener">www.spo.go.kr</a>)</li>
+  <li>경찰청 사이버수사국 — 182 (<a href="https://ecrm.police.go.kr" target="_blank" rel="noopener">ecrm.police.go.kr</a>)</li>
+</ul>
+
+<h2 id="a14">제14조 (개인정보처리방침의 변경)</h2>
+<ul>
+  <li>이 개인정보처리방침은 <strong>2026년 9월 4일</strong>부터 적용됩니다.</li>
+  <li>법령·정책 또는 서비스의 변경에 따라 내용의 추가·삭제·수정이 있는 경우에는
+      변경되는 방침의 시행 7일 전부터 이 페이지를 통해 변경 이유와 내용을 공지합니다.
+      다만 이용자의 권리에 중대한 변경이 있는 경우에는 30일 전에 공지합니다.</li>
+  <li>이전 버전의 개인정보처리방침은
+      <a href="https://github.com/ddai-min/ddai_community/commits/release/docs/privacy-policy.html" target="_blank" rel="noopener">변경 이력</a>에서
+      전문을 확인하실 수 있습니다.</li>
+</ul>
+
+<footer>
+  DDAI Community · 개인정보처리방침 v1.0 (2026년 9월 4일 시행)<br>
+  문의: <a href="mailto:yoda3714@gmail.com">yoda3714@gmail.com</a>
+</footer>
+
+</main>
+</body>
+</html>

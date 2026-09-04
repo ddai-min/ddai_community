@@ -65,6 +65,9 @@ dependencies:
   # 세션(refresh token) 보관 — iOS Keychain · Android Keystore
   flutter_secure_storage: ^11.0.0
 
+  # 외부 브라우저로 링크 열기 (개인정보처리방침)
+  url_launcher: ^6.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,3 +1,5 @@
+import 'package:ddai_community/core/constants/app_links.dart';
+import 'package:ddai_community/core/utils/link_utils.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
@@ -13,7 +15,8 @@ import 'package:go_router/go_router.dart';
 
 /// 프로필 탭 화면. ([HomeTab] 의 세 번째 탭)
 ///
-/// 닉네임·이메일을 표시하고 프로필 관리, 오픈소스 라이선스, 로그아웃 진입점을 제공한다.
+/// 닉네임·이메일을 표시하고 프로필 관리, 개인정보처리방침, 오픈소스 라이선스,
+/// 로그아웃 진입점을 제공한다.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -39,6 +42,14 @@ class ProfileScreen extends ConsumerWidget {
               _pushProfileEditScreen(
                 context: context,
                 userMe: userMe,
+              );
+            },
+          ),
+          _List(
+            title: '개인정보처리방침',
+            onTap: () {
+              _openPrivacyPolicy(
+                context: context,
               );
             },
           ),
@@ -91,6 +102,31 @@ class ProfileScreen extends ConsumerWidget {
         'email': userMe.email!,
       },
     );
+  }
+
+  /// 개인정보처리방침을 외부 브라우저로 연다.
+  ///
+  /// App Store · Play 스토어 모두 방침 링크가 **스토어 메타데이터와 앱 안** 양쪽에
+  /// 있어야 한다고 요구한다. 이 항목이 그 "앱 안" 쪽이므로 지우면 심사에서 반려된다.
+  void _openPrivacyPolicy({
+    required BuildContext context,
+  }) async {
+    final isOpened = await LinkUtils.open(privacyPolicyUrl);
+
+    if (!isOpened) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return DefaultDialog(
+            contentText: '브라우저를 열 수 없습니다.\n잠시 후 다시 시도해주세요.',
+            buttonText: '확인',
+            onPressed: () {
+              context.pop();
+            },
+          );
+        },
+      );
+    }
   }
 
   void _logout({

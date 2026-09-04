@@ -51,14 +51,14 @@ lib/
 │   └── bootstrap.dart         #   .env 로드 + Supabase 초기화
 │
 ├── core/                      # 기능에 종속되지 않는 공통 자산
-│   ├── constants/             #   colors · supabase_env · turnstile_env
+│   ├── constants/             #   colors · supabase_env · turnstile_env · app_links
 │   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository
 │   │                          #   · CaptchaRepository · SecureLocalStorage
 │   ├── models/                #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/             #   PaginationMixin · sessionUidProvider
 │   ├── router/                #   go_router 라우트 정의
 │   ├── theme/                 #   AppTheme
-│   ├── utils/                 #   DataUtils · RegUtils · logger
+│   ├── utils/                 #   DataUtils · RegUtils · LinkUtils · logger
 │   └── widgets/               #   DefaultLayout · Default* 공통 위젯
 │
 └── features/                  # 기능(도메인) 모듈
@@ -232,6 +232,26 @@ features/<feature>/
   원인을 찾기 어렵다.
 - **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
   `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
+- **개인정보처리방침은 앱이 아니라 웹에 있다**: 원본은 `docs/privacy-policy.html`,
+  공개 주소는 GitHub Pages(`https://ddai-min.github.io/ddai_community/privacy-policy.html`).
+  앱은 `privacyPolicyUrl`(`core/constants/app_links.dart`)로 링크만 연다.
+  이용 약관과 달리 수집 항목·수탁자가 바뀔 때마다 고쳐야 하는 문서인데, 앱에 본문을 넣으면
+  문구 한 줄에 스토어 심사와 강제 업데이트가 필요해지기 때문이다.
+  - **링크 지점 2곳을 지우지 말 것** — 프로필 탭 목록과 EULA 화면 11조. 스토어(App Store
+    지침 5.1.1(i) · Play Console)가 **스토어 메타데이터와 앱 안** 양쪽을 요구한다.
+    EULA 쪽이 필요한 이유는 가입 전에는 프로필 화면에 갈 수 없어서다.
+  - **주소를 바꾸면 App Store Connect · Play Console 의 URL 필드도 같이 바꾼다.**
+  - **보존 기간은 네 곳이 같은 값이어야 한다** — 방침 제3조·제4조, EULA 14조,
+    그리고 Supabase 의 `purge-old-reports` pg_cron 작업(현재 신고 기록 3년).
+    `report` 는 `on delete set null` 이라 탈퇴해도 행이 남으므로 이 작업이 없으면
+    "3년 후 파기" 가 사실이 아니게 된다. (`docs/supabase-migration.md` 의 "별건 — 개인정보처리방침 공개")
+- **Android `INTERNET` 권한은 직접 넣어야 한다**: Flutter 템플릿은 이 권한을
+  `debug`/`profile` 매니페스트에만 넣어 준다. 개발 중에는 hot reload 용으로 자동으로 붙어
+  멀쩡해 보이지만 **릴리즈 빌드에는 붙지 않고**, 그러면 Supabase 호출이 전부 조용히 실패한다.
+  의존 플러그인 중 이 권한을 선언하는 것이 하나도 없어서 `android/app/src/main/AndroidManifest.xml`
+  에 직접 넣어 두었다. **지우지 말 것.**
+  - 같은 파일의 `<queries>` 안 `VIEW` + `https` intent 도 필요하다. Android 11+ 는 다른 앱이
+    기본으로 보이지 않아, 없으면 `url_launcher` 가 링크를 열지 못한다.
 - **릴리즈 서명**: `android/key.properties` 가 있어야 릴리즈 빌드가 된다. 없으면
   **디버그 키로 조용히 서명하지 않고 Gradle 이 실패한다** (`android/app/build.gradle` 의
   `taskGraph.whenReady` 검사). 템플릿은 `android/key.properties.example`.
@@ -329,6 +349,8 @@ features/<feature>/
 | `lib/core/data/captcha_repository.dart` | Turnstile CAPTCHA 토큰 발급 |
 | `lib/core/data/secure_local_storage.dart` | 세션 저장소 — Keychain/Keystore + 구버전 이전 |
 | `lib/core/constants/turnstile_env.dart` | Turnstile sitekey · baseUrl (선택 설정) |
+| `lib/core/constants/app_links.dart` | 개인정보처리방침 공개 주소 |
+| `docs/privacy-policy.html` | 개인정보처리방침 원본 (GitHub Pages 로 공개) |
 | `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |
 | `lib/features/user/presentation/providers/user_me_provider.dart` | 전역 로그인 유저 상태 (`userMeProvider`) |

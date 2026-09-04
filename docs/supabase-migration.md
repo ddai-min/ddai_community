@@ -1462,6 +1462,66 @@ revoke delete, references, select, trigger, truncate, update on public.report   
 
 ---
 
+## 별건 — 개인정보처리방침 공개 🟡 *(문서·앱 완료 · 보존 작업 대기)*
+
+### 배경
+
+App Store 심사 지침 5.1.1(i) 와 Play Console 은 개인정보처리방침 링크를
+**스토어 메타데이터와 앱 안 양쪽에** 요구한다. 개인정보 보호법 제30조도
+방침의 수립·공개를 의무로 정한다.
+
+### 문서를 앱이 아니라 웹에 둔 이유
+
+이용 약관은 `eula_screen.dart` 에 하드코딩돼 있다. 로그인 전 동의 화면이라
+네트워크 없이도 보여야 하고, 거의 바뀌지 않는다는 전제가 붙어 있어서다.
+개인정보처리방침은 전제가 다르다 — 수집 항목이나 수탁자가 바뀔 때마다 고쳐야 하는데,
+앱에 본문을 넣으면 문구 한 줄 고치는 데도 스토어 심사와 `app_config` 강제 업데이트를
+거쳐야 한다. 그래서 원본을 저장소에 두고 GitHub Pages 로 서빙한다.
+
+| 항목 | 값 |
+| --- | --- |
+| 원본 | `docs/privacy-policy.html` |
+| 공개 주소 | `https://ddai-min.github.io/ddai_community/privacy-policy.html` |
+| 앱 상수 | `lib/core/constants/app_links.dart` 의 `privacyPolicyUrl` |
+| 앱 링크 지점 | 프로필 탭 목록 · EULA 화면 11조(가입 전에는 프로필에 갈 수 없다) |
+
+이전 버전 공개 요건은 git 커밋 이력이 그대로 충족한다.
+**주소를 바꾸면 App Store Connect · Play Console 의 URL 필드도 같이 바꾼다.**
+
+### 스키마와 어긋나 있던 문구
+
+EULA 14조는 "계정을 삭제하면 게시글·댓글·채팅·신고·차단 기록이 함께 삭제된다" 였다.
+`report` 는 `on delete set null` 이라 **행이 남는다.** uid 만 끊기고
+`reporter_user_name` · `reported_user_name` 스냅샷은 그대로다.
+(`board` · `comment` · `chat` · `block_user` 는 cascade 라 문구가 맞았다)
+
+신고 기록을 지우면 신고당한 뒤 탈퇴·재가입으로 이력을 세탁할 수 있으므로 **남기는 쪽**을 택하고,
+보존 기간을 **3년**으로 정해 EULA 14조와 방침 제3조·제4조에 같은 값을 적었다.
+
+### 대기 중 — 3년 경과분 자동 삭제
+
+방침에 보존 기간을 적었으므로 실제로 지워져야 한다. Supabase SQL 에디터에서 한 번 실행한다.
+
+```sql
+-- Dashboard → Database → Extensions 에서 pg_cron 을 켠 뒤 실행한다.
+select cron.schedule(
+  'purge-old-reports',
+  '30 3 * * *',   -- 매일 03:30 UTC
+  $$delete from public.report where created_at < now() - interval '3 years'$$
+);
+
+-- 등록 확인
+select jobid, jobname, schedule, active from cron.job;
+```
+
+`cron.schedule` 은 postgres 롤로 실행되므로 `report` 에 DELETE 정책이 없어도 지워진다.
+해제는 `select cron.unschedule('purge-old-reports');`.
+
+> 이 작업을 걸지 않으면 방침에 적은 "3년 후 파기" 가 사실이 아니게 된다.
+> 기간을 바꿀 때는 **SQL · EULA 14조 · 방침 제3조/제4조 네 곳을 함께** 고친다.
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |
