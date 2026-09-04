@@ -1,5 +1,3 @@
-import 'package:ddai_community/core/constants/app_links.dart';
-import 'package:ddai_community/core/utils/link_utils.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
@@ -8,6 +6,7 @@ import 'package:ddai_community/features/auth/presentation/screens/login_screen.d
 import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
+import 'package:ddai_community/features/user/presentation/screens/privacy_policy_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,8 +47,9 @@ class ProfileScreen extends ConsumerWidget {
           _List(
             title: '개인정보처리방침',
             onTap: () {
-              _openPrivacyPolicy(
-                context: context,
+              // `goNamed` 가 아니라 `pushNamed` 다. 이유는 [PrivacyPolicyScreen] 참고.
+              context.pushNamed(
+                PrivacyPolicyScreen.routeName,
               );
             },
           ),
@@ -102,31 +102,6 @@ class ProfileScreen extends ConsumerWidget {
         'email': userMe.email!,
       },
     );
-  }
-
-  /// 개인정보처리방침을 외부 브라우저로 연다.
-  ///
-  /// App Store · Play 스토어 모두 방침 링크가 **스토어 메타데이터와 앱 안** 양쪽에
-  /// 있어야 한다고 요구한다. 이 항목이 그 "앱 안" 쪽이므로 지우면 심사에서 반려된다.
-  void _openPrivacyPolicy({
-    required BuildContext context,
-  }) async {
-    final isOpened = await LinkUtils.open(privacyPolicyUrl);
-
-    if (!isOpened) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return DefaultDialog(
-            contentText: '브라우저를 열 수 없습니다.\n잠시 후 다시 시도해주세요.',
-            buttonText: '확인',
-            onPressed: () {
-              context.pop();
-            },
-          );
-        },
-      );
-    }
   }
 
   void _logout({

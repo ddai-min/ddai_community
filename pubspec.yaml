@@ -65,7 +65,11 @@ dependencies:
   # 세션(refresh token) 보관 — iOS Keychain · Android Keystore
   flutter_secure_storage: ^11.0.0
 
-  # 외부 브라우저로 링크 열기 (개인정보처리방침)
+  # 개인정보처리방침을 앱 안에서 띄우는 웹뷰
+  # (cloudflare_turnstile 이 이미 끌어오던 패키지라 네이티브 구성은 그대로다)
+  flutter_inappwebview: ^6.1.5
+
+  # 방침 문서 안의 바깥 링크(수탁자 방침 · mailto)를 기본 앱으로 넘길 때 쓴다
   url_launcher: ^6.3.2
 
 dev_dependencies:

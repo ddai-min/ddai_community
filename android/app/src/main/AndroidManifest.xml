@@ -49,12 +49,16 @@
             <data android:mimeType="text/plain"/>
         </intent>
 
-        <!-- url_launcher 가 개인정보처리방침을 브라우저로 넘길 때 필요하다.
+        <!-- 개인정보처리방침 웹뷰가 문서 안쪽의 바깥 링크를 기본 앱으로 넘길 때 필요하다.
              Android 11(API 30)부터 다른 앱이 기본으로 보이지 않으므로,
              이 선언이 없으면 링크를 눌러도 아무 일이 일어나지 않는다. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="mailto"/>
         </intent>
     </queries>
 </manifest>

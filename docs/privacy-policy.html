@@ -6,6 +6,9 @@
 <title>DDAI Community 개인정보처리방침</title>
 <meta name="description" content="DDAI Community 앱의 개인정보처리방침입니다.">
 <style>
+  /* 다크 모드(prefers-color-scheme)를 일부러 넣지 않는다.
+     이 문서는 앱 안의 웹뷰로도 뜨는데 앱에는 다크 테마가 없어서,
+     기기가 다크 모드면 이 화면만 검게 떠 앞뒤 화면과 어긋난다. */
   :root {
     --accent: #5F9EA0;
     --bg: #ffffff;
@@ -14,14 +17,6 @@
     --line: #e3e6ea;
     --box: #f6f8fa;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14171a;
-      --fg: #e6e9ec;
-      --muted: #9aa4ad;
-      --line: #2c3238;
-      --box: #1c2126;
-    }
   }
   * { box-sizing: border-box; }
   body {

@@ -1484,6 +1484,7 @@ App Store 심사 지침 5.1.1(i) 와 Play Console 은 개인정보처리방침 �
 | 공개 주소 | `https://ddai-min.github.io/ddai_community/privacy-policy.html` |
 | 앱 상수 | `lib/core/constants/app_links.dart` 의 `privacyPolicyUrl` |
 | 앱 링크 지점 | 프로필 탭 목록 · EULA 화면 11조(가입 전에는 프로필에 갈 수 없다) |
+| 표시 방법 | `PrivacyPolicyScreen` 의 웹뷰. 최상위 라우트 `/privacy_policy` 를 `pushNamed` 로 연다 |
 
 이전 버전 공개 요건은 git 커밋 이력이 그대로 충족한다.
 **주소를 바꾸면 App Store Connect · Play Console 의 URL 필드도 같이 바꾼다.**

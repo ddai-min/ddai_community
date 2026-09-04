@@ -1,6 +1,4 @@
-import 'package:ddai_community/core/constants/app_links.dart';
 import 'package:ddai_community/core/constants/colors.dart';
-import 'package:ddai_community/core/utils/link_utils.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
@@ -10,6 +8,7 @@ import 'package:ddai_community/features/auth/presentation/screens/login_screen.d
 import 'package:ddai_community/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:ddai_community/features/user/presentation/screens/privacy_policy_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -334,26 +333,14 @@ class _Body extends StatelessWidget {
     );
   }
 
-  /// 방침 전문을 외부 브라우저로 연다.
+  /// 방침 전문을 앱 안의 웹뷰로 연다.
   ///
   /// 가입 전에는 프로필 화면에 갈 수 없으므로, 동의 시점에 방침을 볼 수 있는 곳은 여기뿐이다.
-  void _openPrivacyPolicy(BuildContext context) async {
-    final isOpened = await LinkUtils.open(privacyPolicyUrl);
-
-    if (!isOpened) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return DefaultDialog(
-            contentText: '브라우저를 열 수 없습니다.\n잠시 후 다시 시도해주세요.',
-            buttonText: '확인',
-            onPressed: () {
-              context.pop();
-            },
-          );
-        },
-      );
-    }
+  /// `pushNamed` 라야 방침을 닫고 이 동의 화면으로 되돌아온다.
+  void _openPrivacyPolicy(BuildContext context) {
+    context.pushNamed(
+      PrivacyPolicyScreen.routeName,
+    );
   }
 
   TextSpan _sectionTitle(String title) {
