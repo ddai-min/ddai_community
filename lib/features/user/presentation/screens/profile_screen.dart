@@ -5,6 +5,7 @@ import 'package:ddai_community/features/auth/data/auth_repository.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
+import 'package:ddai_community/features/user/presentation/screens/block_user_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/privacy_policy_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
@@ -14,8 +15,8 @@ import 'package:go_router/go_router.dart';
 
 /// 프로필 탭 화면. ([HomeTab] 의 세 번째 탭)
 ///
-/// 닉네임·이메일을 표시하고 프로필 관리, 개인정보처리방침, 오픈소스 라이선스,
-/// 로그아웃 진입점을 제공한다.
+/// 닉네임·이메일을 표시하고 프로필 관리, 차단한 사용자, 개인정보처리방침,
+/// 오픈소스 라이선스, 로그아웃 진입점을 제공한다.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -41,6 +42,14 @@ class ProfileScreen extends ConsumerWidget {
               _pushProfileEditScreen(
                 context: context,
                 userMe: userMe,
+              );
+            },
+          ),
+          _List(
+            title: '차단한 사용자',
+            onTap: () {
+              context.goNamed(
+                BlockUserScreen.routeName,
               );
             },
           ),

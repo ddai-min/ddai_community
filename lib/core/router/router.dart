@@ -4,6 +4,7 @@ import 'package:ddai_community/features/auth/presentation/screens/sign_up_screen
 import 'package:ddai_community/features/board/presentation/screens/board_create_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_detail_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
+import 'package:ddai_community/features/user/presentation/screens/block_user_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/privacy_policy_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
@@ -60,6 +61,11 @@ List<GoRoute> routes = [
           userName: state.uri.queryParameters['userName']!,
           email: state.uri.queryParameters['email']!,
         ),
+      ),
+      GoRoute(
+        path: 'block_user',
+        name: BlockUserScreen.routeName,
+        builder: (_, _) => const BlockUserScreen(),
       ),
       GoRoute(
         path: 'license',

@@ -1,5 +1,6 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
+import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/features/chat/domain/chat_model.dart';
 import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
 import 'package:ddai_community/features/chat/presentation/widgets/chat_text_field.dart';
@@ -8,6 +9,7 @@ import 'package:ddai_community/features/chat/presentation/widgets/other_chat_bub
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// 전체 공개 실시간 채팅 화면. ([HomeTab] 의 두 번째 탭)
 ///
@@ -133,7 +135,19 @@ class _Body extends ConsumerWidget {
                 // 내 메시지는 오른쪽, 상대 메시지는 왼쪽 말풍선으로 표시한다.
                 // (상대가 연속으로 보낸 경우 isSayAgain=true 로 이름을 생략)
                 if (chatItem.userUid == ref.read(userMeProvider).id)
-                  MyChatBubble(message: chatItem.content)
+                  MyChatBubble(
+                    message: chatItem.content,
+                    // 아직 전송 중인 말풍선은 서버에 지울 행이 없다.
+                    onLongPress: ChatList.isPending(chatItem.id)
+                        ? null
+                        : () {
+                            _confirmDelete(
+                              context: context,
+                              ref: ref,
+                              chatId: chatItem.id,
+                            );
+                          },
+                  )
                 else
                   OtherChatBubble(
                     isSayAgain: isSayAgain,
@@ -145,6 +159,60 @@ class _Body extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  void _confirmDelete({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String chatId,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return DefaultDialog(
+          titleText: '메시지 삭제',
+          contentText: '이 메시지를 삭제하시겠습니까?',
+          buttonText: '삭제',
+          onPressed: () {
+            dialogContext.pop();
+
+            _deleteChat(
+              context: context,
+              ref: ref,
+              chatId: chatId,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// 목록에서 말풍선이 걷히는 것은 실시간 스트림이 처리한다. (여기서 지우지 않는다)
+  void _deleteChat({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String chatId,
+  }) async {
+    final isDelete = await ref.read(
+      deleteChatProvider(chatId).future,
+    );
+
+    if (isDelete) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return DefaultDialog(
+          contentText: '메시지를 삭제하지 못했습니다.\n잠시 후 다시 시도해주세요.',
+          buttonText: '확인',
+          onPressed: () {
+            dialogContext.pop();
+          },
+        );
+      },
     );
   }
 }

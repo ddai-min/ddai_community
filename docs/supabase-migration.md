@@ -1523,6 +1523,134 @@ select jobid, jobname, schedule, active from cron.job;
 
 ---
 
+## 별건 — 차단 해제 · 본인 콘텐츠 삭제 · 신고 알림 🟡 *(앱 완료 · SQL 적용 대기)*
+
+앱에 있다고 약속해 놓고 실제로는 없던 세 가지를 채웠다.
+**아래 SQL 을 적용하기 전에는 세 기능 모두 조용히 실패한다.** (repository 가 예외를 삼키고
+빈 목록 / `false` 를 돌려주는 규칙이라 화면이 죽지는 않는다)
+
+### 1. 차단 해제 — `block_user.blocked_user_name`
+
+차단은 걸 수만 있고 **푸는 방법이 없었다.** `block_delete_own` 정책은 이미 있었으므로
+서버는 준비돼 있었고 앱에만 없었다. 개인정보처리방침 제3조가 차단 기록 보유 기간을
+"이용자가 차단을 해제하거나 회원 탈퇴할 때까지" 로 적고 있어 문구와도 어긋나 있었다.
+
+목록에 닉네임을 보여주려면 비정규화가 필요하다. `profile` 은 **본인 행만** 조회할 수 있어서
+(`profile_select` 정책) uid 로 상대 이름을 되찾을 수 없다. `board`/`chat` 의 `user_name` 과
+같은 방식으로 컬럼을 두고 트리거가 채운다.
+
+```sql
+alter table public.block_user
+  add column if not exists blocked_user_name text not null default '';
+
+-- 기존 차단 기록 backfill
+update public.block_user b
+set blocked_user_name = p.user_name
+from public.profile p
+where p.id = b.blocked_uid
+  and b.blocked_user_name = '';
+
+-- 차단하는 쪽은 상대 profile 을 읽을 수 없으므로 security definer 여야 한다.
+-- 다른 헬퍼와 같이 private 스키마에 둔다. (public 에 두면 PostgREST 가 rpc 로 노출한다)
+create or replace function private.set_blocked_user_name()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  new.blocked_user_name := coalesce(
+    (select user_name from public.profile where id = new.blocked_uid),
+    ''
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists set_blocked_user_name on public.block_user;
+create trigger set_blocked_user_name
+  before insert on public.block_user
+  for each row execute function private.set_blocked_user_name();
+```
+
+> 닉네임은 **차단 시점의 스냅샷**이다. 상대가 이름을 바꿔도 목록의 값은 그대로다.
+> 다른 테이블의 `user_name` 과 같은 성질이다.
+
+### 2. 본인 댓글 · 채팅 삭제
+
+지금까지 본인이 쓴 글은 지울 수 있었지만 **댓글과 채팅은 지울 수 없었다.**
+남의 글에 단 댓글은 계정을 통째로 지우는 것 말고는 없앨 방법이 없었다.
+`comment` · `chat` 은 DELETE 권한이 회수돼 있고 정책도 없었다.
+
+```sql
+grant delete on public.comment to authenticated;
+grant delete on public.chat    to authenticated;
+
+create policy comment_delete_own on public.comment
+  for delete to authenticated using (user_uid = auth.uid());
+
+create policy chat_delete_own on public.chat
+  for delete to authenticated using (user_uid = auth.uid());
+```
+
+> 채팅 삭제는 Realtime 이 목록에서 걷어낸다. `.stream()` 은 기본 replica identity(PK)만으로도
+> DELETE 이벤트에서 행을 지울 수 있으므로 `replica identity full` 은 필요 없다.
+
+### 3. 신고 알림 — Edge Function `notify-report`
+
+`report` 는 SELECT 정책이 없어 앱에서 읽을 수 없다(의도된 설계). 그래서 지금까지 신고를
+확인하려면 Supabase SQL 에디터를 직접 열어야 했다. EULA 8조는 "24시간 이내 검토"를
+약속하고 있다. 신고가 들어온 **사실만** 운영자 메일로 알린다.
+
+```bash
+# 1) Resend(https://resend.com) 에서 API 키 발급. 도메인 인증은 하지 않아도 된다 —
+#    기본 발신 주소는 계정 소유자 본인에게만 배달되는데 지금 용도에는 그걸로 충분하다.
+# 2) secret 등록
+supabase secrets set \
+  REPORT_ALERT_SECRET=<임의의 긴 문자열> \
+  RESEND_API_KEY=<Resend API 키> \
+  REPORT_ALERT_TO=<운영자 메일 주소> \
+  --project-ref <ref>
+
+# 3) 배포 — 호출자가 사람이 아니라 웹훅이라 JWT 가 없다
+supabase functions deploy notify-report --no-verify-jwt --project-ref <ref>
+```
+
+그 다음 대시보드 **Database → Webhooks** 에서 훅을 만든다.
+(Table `public.report` · Event `Insert` · Type `Supabase Edge Functions` · 함수 `notify-report`,
+HTTP Headers 에 `x-webhook-secret: <REPORT_ALERT_SECRET 과 같은 값>`)
+
+SQL 로 만들 수도 있다. Webhooks 기능을 한 번 켜서 `supabase_functions` 스키마가 생긴 뒤여야 한다.
+
+```sql
+create trigger notify_report
+after insert on public.report
+for each row execute function supabase_functions.http_request(
+  'https://<ref>.supabase.co/functions/v1/notify-report',
+  'POST',
+  '{"Content-Type":"application/json","x-webhook-secret":"<REPORT_ALERT_SECRET 과 같은 값>"}',
+  '{}',
+  '5000'
+);
+```
+
+> **`--no-verify-jwt` 로 배포하므로 주소를 아는 누구나 부를 수 있다.**
+> `x-webhook-secret` 이 유일한 관문이니 짧게 잡지 말 것. 함수는 이 값을 상수 시간으로 비교한다.
+> 메일 발송이 실패해도 신고 저장 자체는 이미 끝난 뒤다 — 웹훅은 `pg_net` 으로 비동기 실행된다.
+
+### 적용 확인
+
+```sql
+-- 정책 3종이 붙었는지
+select tablename, policyname, cmd from pg_policies
+where policyname in ('comment_delete_own', 'chat_delete_own', 'block_delete_own');
+
+-- 트리거가 이름을 채우는지 (차단 한 건 넣어 보고 되돌리기)
+select blocked_uid, blocked_user_name from public.block_user limit 5;
+```
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |

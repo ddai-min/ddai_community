@@ -41,4 +41,29 @@ class ChatRepository extends PaginationRepository<ChatModel> {
       return null;
     }
   }
+
+  /// 채팅 메시지를 삭제한다. 성공 여부를 bool 로 반환한다.
+  ///
+  /// 지워진 행을 되받아 실제로 지워졌는지 확인한다. RLS(`chat_delete_own`)가 막으면
+  /// 오류 없이 0행이 지워지므로, 이 확인이 없으면 실패를 성공으로 보고하게 된다.
+  ///
+  /// 화면에서 말풍선이 걷히는 것은 **실시간 스트림이 담당한다.** 전송 때처럼 미리
+  /// 지우지는 않는다 — 삭제는 사용자가 그 사이 할 일이 없어서 왕복이 드러나지 않는다.
+  static Future<bool> deleteChat({
+    required String searchId,
+  }) async {
+    try {
+      final deletedRows = await supabase
+          .from('chat')
+          .delete()
+          .eq('id', searchId)
+          .select('id');
+
+      return deletedRows.isNotEmpty;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
+    }
+  }
 }

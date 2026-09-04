@@ -70,7 +70,9 @@ lib/
 
 supabase/
 ├── config.toml                # Supabase CLI 설정
-└── functions/delete-account/  # 계정 삭제 Edge Function (Deno)
+└── functions/                 # Edge Function (Deno)
+    ├── delete-account/        #   계정 삭제 (비밀번호 재확인 후 admin 삭제)
+    └── notify-report/         #   신고 접수 알림 (Database Webhook 이 호출)
 
 asset/
 ├── fonts/                     # NotoSans (앱 전역 폰트)
@@ -214,8 +216,9 @@ features/<feature>/
     세션이 디스크에 남는다.
   - PKCE code verifier(`pkceAsyncStorage`)는 여전히 SharedPreferences 다. 이 앱은 OAuth·매직링크를
     쓰지 않아 값이 실제로 들어가지 않는다.
-- **작성자 표시 이름은 서버가 정한다**: `board`/`chat`/`comment`/`report` 의 `user_name` 계열 컬럼은
-  `BEFORE INSERT` 트리거(`private.set_author_name` · `private.set_report_names`)가 `profile` 값으로
+- **작성자 표시 이름은 서버가 정한다**: `board`/`chat`/`comment`/`report`/`block_user` 의 `user_name`
+  계열 컬럼은 `BEFORE INSERT` 트리거(`private.set_author_name` · `private.set_report_names` ·
+  `private.set_blocked_user_name`)가 `profile` 값으로
   덮어쓴다. 클라이언트가 보낸 값은 **무시된다.** 정책이 `user_uid = auth.uid()` 만 검사해서,
   REST 를 직접 부르면 아무 이름으로나 글을 쓸 수 있었기 때문이다.
   - 여전히 payload 에 `user_name` 을 담아 보내는 건 무해하다(덮어써진다). 빼도 된다.
@@ -232,6 +235,11 @@ features/<feature>/
   원인을 찾기 어렵다.
 - **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
   `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
+  - 앱에서 신고를 **읽을 수 없는 것은 의도된 설계다.** 대신 Database Webhook 이
+    Edge Function `notify-report` 를 불러 운영자 메일로 알린다. 확인·조치는 대시보드에서 한다.
+    이 함수는 호출자가 사람이 아니라 웹훅이라 **`--no-verify-jwt` 로 배포**하고,
+    `x-webhook-secret` 헤더 하나가 유일한 관문이다. 주소를 아는 누구나 부를 수 있으니
+    비밀값을 짧게 잡지 말 것.
 - **개인정보처리방침 본문은 앱이 아니라 웹에 있다**: 원본은 `docs/privacy-policy.html`,
   공개 주소는 GitHub Pages(`https://ddai-min.github.io/ddai_community/privacy-policy.html`).
   이용 약관과 달리 수집 항목·수탁자가 바뀔 때마다 고쳐야 하는 문서인데, 앱에 본문을 넣으면
@@ -275,6 +283,19 @@ features/<feature>/
   실제로는 실패하고 있었다) `ignoreDuplicates` 는 `ON CONFLICT DO NOTHING` 이라 통과한다.
 - **차단 로직**: 유저 차단 시 `block_user` 에 기록되고, 이후 목록 조회에서 RLS 가 자동 제외한다.
   Firestore 의 `whereNotIn` 10개 제한도 이로써 사라졌다.
+  - 해제는 프로필 탭의 `BlockUserScreen` 에서 한다. **개인정보처리방침 제3조가 차단 기록
+    보유 기간을 "해제하거나 탈퇴할 때까지" 로 적고 있으므로 이 화면을 없애면 문구도 고쳐야 한다.**
+  - **해제한 뒤에는 목록을 다시 받아야 한다.** 차단 여부는 RLS 가 조회 시점에 거르므로,
+    이미 받아 둔 목록에는 반영되지 않는다. 게시판은 `refresh()`, 채팅은 `ref.invalidate` 다 —
+    채팅은 스트림 구독을 다시 맺어야 이전 메시지까지 새 판정으로 받아온다.
+  - **`block_user` 는 `(blocker_uid, blocked_uid)` 복합 PK 라 `id` 컬럼이 없다.**
+    `created_at desc, id desc` 커서를 쓰는 `PaginationRepository` 를 태울 수 없어
+    차단 목록만 한 번에 가져온다. `BlockUserModel` 이 `ModelWithId` 를 구현하지 않는 이유다.
+  - 목록의 닉네임은 `blocked_user_name` 에 비정규화돼 있다. `profile` 은 본인 행만
+    조회할 수 있어서 uid 로 이름을 되찾을 수 없기 때문이다.
+- **댓글·채팅 삭제는 정책이 있어야 동작한다**: `comment_delete_own` · `chat_delete_own` 과
+  각 테이블의 DELETE grant 가 필요하다. 둘 다 처음에는 회수돼 있었다.
+  없으면 **오류 없이 0행**이 지워지므로, repository 가 `.select('id')` 로 되받아 확인한다.
 - **SECURITY DEFINER 함수는 `private` 스키마에 둔다**: `is_blocked()` · `handle_new_user()` 는
   `public` 이 아니라 `private` 에 있다. `public` 에 있으면 PostgREST 가 `/rest/v1/rpc/<name>` 으로
   노출해서 Security Advisor 가 경고한다. 새 헬퍼 함수도 `private` 에 만든다.
@@ -361,10 +382,12 @@ features/<feature>/
 | `lib/core/constants/turnstile_env.dart` | Turnstile sitekey · baseUrl (선택 설정) |
 | `lib/core/constants/app_links.dart` | 개인정보처리방침 공개 주소 |
 | `lib/features/user/presentation/screens/privacy_policy_screen.dart` | 방침 웹뷰 화면 (최상위 라우트) |
+| `lib/features/user/presentation/screens/block_user_screen.dart` | 차단한 사용자 목록 · 차단 해제 |
 | `docs/privacy-policy.html` | 개인정보처리방침 원본 (GitHub Pages 로 공개) |
 | `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |
 | `lib/features/user/presentation/providers/user_me_provider.dart` | 전역 로그인 유저 상태 (`userMeProvider`) |
 | `lib/core/widgets/default_layout.dart` | 공통 Scaffold (`DefaultLayout`) |
 | `supabase/functions/delete-account/index.ts` | 계정 삭제 Edge Function |
+| `supabase/functions/notify-report/index.ts` | 신고 접수 알림 Edge Function (웹훅 호출) |
 | `docs/supabase-migration.md` | 전환 기록 — 스키마 · RLS · 단계별 검증 결과 |

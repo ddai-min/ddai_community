@@ -1,5 +1,6 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
+import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/features/board/domain/comment_model.dart';
 import 'package:ddai_community/features/board/domain/comment_parameter.dart';
@@ -11,6 +12,7 @@ import 'package:ddai_community/features/board/presentation/widgets/comment_text_
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class BoardDetailScreen extends ConsumerStatefulWidget {
   static String get routeName => 'board_detail';
@@ -69,6 +71,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
       ),
       data: (data) => DefaultLayout(
+        padding: EdgeInsetsGeometry.zero,
         title: data!.title,
         actions: _renderActions(
           userUid: data.userUid,
@@ -76,21 +79,29 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
         ),
         child: SingleChildScrollView(
           controller: scrollController,
+          clipBehavior: Clip.none,
           child: Column(
             children: [
               const SizedBox(height: 16.0),
-              _Writing(
-                title: data.title,
-                userName: data.userName,
-                content: data.content,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _Writing(
+                  title: data.title,
+                  userName: data.userName,
+                  content: data.content,
+                ),
               ),
               const SizedBox(height: 16.0),
               CommentTextField(
                 controller: commentTextController,
                 onPressed: _addComment,
               ),
-              _CommentList(
-                commentList: commentList,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _CommentList(
+                  boardId: widget.id,
+                  commentList: commentList,
+                ),
               ),
             ],
           ),
@@ -205,15 +216,18 @@ class _Writing extends StatelessWidget {
   }
 }
 
-class _CommentList extends StatelessWidget {
+class _CommentList extends ConsumerWidget {
+  /// 삭제 후 목록을 다시 읽을 때 필요하다. (댓글 목록은 게시글 id 로 family 생성된다)
+  final String boardId;
   final PaginationModel<CommentModel> commentList;
 
   const _CommentList({
+    required this.boardId,
     required this.commentList,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (commentList.items.isEmpty) {
       return SizedBox(
         height: 100,
@@ -239,9 +253,72 @@ class _CommentList extends StatelessWidget {
 
           return CommentListItem(
             commentModel: comment,
+            isMine: comment.userUid == ref.read(userMeProvider).id,
+            onDelete: () {
+              _confirmDelete(
+                context: context,
+                ref: ref,
+                commentId: comment.id,
+              );
+            },
           );
         },
       );
     }
+  }
+
+  void _confirmDelete({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String commentId,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return DefaultDialog(
+          titleText: '댓글 삭제',
+          contentText: '정말로 삭제하시겠습니까?',
+          buttonText: '삭제',
+          onPressed: () {
+            dialogContext.pop();
+
+            _deleteComment(
+              context: context,
+              ref: ref,
+              commentId: commentId,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _deleteComment({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String commentId,
+  }) async {
+    final isDelete = await ref.read(
+      deleteCommentProvider(commentId).future,
+    );
+
+    if (isDelete) {
+      ref.read(commentListProvider(boardId).notifier).refresh();
+
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return DefaultDialog(
+          contentText: '댓글을 삭제하지 못했습니다.\n잠시 후 다시 시도해주세요.',
+          buttonText: '확인',
+          onPressed: () {
+            dialogContext.pop();
+          },
+        );
+      },
+    );
   }
 }

@@ -3,6 +3,7 @@ import 'package:ddai_community/core/data/supabase_client.dart';
 import 'package:ddai_community/core/utils/data_utils.dart';
 import 'package:ddai_community/core/utils/logger.dart';
 import 'package:ddai_community/features/auth/domain/auth_parameter.dart';
+import 'package:ddai_community/features/user/domain/block_user_model.dart';
 import 'package:ddai_community/features/user/domain/user_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -327,6 +328,55 @@ class AuthRepository {
       }, ignoreDuplicates: true);
 
       return true;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
+    }
+  }
+
+  /// 차단한 유저 목록을 최신순으로 가져온다. 실패하면 빈 목록을 돌려준다.
+  ///
+  /// `block_select_own` 정책이 본인이 차단한 행만 남기므로 조건을 따로 걸지 않는다.
+  /// 닉네임은 `blocked_user_name` 에 비정규화돼 있다 — `profile` 은 본인 행만
+  /// 조회할 수 있어서 uid 로 이름을 되찾을 수 없기 때문이다.
+  static Future<List<BlockUserModel>> getBlockUserList() async {
+    try {
+      final rows = await supabase
+          .from('block_user')
+          .select()
+          .order('created_at', ascending: false);
+
+      return rows.map(BlockUserModel.fromJson).toList();
+    } catch (error) {
+      logger.e(error);
+
+      return const [];
+    }
+  }
+
+  /// 차단을 해제한다. 성공 여부를 bool 로 반환한다.
+  ///
+  /// 지워진 행을 되받아 실제로 해제됐는지 확인한다. RLS(`block_delete_own`)가 막으면
+  /// 오류 없이 0행이 지워지므로, 이 확인이 없으면 실패를 성공으로 보고하게 된다.
+  static Future<bool> unblockUser({
+    required String blockUserUid,
+  }) async {
+    try {
+      final user = supabase.auth.currentUser;
+
+      if (user == null) {
+        return false;
+      }
+
+      final deletedRows = await supabase
+          .from('block_user')
+          .delete()
+          .eq('blocker_uid', user.id)
+          .eq('blocked_uid', blockUserUid)
+          .select('blocked_uid');
+
+      return deletedRows.isNotEmpty;
     } catch (error) {
       logger.e(error);
 

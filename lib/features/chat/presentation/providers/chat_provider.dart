@@ -12,6 +12,11 @@ part 'chat_provider.g.dart';
 @Riverpod(keepAlive: true)
 ChatRepository chatRepository(Ref ref) => ChatRepository();
 
+/// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+@riverpod
+Future<bool> deleteChat(Ref ref, String searchId) =>
+    ChatRepository.deleteChat(searchId: searchId);
+
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
 ///
 /// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
@@ -19,6 +24,16 @@ ChatRepository chatRepository(Ref ref) => ChatRepository();
 /// (낙관적 렌더링 — 실제 행이 도착하면 조용히 교체된다)
 @riverpod
 class ChatList extends _$ChatList with PaginationMixin<ChatModel> {
+  /// 임시 말풍선 id 앞에 붙는 접두사. 서버가 만드는 uuid 와 겹칠 수 없는 값이다.
+  static const String _localIdPrefix = 'local-';
+
+  /// 아직 서버에 도착하지 않은 임시 말풍선인지.
+  ///
+  /// 이 메시지는 서버에 지울 행이 없으므로 화면이 삭제 메뉴를 막는 데 쓴다.
+  /// 접두사 규칙이 [sendChat] 안에만 있으면 화면이 `'local-'` 을 직접 알아야 해서
+  /// 여기로 꺼내 둔다.
+  static bool isPending(String id) => id.startsWith(_localIdPrefix);
+
   /// 스트림이 마지막으로 내보낸 서버 목록. (최신순)
   List<ChatModel> _serverChats = const [];
 
@@ -69,7 +84,7 @@ class ChatList extends _$ChatList with PaginationMixin<ChatModel> {
     required String userUid,
   }) async {
     final pending = ChatModel(
-      id: 'local-${_localSeq++}',
+      id: '$_localIdPrefix${_localSeq++}',
       content: content,
       userName: userName,
       userUid: userUid,

@@ -38,3 +38,8 @@ class CommentList extends _$CommentList with PaginationMixin<CommentModel> {
 @riverpod
 Future<bool> addComment(Ref ref, AddCommentParams params) =>
     CommentRepository.addComment(addCommentParams: params);
+
+/// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+@riverpod
+Future<bool> deleteComment(Ref ref, String searchId) =>
+    CommentRepository.deleteComment(searchId: searchId);

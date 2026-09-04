@@ -54,6 +54,84 @@ final class ChatRepositoryProvider
 
 String _$chatRepositoryHash() => r'f387326596315816fc6945584a7f7d41b2cf70f2';
 
+/// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+@ProviderFor(deleteChat)
+final deleteChatProvider = DeleteChatFamily._();
+
+/// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+final class DeleteChatProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+  DeleteChatProvider._({
+    required DeleteChatFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'deleteChatProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteChatHash();
+
+  @override
+  String toString() {
+    return r'deleteChatProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    final argument = this.argument as String;
+    return deleteChat(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DeleteChatProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$deleteChatHash() => r'8fee933725ff0a6826dde853eef0b65557df6de2';
+
+/// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+final class DeleteChatFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<bool>, String> {
+  DeleteChatFamily._()
+    : super(
+        retry: null,
+        name: r'deleteChatProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 채팅 메시지 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+  DeleteChatProvider call(String searchId) =>
+      DeleteChatProvider._(argument: searchId, from: this);
+
+  @override
+  String toString() => r'deleteChatProvider';
+}
+
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
 ///
 /// 전송한 메시지가 스트림을 타고 돌아오기까지 평균 450ms 가 걸리는데,
@@ -102,7 +180,7 @@ final class ChatListProvider
   }
 }
 
-String _$chatListHash() => r'a4e6e633c8518639a9d3acd684fca54d17a61e9a';
+String _$chatListHash() => r'7095dd9c43b1f500e180879a8e37fa9c1bed4865';
 
 /// 채팅 목록 Notifier. 실시간 스트림으로 동기화된다.
 ///

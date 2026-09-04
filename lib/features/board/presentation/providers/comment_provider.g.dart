@@ -254,3 +254,81 @@ final class AddCommentFamily extends $Family
   @override
   String toString() => r'addCommentProvider';
 }
+
+/// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+@ProviderFor(deleteComment)
+final deleteCommentProvider = DeleteCommentFamily._();
+
+/// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+final class DeleteCommentProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+  DeleteCommentProvider._({
+    required DeleteCommentFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'deleteCommentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteCommentHash();
+
+  @override
+  String toString() {
+    return r'deleteCommentProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    final argument = this.argument as String;
+    return deleteComment(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DeleteCommentProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$deleteCommentHash() => r'ee6e5d0788e9c58524f39ebe894dc965f757a0d0';
+
+/// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+final class DeleteCommentFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<bool>, String> {
+  DeleteCommentFamily._()
+    : super(
+        retry: null,
+        name: r'deleteCommentProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
+
+  DeleteCommentProvider call(String searchId) =>
+      DeleteCommentProvider._(argument: searchId, from: this);
+
+  @override
+  String toString() => r'deleteCommentProvider';
+}
