@@ -69,6 +69,8 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
           return BoardListItem(
             title: board.title,
             content: board.content,
+            userName: board.userName,
+            date: board.date,
             onTap: () {
               context.goNamed(
                 BoardDetailScreen.routeName,
