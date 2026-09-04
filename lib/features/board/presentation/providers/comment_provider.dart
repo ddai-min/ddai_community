@@ -1,6 +1,7 @@
 import 'package:ddai_community/core/data/pagination_repository.dart';
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/providers/pagination_provider.dart';
+import 'package:ddai_community/core/providers/session_provider.dart';
 import 'package:ddai_community/features/board/data/comment_repository.dart';
 import 'package:ddai_community/features/board/domain/comment_model.dart';
 import 'package:ddai_community/features/board/domain/comment_parameter.dart';
@@ -32,6 +33,23 @@ class CommentList extends _$CommentList with PaginationMixin<CommentModel> {
   // (좁힐 컬럼 이름은 CommentRepository 가 parentColumn 으로 들고 있다)
   @override
   String? get parentId => _boardId;
+}
+
+/// 내가 쓴 댓글 목록.
+///
+/// [CommentList] 와 달리 부모 게시글로 좁히지 않는다. 원글로 이동하려면
+/// 댓글이 `board_id` 를 들고 있어야 해서 [CommentModel] 에 필드를 두었다.
+@riverpod
+class MyCommentList extends _$MyCommentList with PaginationMixin<CommentModel> {
+  @override
+  PaginationModel<CommentModel> build() => initialState();
+
+  @override
+  PaginationRepository<CommentModel> get paginationRepository =>
+      ref.read(commentRepositoryProvider);
+
+  @override
+  String? get userUid => ref.read(sessionUidProvider);
 }
 
 /// 댓글 작성. 결과로 성공 여부(bool)를 반환한다.

@@ -27,6 +27,12 @@ class DefaultTextField extends StatelessWidget {
   final String? hintText;
   final Widget? suffixIcon;
 
+  /// 키보드 오른쪽 아래 동작 버튼. (검색 화면에서 `search` 로 바꾼다)
+  final TextInputAction? textInputAction;
+
+  /// 그 버튼을 눌렀을 때. 검색처럼 **입력이 끝난 시점**에만 움직여야 하는 화면이 쓴다.
+  final ValueChanged<String>? onFieldSubmitted;
+
   const DefaultTextField({
     super.key,
     this.controller,
@@ -50,6 +56,8 @@ class DefaultTextField extends StatelessWidget {
     this.labelText,
     this.hintText,
     this.suffixIcon,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -64,6 +72,8 @@ class DefaultTextField extends StatelessWidget {
         forceErrorText: forceErrorText,
         onChanged: onChanged,
         validator: validator,
+        textInputAction: textInputAction,
+        onFieldSubmitted: onFieldSubmitted,
         onTapOutside: (event) {
           FocusManager.instance.primaryFocus?.unfocus();
         },

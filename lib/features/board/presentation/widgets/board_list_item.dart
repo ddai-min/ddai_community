@@ -11,6 +11,13 @@ class BoardListItem extends StatelessWidget {
   final String content;
   final String userName;
   final DateTime date;
+
+  /// 댓글 수. 목록 조회에서만 실리므로 없을 수 있다.
+  final int? commentCount;
+
+  /// 좋아요 수. 목록 조회에서만 실리므로 없을 수 있다.
+  final int? likeCount;
+
   final GestureTapCallback onTap;
 
   const BoardListItem({
@@ -20,6 +27,8 @@ class BoardListItem extends StatelessWidget {
     required this.userName,
     required this.date,
     required this.onTap,
+    this.commentCount,
+    this.likeCount,
   });
 
   @override
@@ -72,6 +81,33 @@ class BoardListItem extends StatelessWidget {
                   ' · ${DataUtils.formatRelativeDate(date)}',
                   style: metaTextStyle,
                 ),
+                // 하나도 없으면 굳이 0 을 그리지 않는다.
+                if (commentCount != null && commentCount! > 0) ...[
+                  const SizedBox(width: 8.0),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 12.0,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 3.0),
+                  Text(
+                    '$commentCount',
+                    style: metaTextStyle,
+                  ),
+                ],
+                if (likeCount != null && likeCount! > 0) ...[
+                  const SizedBox(width: 8.0),
+                  Icon(
+                    Icons.favorite_border,
+                    size: 12.0,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 3.0),
+                  Text(
+                    '$likeCount',
+                    style: metaTextStyle,
+                  ),
+                ],
               ],
             ),
           ],

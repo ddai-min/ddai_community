@@ -3,9 +3,11 @@ import 'package:ddai_community/features/auth/presentation/screens/login_screen.d
 import 'package:ddai_community/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_create_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_detail_screen.dart';
+import 'package:ddai_community/features/board/presentation/screens/board_search_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
 import 'package:ddai_community/features/user/presentation/screens/block_user_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
+import 'package:ddai_community/features/user/presentation/screens/my_content_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/privacy_policy_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/profile_edit_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +56,14 @@ List<GoRoute> routes = [
         name: BoardCreateScreen.routeName,
         builder: (_, _) => const BoardCreateScreen(),
       ),
+      // 작성과 같은 화면을 쓴다. id 가 실리면 수정 모드다.
+      GoRoute(
+        path: 'board_edit/:id',
+        name: BoardCreateScreen.editRouteName,
+        builder: (_, state) => BoardCreateScreen(
+          boardId: state.pathParameters['id']!,
+        ),
+      ),
       GoRoute(
         path: 'profile_edit',
         name: ProfileEditScreen.routeName,
@@ -61,6 +71,16 @@ List<GoRoute> routes = [
           userName: state.uri.queryParameters['userName']!,
           email: state.uri.queryParameters['email']!,
         ),
+      ),
+      GoRoute(
+        path: 'board_search',
+        name: BoardSearchScreen.routeName,
+        builder: (_, _) => const BoardSearchScreen(),
+      ),
+      GoRoute(
+        path: 'my_content',
+        name: MyContentScreen.routeName,
+        builder: (_, _) => const MyContentScreen(),
       ),
       GoRoute(
         path: 'block_user',

@@ -9,6 +9,7 @@ import 'package:ddai_community/features/board/domain/comment_parameter.dart';
 import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
 import 'package:ddai_community/features/board/presentation/providers/comment_provider.dart';
 import 'package:ddai_community/features/board/presentation/widgets/board_detail_buttons.dart';
+import 'package:ddai_community/features/board/presentation/widgets/board_like_button.dart';
 import 'package:ddai_community/features/board/presentation/widgets/comment_list_item.dart';
 import 'package:ddai_community/features/board/presentation/widgets/comment_text_field.dart';
 import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
@@ -98,7 +99,12 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                 content: data.content,
               ),
             ),
-            const SizedBox(height: 16.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: BoardLikeButton(
+                boardId: widget.id,
+              ),
+            ),
             CommentTextField(
               controller: commentTextController,
               onPressed: _addComment,
@@ -126,6 +132,9 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     // build 에서 부르므로 watch 다. 로그인 상태가 늦게 채워져도 버튼이 따라 바뀐다.
     if (ref.watch(userMeProvider).id == userUid) {
       return [
+        BoardEditButton(
+          boardId: widget.id,
+        ),
         BoardDeleteButton(
           boardId: widget.id,
         ),

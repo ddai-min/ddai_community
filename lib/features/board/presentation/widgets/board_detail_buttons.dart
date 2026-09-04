@@ -1,5 +1,6 @@
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
+import 'package:ddai_community/features/board/presentation/screens/board_create_screen.dart';
 import 'package:ddai_community/features/chat/presentation/providers/chat_provider.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
 import 'package:ddai_community/features/user/domain/report_parameter.dart';
@@ -59,6 +60,37 @@ class _BoardDeleteButtonState extends ConsumerState<BoardDeleteButton> {
         HomeTab.routeName,
       );
     }
+  }
+}
+
+/// 게시글 수정 버튼. (작성자 본인에게만 노출)
+///
+/// 작성 화면을 수정 모드로 연다. `goNamed` 가 아니라 `pushNamed` 라야
+/// 수정을 마치고 상세 화면으로 되돌아온다.
+class BoardEditButton extends StatelessWidget {
+  final String boardId;
+
+  const BoardEditButton({
+    super.key,
+    required this.boardId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () {
+        context.pushNamed(
+          BoardCreateScreen.editRouteName,
+          pathParameters: {
+            'id': boardId,
+          },
+        );
+      },
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+      ),
+      child: const Text('수정'),
+    );
   }
 }
 

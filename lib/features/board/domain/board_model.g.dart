@@ -16,6 +16,8 @@ BoardModel _$BoardModelFromJson(Map<String, dynamic> json) => BoardModel(
   commentList: (json['comment'] as List<dynamic>?)
       ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
       .toList(),
+  commentCount: (_readCommentCount(json, 'comment_count') as num?)?.toInt(),
+  likeCount: (_readCommentCount(json, 'like_count') as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$BoardModelToJson(BoardModel instance) =>

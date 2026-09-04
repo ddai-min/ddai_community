@@ -59,7 +59,7 @@ lib/
 │   ├── router/                #   go_router 라우트 정의
 │   ├── theme/                 #   AppTheme
 │   ├── utils/                 #   DataUtils · RegUtils · LinkUtils · logger
-│   └── widgets/               #   DefaultLayout · Default* 공통 위젯
+│   └── widgets/               #   DefaultLayout · Default* 공통 위젯 · ContentActionSheet
 │
 └── features/                  # 기능(도메인) 모듈
     ├── auth/                  #   로그인 · 회원가입 · EULA · 차단
@@ -116,6 +116,11 @@ features/<feature>/
     **`paginationRepository` 만 override** 한다. (어느 테이블을 볼지는 repository 자신이 안다)
   - 댓글처럼 부모 행으로 좁혀야 하면 `parentId` 를 추가로 override 한다.
     좁힐 컬럼(`board_id`)은 repository 의 `parentColumn` 이 들고 있다.
+  - `userUid`("내가 쓴 글")·`keyword`(검색)도 같은 방식으로 override 한다.
+    검색이 훑을 컬럼은 repository 의 `searchColumns` 가 정한다.
+  - **조회 실패는 `hasError` 로 구분한다.** repository 가 예외를 삼키고 빈 목록을
+    돌려주므로, 이 플래그가 없으면 화면이 "없음" 과 "못 불러옴" 을 구분할 수 없다.
+    실패 시 `hasMore` 도 함께 내린다 — 안 그러면 스크롤할 때마다 다시 던진다.
   - `build()` 는 `initialState()` 를 반환한다. 채팅은 `build()` 에서 `subscribeStream()` 을 추가 호출(실시간).
   - `mergeStreamData(rows)` — 스트림이 내보낸 서버 목록을 상태에 넣기 **전에** 가공하는 훅.
     기본은 그대로 통과. 스트림은 매번 목록 전체를 내보내므로, 이 훅 없이 로컬 항목을 얹으면
@@ -257,6 +262,23 @@ features/<feature>/
   `profile.user_name` 2~12 · `report.report_reason` 500. **UI 의 `maxLength` 와 같은 값이므로
   UI 를 바꾸면 CHECK 제약도 같이 바꿔야 한다.** 어긋나면 입력은 되는데 저장만 실패해서
   원인을 찾기 어렵다.
+- **신고·차단 진입점은 세 곳이다**: 게시글 상세 AppBar, 채팅 말풍선 길게 누르기,
+  댓글 오른쪽 메뉴. 셋 다 `showReportDialog` · `showBlockDialog`(`features/user/
+  presentation/widgets/report_block_actions.dart`) 한 구현을 쓴다.
+  - **채팅 쪽을 지우지 말 것.** 전체 공개 실시간이라 가장 위험한 화면인데, 예전에는
+    여기 신고가 없어서 상대가 쓴 게시글을 찾아 들어가야만 신고·차단할 수 있었다.
+  - `report.report_content_type` 의 값 목록은 앱의 `ReportContentType` enum 과
+    **같아야 한다.** 한쪽만 늘리면 insert 가 CHECK 위반으로 막히는데, `report` 는
+    조용히 실패하는 자리라 원인을 찾기 어렵다.
+- **게시글 목록 select 절의 별칭을 빼지 말 것**: 목록은
+  `*, comment_count:comment(count), like_count:board_like(count)` 로 조회한다.
+  별칭 없이 `comment(count)` 를 쓰면 상세의 `comment(*)` 와 **같은 `comment` 키**로
+  내려와 `BoardModel` 이 댓글 목록으로 파싱하려다 실패한다.
+- **`board` 의 UPDATE 는 컬럼 단위 grant 다**: `title`·`content` 에만 준다.
+  `set_author_name` 트리거는 `BEFORE INSERT` 전용이라 UPDATE 에 걸리지 않아서,
+  테이블 전체에 UPDATE 를 주면 자기 글의 작성자 이름을 아무 값으로나 바꿀 수 있다.
+- **`board_like` 의 `ignoreDuplicates: true` 를 빼지 말 것**: `block_user` 와 같은 이유다.
+  UPDATE 정책이 없어서 기본 upsert(`ON CONFLICT DO UPDATE`)로 나가면 연타 시 403 이 된다.
 - **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
   `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
   - 앱에서 신고를 **읽을 수 없는 것은 의도된 설계다.** 대신 Database Webhook 이
@@ -407,6 +429,12 @@ features/<feature>/
 | `lib/core/constants/app_links.dart` | 개인정보처리방침 공개 주소 |
 | `lib/features/user/presentation/screens/privacy_policy_screen.dart` | 방침 웹뷰 화면 (최상위 라우트) |
 | `lib/features/user/presentation/screens/block_user_screen.dart` | 차단한 사용자 목록 · 차단 해제 |
+| `lib/features/user/presentation/screens/my_content_screen.dart` | 내가 쓴 글 · 댓글 (탭) |
+| `lib/features/user/presentation/widgets/report_block_actions.dart` | 신고·차단 공용 동작 (세 화면이 공유) |
+| `lib/features/board/presentation/screens/board_search_screen.dart` | 게시글 검색 (제목·내용 ilike) |
+| `lib/core/widgets/content_action_sheet.dart` | 콘텐츠 동작 선택 시트 (삭제 / 신고·차단) |
+| `lib/core/widgets/default_list_placeholder.dart` | 목록 빈 상태·오류 안내 |
+| `docs/account-deletion.html` | 계정 삭제 안내 (Play 필수 URL) |
 | `docs/privacy-policy.html` | 개인정보처리방침 원본 (GitHub Pages 로 공개) |
 | `lib/app/app_update.dart` | 강제 업데이트 판정 (`AppUpdateStatus`) |
 | `lib/features/home/presentation/screens/home_tab.dart` | 게시판/채팅/프로필 3탭 메인 화면 |

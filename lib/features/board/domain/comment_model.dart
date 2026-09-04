@@ -9,6 +9,13 @@ part 'comment_model.g.dart';
 class CommentModel implements ModelWithId {
   @override
   final String id;
+
+  /// 이 댓글이 달린 게시글 id.
+  ///
+  /// 게시글 상세에서는 이미 아는 값이지만, "내가 쓴 댓글" 목록에서 원글로
+  /// 이동하려면 댓글 자신이 들고 있어야 한다.
+  final String boardId;
+
   final String userName;
   final String userUid;
   final String content;
@@ -19,6 +26,7 @@ class CommentModel implements ModelWithId {
 
   CommentModel({
     required this.id,
+    required this.boardId,
     required this.userName,
     required this.userUid,
     required this.content,

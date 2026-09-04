@@ -3,6 +3,7 @@ import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
 import 'package:ddai_community/features/auth/presentation/screens/login_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_list_screen.dart';
+import 'package:ddai_community/features/board/presentation/screens/board_search_screen.dart';
 import 'package:ddai_community/features/board/presentation/widgets/add_board_floating_action_button.dart';
 import 'package:ddai_community/features/chat/presentation/screens/chat_screen.dart';
 import 'package:ddai_community/features/user/presentation/providers/user_me_provider.dart';
@@ -99,6 +100,19 @@ class _HomeTabState extends ConsumerState<HomeTab>
       // TabBarView 와 그 안의 목록이 스스로 스크롤한다. 스크롤뷰로 감싸면 높이가
       // 무한이 되어 그대로 터진다.
       isScrollable: false,
+      // 검색은 게시판에만 해당한다. 채팅·프로필 탭에서는 버튼을 감춘다.
+      actions: index == 0
+          ? [
+              IconButton(
+                onPressed: () {
+                  context.goNamed(
+                    BoardSearchScreen.routeName,
+                  );
+                },
+                icon: const Icon(Icons.search),
+              ),
+            ]
+          : null,
       floatingActionButton: renderFloatingActionButton(),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,

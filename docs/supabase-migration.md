@@ -1748,6 +1748,88 @@ grant execute on function public.is_user_name_taken(text) to anon, authenticated
 
 ---
 
+## 별건 — 게시판 기능 확장 🟡 *(앱 완료 · SQL 적용 대기)*
+
+게시글 수정 · 좋아요 · 검색 · "내가 쓴 글/댓글" · 댓글 수를 붙였다.
+검색과 "내가 쓴 글" 은 기존 컬럼만 쓰므로 인덱스 외에는 DDL 이 없다.
+
+### 1. 게시글 수정 — 컬럼 단위 UPDATE
+
+**테이블 전체에 UPDATE 를 주면 안 된다.** `set_author_name` 트리거는 `BEFORE INSERT`
+전용이라 UPDATE 에는 걸리지 않는다. 전체 권한을 주면 자기 글의 `user_name` 을
+아무 값으로나 바꿀 수 있고, 그러면 사칭을 막으려고 트리거를 둔 의미가 사라진다.
+
+```sql
+grant update (title, content) on public.board to authenticated;
+
+create policy board_update_own on public.board
+  for update to authenticated
+  using (user_uid = auth.uid())
+  with check (user_uid = auth.uid());
+```
+
+### 2. 좋아요 — `board_like`
+
+```sql
+create table public.board_like (
+  board_id   uuid not null references public.board(id)   on delete cascade,
+  user_uid   uuid not null references public.profile(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (board_id, user_uid)
+);
+create index board_like_board_idx on public.board_like (board_id);
+
+alter table public.board_like enable row level security;
+
+-- 개수는 모두가 볼 수 있어야 하고, 누르고 취소하는 것은 본인 것만.
+create policy board_like_select     on public.board_like for select to authenticated using (true);
+create policy board_like_insert_own on public.board_like for insert to authenticated with check (user_uid = auth.uid());
+create policy board_like_delete_own on public.board_like for delete to authenticated using (user_uid = auth.uid());
+
+-- 새 테이블에는 Supabase 이벤트 트리거가 ALL 을 준다. 쓰지 않는 권한은 회수한다.
+revoke all on public.board_like from anon, authenticated;
+grant select, insert, delete on public.board_like to authenticated;
+```
+
+> `board_like` 에는 **UPDATE 정책이 없다.** 앱의 `likeBoard` 가 `ignoreDuplicates: true`
+> 로 upsert 하는 이유다. 기본 upsert 는 `ON CONFLICT DO UPDATE` 라 연타하면 403 이 된다.
+> (`block_user` 에서 겪은 것과 같은 문제다)
+
+> 좋아요 목록에는 차단 필터가 없다. 개수만 드러나고 누가 눌렀는지는 화면에
+> 나오지 않으므로 `is_blocked()` 를 걸지 않았다.
+
+### 3. 인덱스 — "내가 쓴 댓글" · 검색
+
+```sql
+-- comment 의 기존 인덱스는 (board_id, created_at desc, id desc) 라
+-- user_uid 로만 좁히는 "내가 쓴 댓글" 을 받쳐주지 못한다.
+create index if not exists comment_user_idx on public.comment (user_uid);
+```
+
+검색은 `title`·`content` 에 `ilike '%키워드%'` 를 건다. 앞부분이 열려 있는 패턴이라
+B-tree 인덱스를 타지 못하고 순차 스캔한다. 글이 수만 건이 되면 아래를 검토한다.
+
+```sql
+-- 선택: 부분 일치 검색용 (글이 많아지면)
+create extension if not exists pg_trgm;
+create index board_title_trgm   on public.board using gin (title   gin_trgm_ops);
+create index board_content_trgm on public.board using gin (content gin_trgm_ops);
+```
+
+### 4. 목록 조회가 쓰는 select 절
+
+게시판 목록은 이제 관계 집계를 함께 가져온다.
+
+```
+*, comment_count:comment(count), like_count:board_like(count)
+```
+
+**별칭이 반드시 있어야 한다.** 별칭 없이 `comment(count)` 를 쓰면 상세 조회의
+`comment(*)` 와 **같은 `comment` 키**로 내려와서, `BoardModel` 이 댓글 목록으로
+파싱하려다 실패한다.
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |
