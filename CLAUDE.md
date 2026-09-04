@@ -148,6 +148,14 @@ features/<feature>/
   갱신은 `ref.read(userMeProvider.notifier).update((state) => ...)` 로 하며, 주로 `app/app.dart` 의
   `supabase.auth.onAuthStateChange` 리스너에서 이루어진다.
   Supabase `User` → `UserModel` 변환은 **`AuthRepository.userModelFrom()` 한 곳**에만 둔다.
+  - **초기값은 `build()` 가 `supabase.auth.currentUser` 로 직접 만든다.** 위 리스너는 스트림이라
+    한 박자 뒤에 오는데, 그 사이 비어 있으면 세션이 살아 있는데도 화면이 비로그인으로 판단한다.
+    `sessionUidProvider` 도 같은 이유로 `currentUser` 를 먼저 읽는다. 비우지 말 것.
+  - **화면에서는 `watch` 로 읽는다.** `build` 안에서 `read` 를 쓰면 구독하지 않아 나중에 값이
+    채워져도 화면이 그대로 굳는다. (`HomeTab` 이 실제로 이 버그를 겪었다 — 익명 로그인 후
+    앱을 다시 켜면 로그인 안내가 뜨고 hot reload 를 해야 풀렸다)
+    `itemBuilder` 는 build 가 아니라 레이아웃 중에 불리므로, 그 안에서 watch 하지 말고
+    `build` 첫 줄에서 값을 꺼내 넘긴다. 버튼 콜백 등 이벤트 핸들러에서는 `read` 가 맞다.
 - **화면 공통 레이아웃**: `DefaultLayout`(공통 Scaffold). `title` 을 주면 브랜드 색 AppBar 가 렌더된다.
   본문 여백도 여기서 준다 — `padding` 파라미터, 기본값 `DefaultLayout.contentPadding`(가로 24 · 세로 16).
   **화면에서 `Padding` 을 덧씌우지 않는다.** 더해져서 화면끼리 어긋난다. 다르게 줘야 하면 `padding` 으로 넘긴다.
@@ -374,7 +382,7 @@ features/<feature>/
     `remove()` 한다. **`remove()` 를 빠뜨리면 앱이 스플래시에서 멈춘다.**
   - 시작 화면은 `supabase.auth.currentSession` 으로 정한다. `Supabase.initialize` 가
     저장된 세션 복원까지 마친 뒤라 이 값은 이미 정확하다.
-    (`userMeProvider` 는 인증 리스너가 비동기로 채우므로 이 시점엔 아직 비어 있을 수 있다)
+    (`userMeProvider` 도 같은 값에서 초기 상태를 만든다 — 위 "전역 유저 상태" 참고)
   - 이미지/색을 바꾸면 `fvm dart run flutter_native_splash:create` 로 네이티브 리소스를 재생성한다.
     Android 12+ 는 아이콘이 원으로 마스킹되므로 1152px 캔버스의 중앙 768px 안에 내용이 있어야 한다.
 

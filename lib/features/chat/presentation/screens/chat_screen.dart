@@ -107,6 +107,10 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // itemBuilder 는 build 가 아니라 레이아웃 중에 불리므로 여기서 미리 구독한다.
+    // 늦게 채워지면 내 메시지가 남의 말풍선으로 그려진 채 남는다.
+    final myUid = ref.watch(userMeProvider).id;
+
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: ListView.builder(
@@ -134,7 +138,7 @@ class _Body extends ConsumerWidget {
               children: [
                 // 내 메시지는 오른쪽, 상대 메시지는 왼쪽 말풍선으로 표시한다.
                 // (상대가 연속으로 보낸 경우 isSayAgain=true 로 이름을 생략)
-                if (chatItem.userUid == ref.read(userMeProvider).id)
+                if (chatItem.userUid == myUid)
                   MyChatBubble(
                     message: chatItem.content,
                     // 아직 전송 중인 말풍선은 서버에 지울 행이 없다.

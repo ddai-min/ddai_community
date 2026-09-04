@@ -118,7 +118,8 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     required String userUid,
     required String userName,
   }) {
-    if (ref.read(userMeProvider).id == userUid) {
+    // build 에서 부르므로 watch 다. 로그인 상태가 늦게 채워져도 버튼이 따라 바뀐다.
+    if (ref.watch(userMeProvider).id == userUid) {
       return [
         BoardDeleteButton(
           boardId: widget.id,
@@ -229,6 +230,9 @@ class _CommentList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // itemBuilder 는 build 가 아니라 레이아웃 중에 불리므로 여기서 미리 구독한다.
+    final myUid = ref.watch(userMeProvider).id;
+
     if (commentList.items.isEmpty) {
       return SizedBox(
         height: 100,
@@ -254,7 +258,7 @@ class _CommentList extends ConsumerWidget {
 
           return CommentListItem(
             commentModel: comment,
-            isMine: comment.userUid == ref.read(userMeProvider).id,
+            isMine: comment.userUid == myUid,
             onDelete: () {
               _confirmDelete(
                 context: context,

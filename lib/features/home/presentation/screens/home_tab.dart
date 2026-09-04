@@ -58,7 +58,9 @@ class _HomeTabState extends ConsumerState<HomeTab>
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.read(userMeProvider);
+    // `read` 가 아니라 `watch` 여야 한다. 로그인 상태가 나중에 채워질 수 있는데
+    // `read` 는 구독하지 않아 화면이 비로그인인 채로 굳는다. (hot reload 로만 풀렸다)
+    final user = ref.watch(userMeProvider);
 
     if (user.id.isEmpty) {
       return DefaultLayout(
