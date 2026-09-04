@@ -155,6 +155,17 @@ features/<feature>/
   - **`HomeTab` 은 `padding: EdgeInsets.zero` 다.** 게시판·채팅 목록이 화면 끝까지 닿아야 하는데
     세 탭이 레이아웃 하나를 공유하기 때문이다. 그래서 **`ProfileScreen` 만** `DefaultLayout.contentPadding` 을
     직접 쓴다. 탭을 추가할 때 여백이 필요하면 같은 방식으로 그 화면이 직접 준다.
+  - **본문 스크롤도 여기서 준다.** `isScrollable` 기본값이 `true` 라 본문이 자동으로
+    `SingleChildScrollView` 에 담긴다. **화면에서 스크롤뷰를 덧씌우지 않는다** — 중첩되면
+    안쪽이 높이를 못 받는다. `clipBehavior` 기본값은 `Clip.none` 이고, 페이지네이션처럼
+    스크롤 위치가 필요하면 `scrollController` 를 넘긴다. (게시글 상세가 그렇게 쓴다)
+  - **`isScrollable: false` 로 꺼야 하는 화면이 있다.** 스크롤뷰 안에서는 높이 제약이
+    무한이라 아래 셋은 터지거나 뭉개진다. 새 화면을 만들 때 먼저 확인할 것.
+    | 조건 | 해당 화면 |
+    | --- | --- |
+    | 자체 스크롤 위젯 (`ListView`·`TabBarView`·웹뷰) | `HomeTab` · `BlockUserScreen` · `PrivacyPolicyScreen` |
+    | `Expanded`·`Spacer` 로 남은 높이를 나눠 가짐 | `SignUpScreen` · `ProfileEditScreen` |
+    | 세로 가운데 정렬 (`Center` · `MainAxisAlignment.center`) | `HomeTab`(비로그인) · `BoardDetailScreen`(로딩·오류) |
 - **모서리 둥글기**: 다이얼로그와 버튼은 `AppTheme.borderRadius`(10) 하나를 공유한다.
   값은 `AppTheme.light` 의 `dialogTheme` · `elevatedButtonTheme` · `textButtonTheme` 이 주므로
   **위젯에서 `shape` 를 지정하지 않는다.** 비워 두면 테마가 적용된다.

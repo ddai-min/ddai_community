@@ -52,36 +52,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return DefaultLayout(
       title: 'DDAI Community',
-      child: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: availableHeight,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _Title(),
-              const SizedBox(height: 15),
-              if (loginErrorCode != null)
-                _ErrorText(errorCode: loginErrorCode!),
-              const SizedBox(height: 15),
-              Form(
-                key: formKey,
-                child: _Inputs(
-                  idTextController: idTextController,
-                  passwordTextController: passwordTextController,
-                  idValidator: _idValidator,
-                  passwordValidator: _passwordValidator,
-                ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: availableHeight,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _Title(),
+            const SizedBox(height: 15),
+            if (loginErrorCode != null) _ErrorText(errorCode: loginErrorCode!),
+            const SizedBox(height: 15),
+            Form(
+              key: formKey,
+              child: _Inputs(
+                idTextController: idTextController,
+                passwordTextController: passwordTextController,
+                idValidator: _idValidator,
+                passwordValidator: _passwordValidator,
               ),
-              _Buttons(
-                onLogin: _onLogin,
-                onSignUp: _onSignUp,
-                onAnonymous: _onAnonymous,
-              ),
-            ],
-          ),
+            ),
+            _Buttons(
+              onLogin: _onLogin,
+              onSignUp: _onSignUp,
+              onAnonymous: _onAnonymous,
+            ),
+          ],
         ),
       ),
     );

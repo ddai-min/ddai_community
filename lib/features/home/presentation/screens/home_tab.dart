@@ -63,6 +63,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
     if (user.id.isEmpty) {
       return DefaultLayout(
         title: 'DDAI Community',
+        // 스크롤뷰 안에서는 높이가 내용만큼 줄어들어 세로 가운데 정렬이 무의미해진다.
+        isScrollable: false,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -92,6 +94,9 @@ class _HomeTabState extends ConsumerState<HomeTab>
       // 게시판·채팅은 목록이 화면 끝까지 닿아야 하고 프로필만 여백이 필요하다.
       // 세 탭이 레이아웃 하나를 공유하므로 여백은 각 탭이 직접 준다.
       padding: EdgeInsets.zero,
+      // TabBarView 와 그 안의 목록이 스스로 스크롤한다. 스크롤뷰로 감싸면 높이가
+      // 무한이 되어 그대로 터진다.
+      isScrollable: false,
       floatingActionButton: renderFloatingActionButton(),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,

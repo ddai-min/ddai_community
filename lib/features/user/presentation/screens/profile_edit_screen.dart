@@ -52,6 +52,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '프로필 수정',
+      // 입력 영역만 스크롤하고 '계정 삭제' 는 바닥에 붙어 있어야 해서 Expanded 를 쓴다.
+      // 그 안쪽 스크롤뷰는 이 화면의 것이므로 레이아웃의 스크롤은 끈다.
+      isScrollable: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

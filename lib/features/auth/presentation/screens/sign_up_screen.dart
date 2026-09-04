@@ -62,6 +62,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Widget build(BuildContext context) {
     return DefaultLayout(
       title: '회원가입',
+      // 하단 버튼이 Expanded 로 남은 높이를 채운다. 스크롤뷰 안에서는 높이가 무한이라
+      // Expanded 가 예외를 던진다.
+      isScrollable: false,
       child: Form(
         key: formKey,
         child: Column(

@@ -27,6 +27,8 @@ class BlockUserScreen extends ConsumerWidget {
 
     return DefaultLayout(
       title: '차단한 사용자',
+      // 목록은 ListView 가, 로딩·빈 상태는 Center 가 화면 높이를 그대로 써야 한다.
+      isScrollable: false,
       child: blockUserList.when(
         loading: () => const Center(
           child: DefaultCircularProgressIndicator(),

@@ -45,6 +45,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
       title: '개인정보처리방침',
       // 문서 HTML 이 자체 여백을 갖고 있으므로 웹뷰는 화면 끝까지 붙인다.
       padding: EdgeInsets.zero,
+      // 웹뷰가 문서를 스스로 스크롤한다. 스크롤뷰로 감싸면 높이가 정해지지 않아
+      // 웹뷰가 그려지지 않는다.
+      isScrollable: false,
       child: Stack(
         children: [
           InAppWebView(

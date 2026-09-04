@@ -49,15 +49,13 @@ class _BoardCreateScreenState extends ConsumerState<BoardCreateScreen> {
           ),
         ),
       ],
-      child: SingleChildScrollView(
-        child: Form(
-          key: formKey,
-          child: _Body(
-            titleValidator: _boardCreateTitleValidator,
-            contentValidator: _boardCreateContentValidator,
-            titleTextController: titleTextController,
-            contentTextController: contentTextController,
-          ),
+      child: Form(
+        key: formKey,
+        child: _Body(
+          titleValidator: _boardCreateTitleValidator,
+          contentValidator: _boardCreateContentValidator,
+          titleTextController: titleTextController,
+          contentTextController: contentTextController,
         ),
       ),
     );

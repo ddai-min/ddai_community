@@ -39,16 +39,13 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
       bottomSheet: _BottomButton(
         onPressed: _onBottomButtonPressed,
       ),
-      child: SingleChildScrollView(
-        clipBehavior: Clip.none,
-        child: Column(
-          children: [
-            const _Body(),
-            // bottomSheet 는 본문을 밀어내지 않고 그 위를 덮는다.
-            // 이 여백이 없으면 맨 아래까지 스크롤해도 마지막 조항이 버튼에 가려 안 보인다.
-            const SizedBox(height: EulaScreen._bottomButtonHeight),
-          ],
-        ),
+      child: const Column(
+        children: [
+          _Body(),
+          // bottomSheet 는 본문을 밀어내지 않고 그 위를 덮는다.
+          // 이 여백이 없으면 맨 아래까지 스크롤해도 마지막 조항이 버튼에 가려 안 보인다.
+          SizedBox(height: EulaScreen._bottomButtonHeight),
+        ],
       ),
     );
   }

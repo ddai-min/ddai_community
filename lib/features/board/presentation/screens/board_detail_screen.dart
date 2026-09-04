@@ -60,51 +60,52 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     return board.when(
       loading: () => const DefaultLayout(
         title: '',
+        // Center 는 스크롤뷰 안에서 내용 높이만큼 줄어 가운데 정렬이 풀린다.
+        isScrollable: false,
         child: Center(
           child: DefaultCircularProgressIndicator(),
         ),
       ),
       error: (error, stack) => const DefaultLayout(
         title: '',
+        isScrollable: false,
         child: Center(
           child: Text('로딩 중에 오류가 발생하였습니다.'),
         ),
       ),
       data: (data) => DefaultLayout(
         padding: EdgeInsetsGeometry.zero,
+        // 스크롤 위치로 다음 댓글 페이지를 불러온다.
+        scrollController: scrollController,
         title: data!.title,
         actions: _renderActions(
           userUid: data.userUid,
           userName: data.userName,
         ),
-        child: SingleChildScrollView(
-          controller: scrollController,
-          clipBehavior: Clip.none,
-          child: Column(
-            children: [
-              const SizedBox(height: 16.0),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _Writing(
-                  title: data.title,
-                  userName: data.userName,
-                  content: data.content,
-                ),
+        child: Column(
+          children: [
+            const SizedBox(height: 16.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _Writing(
+                title: data.title,
+                userName: data.userName,
+                content: data.content,
               ),
-              const SizedBox(height: 16.0),
-              CommentTextField(
-                controller: commentTextController,
-                onPressed: _addComment,
+            ),
+            const SizedBox(height: 16.0),
+            CommentTextField(
+              controller: commentTextController,
+              onPressed: _addComment,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _CommentList(
+                boardId: widget.id,
+                commentList: commentList,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _CommentList(
-                  boardId: widget.id,
-                  commentList: commentList,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
