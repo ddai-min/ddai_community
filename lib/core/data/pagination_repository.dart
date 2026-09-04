@@ -31,6 +31,14 @@ class PaginationRepository<T extends ModelWithId> {
   /// Firestore 의 하위 컬렉션(`board/{id}/comment`)을 대체한다.
   final String? parentColumn;
 
+  /// PostgREST `select` 절. 기본은 모든 컬럼이다.
+  ///
+  /// 관계 집계가 필요한 목록만 바꾼다. (게시판 목록의 `comment(count)`)
+  final String selectColumns;
+
+  /// 검색이 훑을 컬럼들. 비어 있으면 `keyword` 를 무시한다.
+  final List<String> searchColumns;
+
   /// 조회 결과 행(Map)을 모델 [T] 로 변환하는 함수.
   final T Function(Map<String, dynamic> data) fromJson;
 
@@ -38,23 +46,52 @@ class PaginationRepository<T extends ModelWithId> {
     required this.table,
     required this.fromJson,
     this.parentColumn,
+    this.selectColumns = '*',
+    this.searchColumns = const [],
   });
+
+  /// 작성자로 좁힐 때 쓰는 컬럼. 목록 테이블 셋 다 이름이 같다.
+  static const String _userColumn = 'user_uid';
 
   /// 한 페이지 분량의 행을 조회한다.
   ///
   /// - [parentId] 가 주어지면 [parentColumn] 으로 범위를 좁힌다. (특정 게시글의 댓글)
+  /// - [userUid] 가 주어지면 그 사람이 쓴 것만 조회한다. (내가 쓴 글)
+  /// - [keyword] 가 주어지면 [searchColumns] 를 `ilike` 로 훑는다.
   /// - [cursor] 가 주어지면 그 지점 다음부터 이어서 조회한다.
-  /// - 오류가 발생하면 빈 목록을 반환해 UI 크래시를 방지한다.
+  /// - 오류가 나면 빈 목록에 `hasError` 를 세워 반환한다. 화면이 "없음"과
+  ///   "못 불러옴"을 구분할 수 있어야 하기 때문이다.
   Future<PaginationModel<T>> fetchData({
     String? parentId,
+    String? userUid,
+    String? keyword,
     int pageSize = 30,
     PaginationCursor? cursor,
   }) async {
     try {
-      var query = supabase.from(table.name).select();
+      var query = supabase.from(table.name).select(selectColumns);
 
       if (parentColumn != null && parentId != null) {
         query = query.eq(parentColumn!, parentId);
+      }
+
+      if (userUid != null) {
+        query = query.eq(_userColumn, userUid);
+      }
+
+      final trimmedKeyword = keyword?.trim() ?? '';
+
+      if (trimmedKeyword.isNotEmpty && searchColumns.isNotEmpty) {
+        // 큰따옴표로 감싸 쉼표·마침표가 필터 문법으로 읽히지 않게 하고,
+        // 값 안의 역슬래시와 큰따옴표는 이스케이프한다. (안 하면 검색어 하나로
+        // 필터가 깨져 엉뚱한 결과나 오류가 난다)
+        final escaped = trimmedKeyword
+            .replaceAll(r'\', r'\\')
+            .replaceAll('"', r'\"');
+
+        query = query.or(
+          searchColumns.map((column) => '$column.ilike."%$escaped%"').join(','),
+        );
       }
 
       if (cursor != null) {
@@ -96,8 +133,11 @@ class PaginationRepository<T extends ModelWithId> {
     } catch (error) {
       logger.e(error);
 
+      // hasMore 를 내려 두지 않으면 스크롤할 때마다 실패한 요청을 계속 다시 던진다.
       return PaginationModel(
         items: [],
+        hasMore: false,
+        hasError: true,
       );
     }
   }

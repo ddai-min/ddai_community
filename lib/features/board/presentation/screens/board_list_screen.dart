@@ -1,5 +1,6 @@
 import 'package:ddai_community/core/constants/colors.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
+import 'package:ddai_community/core/widgets/default_list_placeholder.dart';
 import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_detail_screen.dart';
 import 'package:ddai_community/features/board/presentation/widgets/board_list_item.dart';
@@ -52,36 +53,70 @@ class _BoardListScreenState extends ConsumerState<BoardListScreen> {
       onRefresh: () async {
         ref.read(boardListProvider.notifier).refresh();
       },
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        clipBehavior: Clip.none,
-        itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == boardList.items.length) {
-            return const Center(
-              child: DefaultCircularProgressIndicator(),
-            );
-          }
+      // 비었을 때도 스크롤 가능한 위젯을 두어야 당겨서 새로고침이 동작한다.
+      child: boardList.items.isEmpty
+          ? _renderPlaceholder(
+              context: context,
+              hasError: boardList.hasError,
+            )
+          : ListView.builder(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              clipBehavior: Clip.none,
+              itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == boardList.items.length) {
+                  return const Center(
+                    child: DefaultCircularProgressIndicator(),
+                  );
+                }
 
-          final board = boardList.items[index];
+                final board = boardList.items[index];
 
-          return BoardListItem(
-            title: board.title,
-            content: board.content,
-            userName: board.userName,
-            date: board.date,
-            onTap: () {
-              context.goNamed(
-                BoardDetailScreen.routeName,
-                pathParameters: {
-                  'id': board.id,
-                },
-              );
-            },
-          );
-        },
-      ),
+                return BoardListItem(
+                  title: board.title,
+                  content: board.content,
+                  userName: board.userName,
+                  date: board.date,
+                  onTap: () {
+                    context.goNamed(
+                      BoardDetailScreen.routeName,
+                      pathParameters: {
+                        'id': board.id,
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+    );
+  }
+
+  /// 목록이 비었을 때 자리에 놓는 안내.
+  ///
+  /// 조회 실패와 "글이 없음" 을 구분한다. 둘 다 빈 목록으로 돌아오기 때문이다.
+  /// 스크롤 가능한 위젯으로 감싸야 이 상태에서도 당겨서 새로고침이 된다.
+  Widget _renderPlaceholder({
+    required BuildContext context,
+    required bool hasError,
+  }) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: DefaultListPlaceholder(
+            message: hasError
+                ? '게시글을 불러오지 못했습니다.\n네트워크 상태를 확인해주세요.'
+                : '아직 게시글이 없습니다.\n첫 글을 남겨보세요.',
+            onRetry: hasError
+                ? () {
+                    ref.read(boardListProvider.notifier).refresh();
+                  }
+                : null,
+          ),
+        ),
+      ],
     );
   }
 

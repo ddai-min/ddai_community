@@ -18,11 +18,19 @@ class PaginationModel<T extends ModelWithId> {
   /// 다음 페이지 조회의 시작점이 되는 커서.
   final PaginationCursor? lastCursor;
 
+  /// 마지막 조회가 실패했는지 여부.
+  ///
+  /// repository 는 예외를 삼키고 빈 목록을 돌려주는 규칙이라, 이 플래그가 없으면
+  /// 화면이 **"글이 없다"와 "불러오지 못했다"를 구분할 수 없다.**
+  /// 네트워크가 끊긴 채로 첫 화면을 열면 앱이 고장난 것처럼 보인다.
+  final bool hasError;
+
   PaginationModel({
     required this.items,
     this.isLoading = false,
     this.hasMore = true,
     this.lastCursor,
+    this.hasError = false,
   });
 
   /// 일부 필드만 교체한 새 인스턴스를 반환한다. (불변 상태 갱신용)
@@ -34,12 +42,14 @@ class PaginationModel<T extends ModelWithId> {
     bool? isLoading,
     bool? hasMore,
     PaginationCursor? lastCursor,
+    bool? hasError,
   }) {
     return PaginationModel<T>(
       items: items ?? this.items,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,
       lastCursor: lastCursor ?? this.lastCursor,
+      hasError: hasError ?? this.hasError,
     );
   }
 }

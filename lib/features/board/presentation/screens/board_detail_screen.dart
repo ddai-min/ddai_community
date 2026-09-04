@@ -1,6 +1,7 @@
 import 'package:ddai_community/core/models/pagination_model.dart';
 import 'package:ddai_community/core/widgets/default_circular_progress_indicator.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
+import 'package:ddai_community/core/widgets/default_list_placeholder.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/features/board/domain/comment_model.dart';
 import 'package:ddai_community/features/board/domain/comment_parameter.dart';
@@ -234,12 +235,25 @@ class _CommentList extends ConsumerWidget {
     final myUid = ref.watch(userMeProvider).id;
 
     if (commentList.items.isEmpty) {
+      if (commentList.isLoading) {
+        return const SizedBox(
+          height: 100,
+          child: Center(
+            child: DefaultCircularProgressIndicator(),
+          ),
+        );
+      }
+
+      // 조회 실패와 "댓글 없음" 을 구분한다. 둘 다 빈 목록으로 돌아오기 때문이다.
       return SizedBox(
         height: 100,
-        child: Center(
-          child: commentList.isLoading
-              ? const DefaultCircularProgressIndicator()
-              : const Text('댓글이 없습니다.'),
+        child: DefaultListPlaceholder(
+          message: commentList.hasError ? '댓글을 불러오지 못했습니다.' : '댓글이 없습니다.',
+          onRetry: commentList.hasError
+              ? () {
+                  ref.read(commentListProvider(boardId).notifier).refresh();
+                }
+              : null,
         ),
       );
     } else {

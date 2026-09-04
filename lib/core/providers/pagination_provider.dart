@@ -21,6 +21,12 @@ mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
   /// (어떤 컬럼으로 좁힐지는 repository 의 `parentColumn` 이 안다)
   String? get parentId => null;
 
+  /// 작성자 uid. "내가 쓴 글" 처럼 한 사람 것만 볼 때 지정한다.
+  String? get userUid => null;
+
+  /// 검색어. repository 의 `searchColumns` 를 훑는다. 비어 있으면 전체 조회다.
+  String? get keyword => null;
+
   int get pageSize => 30;
 
   /// `build()` 에서 반환할 초기 상태.
@@ -65,6 +71,8 @@ mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
 
     final newData = await paginationRepository.fetchData(
       parentId: parentId,
+      userUid: userUid,
+      keyword: keyword,
       pageSize: pageSize,
       cursor: state.lastCursor,
     );
@@ -73,6 +81,7 @@ mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
       items: [...state.items, ...newData.items], // 기존 목록에 이어 붙인다.
       isLoading: false,
       hasMore: newData.hasMore,
+      hasError: newData.hasError,
       lastCursor: newData.lastCursor,
     );
   }
