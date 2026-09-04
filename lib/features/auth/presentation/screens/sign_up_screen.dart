@@ -27,6 +27,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   String? emailErrorText;
   String? passwordErrorText;
   String? passwordVerifyErrorText;
+  String? nicknameErrorText;
 
   final formKey = GlobalKey<FormState>();
 
@@ -96,6 +97,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               text: '닉네임',
               controller: nicknameTextController,
               validator: _nicknameValidator,
+              forceErrorText: nicknameErrorText,
             ),
             _BottomButton(
               onPressed: _onSignUp,
@@ -115,7 +117,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
 
+    setState(() {
+      nicknameErrorText = null;
+    });
+
     DefaultLoadingOverlay.showLoading(context);
+
+    // 닉네임은 영구 계정끼리 겹칠 수 없다. 가입을 시도하면 DB 트리거가 유니크 인덱스에
+    // 걸려 "알 수 없는 오류" 로만 보이므로, 먼저 물어보고 필드에 사유를 띄운다.
+    if (await AuthRepository.isUserNameTaken(
+      userName: nicknameTextController.text,
+    )) {
+      DefaultLoadingOverlay.hideLoading(context);
+
+      setState(() {
+        nicknameErrorText = '이미 사용 중인 닉네임입니다.';
+      });
+
+      return;
+    }
 
     final result = await ref.read(
       signUpWithEmailProvider(

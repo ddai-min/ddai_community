@@ -24,6 +24,10 @@ enum AuthExceptionCode {
   /// Authentication → Providers 에서 익명 로그인이 꺼져 있는 경우.
   anonymousDisabled('anonymous_provider_disabled'),
   noUser('session_not_found'),
+
+  /// 이미 쓰이고 있는 닉네임. Supabase 가 주는 코드가 아니라 앱이 직접 세운다.
+  /// (`profile_user_name_unique` 유니크 인덱스 위반 또는 사전 확인 결과)
+  userNameTaken('user_name_taken'),
   tooManyRequests('over_request_rate_limit'),
 
   /// Supabase 의 CAPTCHA 보호가 켜졌는데 토큰이 없거나 검증에 실패한 경우.
@@ -214,14 +218,14 @@ class AuthRepository {
   ///
   /// `profile` 을 먼저 쓴다. 이쪽이 실패하면 아무것도 바뀌지 않은 채로 끝나지만,
   /// 순서를 뒤집으면 화면 이름만 바뀌고 글쓴이 이름은 옛날 값으로 남는다.
-  static Future<bool> updateUserName({
+  static Future<AuthExceptionCode?> updateUserName({
     required String userName,
   }) async {
     try {
       final user = supabase.auth.currentUser;
 
       if (user == null) {
-        return false;
+        return AuthExceptionCode.noUser;
       }
 
       await supabase
@@ -239,7 +243,43 @@ class AuthRepository {
         ),
       );
 
-      return true;
+      return null;
+    } on PostgrestException catch (error) {
+      logger.e(error);
+
+      // 유니크 인덱스(profile_user_name_unique) 위반. 화면이 먼저 확인하지만
+      // 그 사이 다른 사람이 같은 이름을 차지할 수 있어 여기서도 잡는다.
+      if (error.code == '23505') {
+        return AuthExceptionCode.userNameTaken;
+      }
+
+      return AuthExceptionCode.unknownError;
+    } catch (error) {
+      logger.e(error);
+
+      return AuthExceptionCode.unknownError;
+    }
+  }
+
+  /// 이미 쓰이고 있는 닉네임인지 확인한다.
+  ///
+  /// `profile` 은 SELECT 정책이 본인 행만 허용해서 앱이 직접 훑을 수 없다.
+  /// 그래서 `public.is_user_name_taken` RPC 로 서버에 묻는다.
+  /// **이 함수만 `private` 이 아니라 `public` 스키마에 둔다** — PostgREST 로 노출되는
+  /// 것이 목적이기 때문이다. (다른 SECURITY DEFINER 헬퍼는 `private` 에 둔다)
+  ///
+  /// 확인에 실패하면 `false` 를 돌려 가입·수정을 막지 않는다. 최종 판정은 유니크
+  /// 인덱스가 하므로, 여기서 막으면 네트워크가 흔들릴 때 아무것도 못 하게 된다.
+  static Future<bool> isUserNameTaken({
+    required String userName,
+  }) async {
+    try {
+      final result = await supabase.rpc(
+        'is_user_name_taken',
+        params: {'p_user_name': userName},
+      );
+
+      return result == true;
     } catch (error) {
       logger.e(error);
 

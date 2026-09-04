@@ -184,19 +184,29 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     DefaultLoadingOverlay.showLoading(context);
 
-    final isSuccess = await AuthRepository.updateUserName(
+    // 닉네임은 영구 계정끼리 겹칠 수 없다. 저장 전에 물어보고, 그 사이 다른 사람이
+    // 차지하는 경우는 아래 errorCode 로 한 번 더 걸러낸다.
+    final isTaken = await AuthRepository.isUserNameTaken(
       userName: nicknameTextController.text,
     );
 
+    final errorCode = isTaken
+        ? AuthExceptionCode.userNameTaken
+        : await AuthRepository.updateUserName(
+            userName: nicknameTextController.text,
+          );
+
     DefaultLoadingOverlay.hideLoading(context);
 
-    if (!isSuccess) {
+    if (errorCode != null) {
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) {
           return DefaultDialog(
-            contentText: '프로필 수정 중\n오류가 발생했습니다.\n다시 시도해주세요.',
+            contentText: errorCode == AuthExceptionCode.userNameTaken
+                ? '이미 사용 중인 닉네임입니다.\n다른 닉네임을 입력해주세요.'
+                : '프로필 수정 중\n오류가 발생했습니다.\n다시 시도해주세요.',
             buttonText: '확인',
             onPressed: () {
               context.pop();

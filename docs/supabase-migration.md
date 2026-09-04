@@ -1670,6 +1670,84 @@ select blocked_uid, blocked_user_name from public.block_user limit 5;
 
 ---
 
+## 별건 — 닉네임 중복 방지 🟡 *(앱 완료 · SQL 적용 대기)*
+
+`profile.user_name` 에는 길이 CHECK(2~12)만 있고 **유니크 제약이 없었다.**
+EULA 2조가 "타인을 사칭하는 닉네임을 사용할 수 없다" 고 하는데 막는 장치가 없었다.
+
+### 익명 계정은 제외한다
+
+익명 계정의 이름은 `익명` + uid 앞 6자리로 **자동 생성**되고, 앱도 같은 규칙으로
+클라이언트에서 만들어 쓴다(`DataUtils.setAnonymousName`). 여기에 유니크를 걸면
+드물게 겹칠 때 **가입 자체가 실패한다.** 계정 생성 비용이 0 이어야 하는 익명 로그인에서
+그건 받아들일 수 없어서, 유니크는 영구 계정에만 건다.
+대신 영구 계정이 `익명...` 이름을 쓰지 못하게 막아 반대 방향 사칭도 닫는다.
+
+### 적용 전 확인
+
+이미 위반하는 행이 있으면 아래 DDL 이 실패한다. 먼저 확인하고 해당 계정의 이름을 바꾼다.
+
+```sql
+-- 겹치는 영구 계정 이름
+select lower(user_name), count(*) from public.profile
+where is_anonymous = false group by 1 having count(*) > 1;
+
+-- '익명' 으로 시작하는 영구 계정
+select id, user_name from public.profile
+where is_anonymous = false and user_name like '익명%';
+```
+
+### 적용
+
+```sql
+create unique index if not exists profile_user_name_unique
+  on public.profile (lower(user_name))
+  where is_anonymous = false;
+
+alter table public.profile drop constraint if exists profile_user_name_not_anonymous;
+alter table public.profile
+  add constraint profile_user_name_not_anonymous
+  check (is_anonymous or user_name not like '익명%');
+```
+
+### 중복 확인 RPC
+
+`profile` 은 SELECT 정책이 본인 행만 허용해서 앱이 이름 목록을 훑을 수 없다.
+그래서 서버에 묻는 함수를 둔다.
+
+```sql
+create or replace function public.is_user_name_taken(p_user_name text)
+returns boolean
+language sql
+stable
+security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profile
+    where is_anonymous = false
+      and lower(user_name) = lower(p_user_name)
+  );
+$$;
+
+revoke all on function public.is_user_name_taken(text) from public;
+grant execute on function public.is_user_name_taken(text) to anon, authenticated;
+```
+
+> **이 함수만 `private` 이 아니라 `public` 에 둔다.** 다른 SECURITY DEFINER 헬퍼를
+> `private` 에 두는 이유는 PostgREST 로 노출되는 것을 막기 위해서인데,
+> 이 함수는 노출이 목적이다. (가입 화면이 로그인 전에 부르므로 `anon` 에게도 준다)
+> 닉네임 사용 여부가 드러나지만 이메일은 드러나지 않아 감수할 만하다.
+
+### 앱 쪽 동작
+
+- 가입·프로필 수정 모두 저장 전에 RPC 로 물어보고 필드에 사유를 띄운다.
+- 물어본 뒤 저장 전까지의 틈은 유니크 인덱스가 막는다. `updateUserName` 이
+  `23505` 를 `AuthExceptionCode.userNameTaken` 으로 바꿔 돌려준다.
+- **RPC 호출이 실패하면 "사용 가능" 으로 본다.** 최종 판정은 인덱스가 하므로,
+  여기서 막으면 네트워크가 흔들릴 때 가입도 수정도 못 하게 된다.
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |
