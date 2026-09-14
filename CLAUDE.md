@@ -392,9 +392,24 @@ features/<feature>/
   CocoaPods 도 함께 쓴다. `Podfile` · `Podfile.lock` · `Pods/` 가 있는 것이 정상이다.
   - 빌드할 때마다 `The following plugins do not support Swift Package Manager for ios`
     경고가 뜨는데 **정상이다.** 업스트림(플러그인 저자)이 SPM 을 채택해야 사라진다.
-  - `Podfile` 은 Flutter 가 만든 **표준 템플릿 그대로 두어야 한다.** 한 줄이라도 손대면
-    Flutter 가 바이트 단위 비교로 "non-standard Podfile" 이라 판단해 수동 마이그레이션을
-    안내한다. 배포 타깃은 `project.pbxproj` 의 `IPHONEOS_DEPLOYMENT_TARGET` 이 정한다.
+  - `Podfile` 은 **`platform` 줄만 열어 두었다**(`platform :ios, '15.6'`). 그 외에는
+    Flutter 가 만든 템플릿 그대로 둔다 — 더 손대면 Flutter 가 바이트 단위 비교로
+    "non-standard Podfile" 이라 판단해 수동 마이그레이션을 안내한다.
+    이 값은 Runner **타깃**의 `IPHONEOS_DEPLOYMENT_TARGET`(15.6)과 같은 값이어야 한다.
+    앱의 배포 타깃은 여전히 `project.pbxproj` 가 정하고, `Podfile` 의 값은 **팟**이
+    무엇에 대고 빌드되는지를 정한다. 어긋나면 팟만 다른 배포 타깃으로 빌드된다.
+    (`project.pbxproj` 의 **프로젝트** 수준 값은 템플릿 기본인 13.0 그대로이고,
+    타깃 값이 이를 덮으므로 실제 배포 타깃은 15.6 이다)
+  - **`ios/Flutter/Profile.xcconfig` 는 우리가 만든 파일이다. 템플릿과 다르다고 되돌리지 말 것.**
+    Flutter 템플릿은 Profile 구성의 base config 를 `Release.xcconfig` 로 두는데,
+    Flutter 툴은 `Debug`·`Release` 에만 `#include? ".../Pods-Runner.<mode>.xcconfig"` 를
+    넣어 준다. 그래서 **Profile 만 팟 설정을 물지 못하고**, `pod install` 이
+    `did not set the base configuration ... Pods-Runner.profile.xcconfig` 경고를 낸다.
+    (CocoaPods 는 base config 가 사용자 지정이면 덮어쓰지 않고 경고만 낸다)
+    Debug·Release 와 같은 모양의 파일을 만들고 Runner 타깃 Profile 의
+    `baseConfigurationReference` 를 그쪽으로 돌려서 해결했다.
+    지금은 `Pods-Runner.release.xcconfig` 와 `.profile.xcconfig` 의 내용이 같아 빌드 결과가
+    같지만, 팟이 구성별로 다른 설정을 갖게 되면 **프로파일 빌드만 조용히 틀어진다.**
   - 한때 CocoaPods 를 완전히 걷어냈던 적이 있다(`6292137`). 그때는 팟이 `Flutter` 하나뿐이라
     순수 오버헤드였지만, 지금은 실제 의존성이 있어 되돌렸다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
