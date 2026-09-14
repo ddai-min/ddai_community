@@ -126,7 +126,7 @@ class _MyBoardListState extends ConsumerState<_MyBoardList> {
 
     return ListView.builder(
       controller: scrollController,
-      padding: DefaultLayout.contentPadding,
+      padding: EdgeInsets.zero,
       clipBehavior: Clip.none,
       itemCount: boardList.items.length + (boardList.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -221,7 +221,7 @@ class _MyCommentListState extends ConsumerState<_MyCommentList> {
 
     return ListView.separated(
       controller: scrollController,
-      padding: DefaultLayout.contentPadding,
+      padding: EdgeInsets.symmetric(horizontal: 24),
       clipBehavior: Clip.none,
       itemCount: commentList.items.length + (commentList.hasMore ? 1 : 0),
       separatorBuilder: (_, _) => const Divider(height: 1),

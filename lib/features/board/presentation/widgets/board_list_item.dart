@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 /// 게시판 목록의 게시글 한 줄.
 ///
 /// 제목·내용을 한 줄로 말줄임 처리하고, 아래에 작성자와 작성 시각을 덧붙인다.
+/// 좋아요·댓글 수는 제목·내용 오른쪽(화살표 앞)에 세로로 쌓는다.
 /// 작성자 이름은 작성 시점의 스냅샷이라 닉네임을 바꿔도 지난 글에는 반영되지 않는다.
 class BoardListItem extends StatelessWidget {
   final String title;
@@ -37,6 +38,22 @@ class BoardListItem extends StatelessWidget {
       fontSize: 12.0,
       color: Colors.grey[600],
     );
+
+    // 하나도 없으면 굳이 0 을 그리지 않는다.
+    final counts = <Widget>[
+      if (likeCount != null && likeCount! > 0)
+        _CountLabel(
+          icon: Icons.favorite_border,
+          count: likeCount!,
+          textStyle: metaTextStyle.copyWith(fontSize: 14),
+        ),
+      if (commentCount != null && commentCount! > 0)
+        _CountLabel(
+          icon: Icons.chat_bubble_outline,
+          count: commentCount!,
+          textStyle: metaTextStyle.copyWith(fontSize: 14),
+        ),
+    ];
 
     return Card(
       elevation: 0,
@@ -81,40 +98,61 @@ class BoardListItem extends StatelessWidget {
                   ' · ${DataUtils.formatRelativeDate(date)}',
                   style: metaTextStyle,
                 ),
-                // 하나도 없으면 굳이 0 을 그리지 않는다.
-                if (commentCount != null && commentCount! > 0) ...[
-                  const SizedBox(width: 8.0),
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 12.0,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 3.0),
-                  Text(
-                    '$commentCount',
-                    style: metaTextStyle,
-                  ),
-                ],
-                if (likeCount != null && likeCount! > 0) ...[
-                  const SizedBox(width: 8.0),
-                  Icon(
-                    Icons.favorite_border,
-                    size: 12.0,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 3.0),
-                  Text(
-                    '$likeCount',
-                    style: metaTextStyle,
-                  ),
-                ],
               ],
             ),
           ],
         ),
-        trailing: const Icon(Icons.arrow_forward_ios),
+        // 개수를 화살표 앞에 두는 자리. 본문이 쓸 폭을 뺏지 않도록 최소 폭만 차지한다.
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (counts.isNotEmpty) ...[
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                // 자릿수가 달라도 아이콘은 세로로 나란히 보이도록 왼쪽 정렬한다.
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4.0,
+                children: counts,
+              ),
+              const SizedBox(width: 8.0),
+            ],
+            const Icon(Icons.arrow_forward_ios),
+          ],
+        ),
         onTap: onTap,
       ),
+    );
+  }
+}
+
+/// 아이콘과 개수를 한 줄로 붙인 라벨. 좋아요·댓글 수가 같은 모양이라 공유한다.
+class _CountLabel extends StatelessWidget {
+  final IconData icon;
+  final int count;
+  final TextStyle textStyle;
+
+  const _CountLabel({
+    required this.icon,
+    required this.count,
+    required this.textStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 14.0,
+          color: textStyle.color,
+        ),
+        const SizedBox(width: 3.0),
+        Text(
+          '$count',
+          style: textStyle,
+        ),
+      ],
     );
   }
 }
