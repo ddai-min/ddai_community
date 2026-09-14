@@ -66,6 +66,7 @@ lib/
     ├── board/                 #   게시글 · 댓글
     ├── chat/                  #   실시간 채팅
     ├── home/                  #   홈 탭 (게시판/채팅/프로필)
+    ├── notification/          #   인앱 알림 (댓글 · 좋아요)
     └── user/                  #   프로필 · 신고 · 전역 유저 상태 · 라이선스
 
 supabase/
@@ -368,6 +369,28 @@ features/<feature>/
     지우면, 그 사이 다른 사람 메시지가 도착하는 순간 내 말풍선이 사라졌다 다시 나타난다.
   - `chat` 에는 **DELETE 정책이 없다.** 클라이언트에서 `delete()` 를 불러도 조용히 0행이다.
     테스트 데이터를 심었다면 계정 삭제(FK CASCADE)나 SQL 에디터로 지워야 한다.
+- **인앱 알림**: 내 글에 댓글·좋아요가 달리면 `notification` 행이 생기고, AppBar 종
+  아이콘의 배지가 안 읽은 개수를 보여준다. (`HomeTab` 의 `actions` — 탭과 무관하게 항상 있다)
+  - **행을 만드는 것은 서버 트리거뿐이다.** 앱에는 INSERT 정책도 grant 도 없다.
+    클라이언트가 알림을 만들 수 있으면 아무 이름으로나 알림을 보내는 통로가 된다 —
+    `set_author_name` 을 만들게 했던 사칭 구멍과 같은 종류다.
+    UPDATE 도 `board` 처럼 **`is_read` 컬럼 단위 grant** 다.
+  - **목록에 "내 알림만" 거르는 코드가 없다.** RLS(`notification_select_own`)가
+    `user_uid = auth.uid()` 로 서버에서 거르고, 차단한 유저가 만든 알림도 같은 정책이 뺀다.
+    `PaginationMixin` 의 `userUid` 를 override 하지 말 것 — 중복인 데다 컬럼의 뜻도 다르다.
+    (다른 목록에서 `user_uid` 는 "작성자" 지만 여기서는 "받는 사람" 이다)
+  - `notification` 도 `supabase_realtime` publication 에 있어야 한다. 빠지면
+    **조용히** 배지의 실시간 갱신만 멈춘다. 화면을 열 때마다 다시 세므로 앱은 그대로 돌아간다.
+    (채팅과 달리 치명적이지 않다)
+  - **`NotificationType` 의 `@JsonValue` 는 `notification.type` 의 CHECK 제약과 같아야 한다.**
+    한쪽만 늘리면 모르는 값이 한 행이라도 섞이는 순간 그 페이지 전체가 파싱에 실패해
+    "못 불러옴" 이 된다. (`ReportContentType` 과 같은 종류의 결합이다)
+  - **원본이 지워져도 알림은 남는다.** 댓글을 지워도 "댓글을 남겼습니다" 는 그대로고,
+    좋아요를 취소해도 마찬가지다. 알림은 "그 시점에 일어난 일" 의 기록이다.
+    (게시글이 지워지면 `board_id` CASCADE 로 함께 사라진다)
+  - 스키마·정책·트리거 전문은 `docs/supabase-migration.md` 의 "별건 — 인앱 알림" 에 있다.
+    **새 환경을 세울 때 이 SQL 을 빠뜨리면** 배지가 붙지 않고 알림 화면이
+    "불러오지 못했습니다" 로 보인다. (기존 화면은 영향받지 않는다)
 - **계정 삭제**: 클라이언트는 유저를 지울 수 없다. Edge Function `delete-account` 가
   비밀번호 재확인 후 삭제하며, 연관 행은 FK CASCADE 로 함께 지워진다.
   - 비밀번호 재확인용 클라이언트(`checkClient`)는 **secret 키로 만들어야 한다.**
@@ -449,6 +472,10 @@ features/<feature>/
 | `lib/features/user/presentation/screens/privacy_policy_screen.dart` | 방침 웹뷰 화면 (최상위 라우트) |
 | `lib/features/user/presentation/screens/block_user_screen.dart` | 차단한 사용자 목록 · 차단 해제 |
 | `lib/features/user/presentation/screens/my_content_screen.dart` | 내가 쓴 글 · 댓글 (탭) |
+| `lib/features/notification/data/notification_repository.dart` | 알림 조회 · 읽음 처리 · Realtime 구독 |
+| `lib/features/notification/presentation/providers/notification_provider.dart` | 알림 목록 · 안 읽은 개수(배지) |
+| `lib/features/notification/presentation/screens/notification_screen.dart` | 알림 목록 화면 |
+| `lib/features/notification/presentation/widgets/notification_bell_button.dart` | AppBar 종 아이콘 + 배지 |
 | `lib/features/user/presentation/widgets/report_block_actions.dart` | 신고·차단 공용 동작 (세 화면이 공유) |
 | `lib/features/board/presentation/screens/board_search_screen.dart` | 게시글 검색 (제목·내용 ilike) |
 | `lib/core/widgets/content_action_sheet.dart` | 콘텐츠 동작 선택 시트 (삭제 / 신고·차단) |

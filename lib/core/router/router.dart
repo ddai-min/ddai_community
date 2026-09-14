@@ -5,6 +5,7 @@ import 'package:ddai_community/features/board/presentation/screens/board_create_
 import 'package:ddai_community/features/board/presentation/screens/board_detail_screen.dart';
 import 'package:ddai_community/features/board/presentation/screens/board_search_screen.dart';
 import 'package:ddai_community/features/home/presentation/screens/home_tab.dart';
+import 'package:ddai_community/features/notification/presentation/screens/notification_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/block_user_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/license_screen.dart';
 import 'package:ddai_community/features/user/presentation/screens/my_content_screen.dart';
@@ -86,6 +87,11 @@ List<GoRoute> routes = [
         path: 'block_user',
         name: BlockUserScreen.routeName,
         builder: (_, _) => const BlockUserScreen(),
+      ),
+      GoRoute(
+        path: 'notification',
+        name: NotificationScreen.routeName,
+        builder: (_, _) => const NotificationScreen(),
       ),
       GoRoute(
         path: 'license',

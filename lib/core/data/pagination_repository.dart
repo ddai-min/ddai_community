@@ -6,11 +6,12 @@ import 'package:ddai_community/core/utils/logger.dart';
 
 /// 목록 조회 대상 Postgres 테이블 이름 모음.
 ///
-/// enum 의 `name`(`board`/`comment`/`chat`)이 실제 테이블 이름으로 사용된다.
+/// enum 의 `name`(`board`/`comment`/`chat`/`notification`)이 실제 테이블 이름으로 사용된다.
 enum TablePath {
   board,
   comment,
   chat,
+  notification,
 }
 
 /// 목록 조회 로직을 공통화한 제네릭 Supabase repository.

@@ -4,7 +4,7 @@ Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres �
 
 > **Phase 0~6 완료, Phase 7 은 앱 코드까지 완료.** 앱은 Supabase 위에서 빌드·실행된다.
 > 남은 것은 Supabase 대시보드의 CAPTCHA 스위치를 켜고 실측하는 일뿐이다. (§Phase 7)
-> **별건 항목의 SQL 도 2026-09-11 에 전부 적용됐다.** (§별건 SQL 적용 이력)
+> **별건 항목의 SQL 은 인앱 알림까지 전부 적용됐다.** (§별건 SQL 적용 이력)
 > 이 문서는 이제 계획서가 아니라 **스키마 · RLS 정책의 단일 출처이자 전환 기록**이다.
 > 스키마를 다시 세우거나 새 환경을 만들 때는 §1(DDL)과 §2(RLS)를 그대로 실행하면 된다.
 
@@ -41,6 +41,7 @@ REST · `package:supabase` 스크립트로 이미 확인했다.
 | 2026-09-11 | `board_like` 일체 · 게시글 수정 권한 · `comment_user_idx` | 목록 임베드가 `PGRST200`(관계 없음) → `42501` 로 바뀜 |
 | 2026-09-11 | 닉네임 유니크 인덱스 · CHECK · `is_user_name_taken` | RPC 가 `PGRST202`(함수 없음) → `false` 응답 |
 | 2026-09-11 | `notify-report` 배포 + Database Webhook | 신고 insert → 운영자 메일 수신 확인 |
+| 2026-09-14 | 인앱 알림 일체 — `notification` 테이블 · 정책 · 트리거 · Realtime | 두 계정으로 댓글·좋아요 → 배지·목록·읽음 처리 동작 확인 |
 
 > **앱 코드와 SQL 은 함께 나가야 한다.** 이번에 실제로 겪었다 — `board_like` 가 없는
 > 동안 게시판 목록 select 절의 `like_count:board_like(count)` 가 관계를 찾지 못해
@@ -1880,6 +1881,226 @@ create index board_content_trgm on public.board using gin (content gin_trgm_ops)
 
 ---
 
+## 별건 — 인앱 알림 ✅ *(해결됨)*
+
+내 글에 댓글이나 좋아요가 달려도 **다시 들어와 직접 확인하기 전에는 알 방법이 없었다.**
+커뮤니티 앱에서 사람이 돌아올 이유를 만드는 자리라 가장 먼저 채웠다.
+
+푸시(FCM/APNs)는 아직이다. 디바이스 토큰 · Edge Function · 인증서 없이
+**Postgres 트리거와 Realtime 만으로** 되는 범위를 먼저 만들어 둔 것이다.
+푸시를 붙일 때도 이 테이블이 그대로 발신 원장이 된다.
+
+### 1. 테이블
+
+```sql
+create table public.notification (
+  id          uuid primary key default gen_random_uuid(),
+  -- 받는 사람 (= 글쓴이)
+  user_uid    uuid not null references public.profile(id) on delete cascade,
+  -- 행동한 사람 (= 댓글·좋아요를 남긴 사람)
+  actor_uid   uuid not null references public.profile(id) on delete cascade,
+  -- 표시 이름 스냅샷. profile 은 본인 행만 조회되므로 uid 로는 되찾을 수 없다.
+  actor_name  text not null,
+  type        text not null check (type in ('comment', 'board_like')),
+  board_id    uuid not null references public.board(id) on delete cascade,
+  -- 제목 스냅샷. 목록마다 board 를 임베드하지 않으려고 비정규화한다.
+  board_title text not null,
+  -- 댓글 내용 앞 50자. 좋아요 알림에는 없다.
+  preview     text,
+  is_read     boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+-- 목록은 (내 것 → 최신순) 으로만 읽는다. RLS 의 user_uid 등호가 선두 컬럼에 걸린다.
+create index notification_cursor_idx on public.notification (user_uid, created_at desc, id desc);
+
+-- 배지가 세는 "안 읽은 내 알림".
+create index notification_unread_idx on public.notification (user_uid) where not is_read;
+
+-- 좋아요는 취소하고 다시 눌러도 알림이 한 번만 생기게 한다.
+create unique index notification_like_uniq
+  on public.notification (user_uid, actor_uid, board_id)
+  where type = 'board_like';
+```
+
+> **양쪽 FK 가 모두 `on delete cascade` 다.** 받는 사람이 탈퇴하면 받을 사람이 없고,
+> 행동한 사람이 탈퇴하면 그 댓글·좋아요 자체가 함께 지워져 알림만 남을 이유가 없다.
+> `report` 가 `set null` 인 것과 반대인데, 신고는 탈퇴 후에도 운영자가 봐야 하지만
+> 알림은 그렇지 않기 때문이다. 덕분에 **개인정보처리방침에 새로 적을 보존 항목이 없다.**
+
+### 2. RLS · 권한
+
+```sql
+alter table public.notification enable row level security;
+
+-- 내 알림만, 그리고 차단한 유저가 만든 알림은 빼고 본다.
+create policy notification_select_own on public.notification
+  for select to authenticated
+  using (user_uid = auth.uid() and not private.is_blocked(actor_uid));
+
+-- 바꿀 수 있는 것은 읽음 표시뿐이다. (어느 컬럼인지는 아래 grant 가 정한다)
+create policy notification_update_own on public.notification
+  for update to authenticated
+  using (user_uid = auth.uid())
+  with check (user_uid = auth.uid());
+
+-- 새 테이블에는 Supabase 이벤트 트리거가 ALL 을 준다. 쓰지 않는 권한은 회수한다.
+revoke all on public.notification from anon, authenticated;
+grant select on public.notification to authenticated;
+grant update (is_read) on public.notification to authenticated;
+```
+
+> **INSERT 정책도 grant 도 일부러 없다.** 알림을 만들 수 있는 것은 아래 트리거뿐이다.
+> 클라이언트가 직접 넣을 수 있으면 아무 이름으로나 알림을 보내는 통로가 된다 —
+> `set_author_name` 을 만들게 했던 사칭 구멍과 같은 종류다.
+>
+> `board` 의 UPDATE 와 마찬가지로 **컬럼 단위 grant** 다. 테이블 전체에 UPDATE 를 주면
+> 자기가 받은 알림의 문구·보낸 사람을 아무 값으로나 고칠 수 있다.
+
+### 3. 트리거 — 알림을 만드는 유일한 경로
+
+```sql
+-- 댓글이 달리면 글쓴이에게 알린다.
+create or replace function private.notify_on_comment()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  v_title text;
+  v_owner uuid;
+begin
+  select b.title, b.user_uid into v_title, v_owner
+  from public.board b
+  where b.id = new.board_id;
+
+  -- 내 글에 내가 단 댓글은 알리지 않는다.
+  if v_owner is null or v_owner = new.user_uid then
+    return null;
+  end if;
+
+  insert into public.notification
+    (user_uid, actor_uid, actor_name, type, board_id, board_title, preview)
+  values
+    (v_owner, new.user_uid, new.user_name, 'comment',
+     new.board_id, v_title, left(new.content, 50));
+
+  return null;
+end;
+$$;
+
+create trigger notify_on_comment
+after insert on public.comment
+for each row execute function private.notify_on_comment();
+
+
+-- 좋아요를 누르면 글쓴이에게 알린다.
+create or replace function private.notify_on_board_like()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  v_title text;
+  v_owner uuid;
+  v_actor text;
+begin
+  select b.title, b.user_uid into v_title, v_owner
+  from public.board b
+  where b.id = new.board_id;
+
+  if v_owner is null or v_owner = new.user_uid then
+    return null;
+  end if;
+
+  -- board_like 에는 이름 컬럼이 없다. profile 에서 가져온다.
+  select p.user_name into v_actor
+  from public.profile p
+  where p.id = new.user_uid;
+
+  insert into public.notification
+    (user_uid, actor_uid, actor_name, type, board_id, board_title)
+  values
+    (v_owner, new.user_uid, coalesce(v_actor, '알 수 없음'), 'board_like',
+     new.board_id, v_title)
+  on conflict do nothing;   -- notification_like_uniq
+
+  return null;
+end;
+$$;
+
+create trigger notify_on_board_like
+after insert on public.board_like
+for each row execute function private.notify_on_board_like();
+```
+
+> **`new.user_name` 을 그대로 쓰는 것이 맞다.** `comment` 의 `BEFORE INSERT` 트리거
+> `private.set_author_name` 이 이미 `profile` 값으로 덮어쓴 뒤이므로, 여기 도착한 값은
+> 클라이언트가 보낸 것이 아니라 서버가 정한 이름이다. (BEFORE 가 AFTER 보다 먼저 돈다)
+>
+> 함수는 **`private` 스키마**에 둔다. `public` 에 있으면 PostgREST 가
+> `/rest/v1/rpc/<name>` 으로 노출해 Security Advisor 가 경고한다.
+
+### 4. Realtime
+
+```sql
+-- 배지가 다른 화면에 있는 동안에도 올라가려면 필요하다.
+alter publication supabase_realtime add table public.notification;
+```
+
+누락되면 **오류 없이 조용히** 실시간 갱신만 멈춘다. 화면을 열 때마다 개수를 다시 세므로
+앱은 그대로 쓸 수 있고, 배지가 뒤늦게 붙을 뿐이다. (`chat` 과 달리 치명적이지 않다)
+
+### 5. 오래된 알림 정리 *(권장)*
+
+알림은 읽어도 지워지지 않아서 계속 쌓인다. 방침상 요구되는 기간은 아니고 순수하게
+용량 관리다. `purge-old-reports` 와 같은 방식으로 건다.
+
+```sql
+select cron.schedule(
+  'purge-old-notifications',
+  '0 4 * * *',   -- 매일 04:00 UTC
+  $$delete from public.notification where created_at < now() - interval '90 days'$$
+);
+```
+
+### 적용 확인
+
+```sql
+-- 테이블 · 정책 · 트리거 · publication 을 한 번에 본다.
+select 'policy' as kind, policyname as name from pg_policies where tablename = 'notification'
+union all
+select 'trigger', tgname from pg_trigger
+  where tgrelid in ('public.comment'::regclass, 'public.board_like'::regclass) and not tgisinternal
+union all
+select 'realtime', tablename from pg_publication_tables
+  where pubname = 'supabase_realtime' and tablename = 'notification';
+```
+
+앱에서는 **다른 계정으로 내 글에 댓글을 달고**, 원래 계정의 AppBar 종 아이콘에
+배지가 붙는지 본다. 화면을 옮기지 않아도 붙으면 Realtime 까지 살아 있는 것이다.
+
+### SQL 없이 앱만 있으면 (새 환경 구성 시 참고)
+
+**기존 기능은 아무것도 깨지지 않는다.** `board_like` 때와 달리 이번에는 기존 화면이
+쓰는 select 절을 건드리지 않았다. 알림 조회는 repository 가 예외를 삼키므로
+종 아이콘에 배지가 안 붙고, 알림 화면이 "불러오지 못했습니다" 로 보일 뿐이다.
+
+### 앱 쪽 동작
+
+- 목록은 `PaginationRepository` 를 그대로 탄다. **받는 사람으로 좁히는 override 가 없다** —
+  RLS 가 이미 내 알림만 내려주므로 `userUid` 를 넘길 이유가 없다.
+- 배지는 `notificationUnreadCountProvider`(`keepAlive`)가 들고 있고, `user_uid` 로 필터한
+  Realtime 채널이 변화를 알려 주면 **개수를 다시 센다.** payload 는 쓰지 않는다 —
+  insert/update/delete 를 각각 반영하려다 어긋나는 것보다 한 번 더 세는 쪽이 싸고 정확하다.
+- 알림을 누르면 **읽음 처리를 기다리지 않고** 게시글로 넘어간다. 목록은 먼저 강조를
+  걷어내고(낙관적), 서버가 거절하면 되돌린다.
+- **원본이 지워져도 알림은 남는다.** 댓글을 지워도 "댓글을 남겼습니다" 는 그대로고,
+  좋아요를 취소해도 마찬가지다. 알림은 "그 시점에 일어난 일" 의 기록이다.
+  (게시글이 지워지면 `board_id` CASCADE 로 함께 사라진다)
+
+---
+
 ## 11. 리스크 · 주의사항
 
 | 리스크 | 대응 |
@@ -1888,7 +2109,7 @@ create index board_content_trgm on public.board using gin (content gin_trgm_ops)
 | **`service_role` 키 유출** | 앱/`.env`/저장소에 절대 넣지 않는다. Edge Function 런타임에만 존재 |
 | **익명 로그인 남용** — 무제한 계정 생성 | Supabase 대시보드에서 CAPTCHA(hCaptcha/Turnstile) 활성화 권장 |
 | **`app_config` anon 정책 누락** | 스플래시 조회 실패 → `exit(0)` → 앱이 아예 안 뜸. Phase 0 체크리스트 필수 항목 |
-| **Realtime 기본 비활성** | `alter publication supabase_realtime add table public.chat;` 누락 시 채팅이 조용히 멈춤 |
+| **Realtime 기본 비활성** | `alter publication supabase_realtime add table public.chat;` 누락 시 채팅이 조용히 멈춤. `notification` 도 같은 처리가 필요하다 (누락 시 알림 배지만 실시간 갱신이 멈춤) |
 | **무료 티어 일시정지** | 프로젝트가 일정 기간 미사용이면 pause 된다. 운영 전환 시 유료 플랜 검토 |
 | **`is_blocked()` 함수 호출 비용** | 행마다 평가된다. `block_user(blocker_uid)` 인덱스 필수. 규모가 커지면 `NOT EXISTS` 조인으로 재작성 |
 | **Supabase 예외 코드 변동** | §3 매핑 표는 Phase 2 에서 실제 응답을 로깅해 확정 |
