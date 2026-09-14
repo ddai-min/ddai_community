@@ -227,6 +227,10 @@ features/<feature>/
     (Xcode General 탭에서 버전을 고치면 정확히 이 상태가 된다. 실제로 한 번 겪었다)
   - Android: `flutter.versionCode` / `flutter.versionName` 을 그대로 쓴다.
     값이 없으면 조용히 틀린 버전으로 빌드하지 않고 Gradle 이 실패한다.
+  - **빌드 번호(`+` 뒤)는 `(major 1자리)(minor 2자리)(patch 2자리)30` 으로 만든다.**
+    `1.5.0` → `1050030`, `1.4.1` → `1040130`. 버전을 올리면 빌드 번호도 반드시 커지므로
+    스토어가 요구하는 "빌드 번호는 항상 증가" 조건이 저절로 지켜진다.
+    **minor 와 patch 는 두 자리 자리값이라 99 를 넘기면 순서가 깨진다.**
   - 버전을 올릴 때는 **`pubspec.yaml` 한 줄만** 고치고, 필요하면 `app_config.version_name` 을 맞춘다.
 - **세션은 보안 저장소에 넣는다**: `app/bootstrap.dart` 가 `Supabase.initialize` 에
   `SecureLocalStorage` 를 주입한다. supabase_flutter 기본값(`SharedPreferencesLocalStorage`)은
