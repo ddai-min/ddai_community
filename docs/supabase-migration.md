@@ -4,6 +4,7 @@ Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres �
 
 > **Phase 0~6 완료, Phase 7 은 앱 코드까지 완료.** 앱은 Supabase 위에서 빌드·실행된다.
 > 남은 것은 Supabase 대시보드의 CAPTCHA 스위치를 켜고 실측하는 일뿐이다. (§Phase 7)
+> **별건 항목의 SQL 도 2026-09-11 에 전부 적용됐다.** (§별건 SQL 적용 이력)
 > 이 문서는 이제 계획서가 아니라 **스키마 · RLS 정책의 단일 출처이자 전환 기록**이다.
 > 스키마를 다시 세우거나 새 환경을 만들 때는 §1(DDL)과 §2(RLS)를 그대로 실행하면 된다.
 
@@ -27,6 +28,25 @@ Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres �
 **아직 남은 검증** — 실기기에서의 UI 조작(무한 스크롤, 당겨서 새로고침, 2기기 채팅,
 회원가입 → 로그아웃 → 로그인 → 닉네임 수정 → 탈퇴 전 과정). 각 경로의 서버 동작은
 REST · `package:supabase` 스크립트로 이미 확인했다.
+
+### 별건 SQL 적용 이력
+
+별건 항목은 **앱 코드가 먼저 나가고 SQL 이 나중에 적용됐다.** 2026-09-11 에 남은 것을
+모두 적용하고, 적용 여부를 서버에 직접 물어 확인했다.
+
+| 적용 | 내용 | 확인 방법 |
+| --- | --- | --- |
+| 이전 | 차단 해제 · 본인 댓글/채팅 삭제 · `purge-old-reports` | `pg_policies` · `pg_trigger` · `cron.job` 조회 |
+| 2026-09-11 | `report.report_content_type` + CHECK | REST 조회가 `42703`(컬럼 없음) → `42501`(권한) 로 바뀜 |
+| 2026-09-11 | `board_like` 일체 · 게시글 수정 권한 · `comment_user_idx` | 목록 임베드가 `PGRST200`(관계 없음) → `42501` 로 바뀜 |
+| 2026-09-11 | 닉네임 유니크 인덱스 · CHECK · `is_user_name_taken` | RPC 가 `PGRST202`(함수 없음) → `false` 응답 |
+| 2026-09-11 | `notify-report` 배포 + Database Webhook | 신고 insert → 운영자 메일 수신 확인 |
+
+> **앱 코드와 SQL 은 함께 나가야 한다.** 이번에 실제로 겪었다 — `board_like` 가 없는
+> 동안 게시판 목록 select 절의 `like_count:board_like(count)` 가 관계를 찾지 못해
+> **목록 · 검색 · "내가 쓴 글" 조회가 전부 실패**하고 있었고, `report_content_type` 이
+> 없는 동안 **신고도 전부 실패**했다. 둘 다 repository 가 예외를 삼키는 자리라
+> 화면에는 "못 불러옴" 으로만 보여서 알아차리기 어려웠다.
 
 ---
 
@@ -1462,7 +1482,7 @@ revoke delete, references, select, trigger, truncate, update on public.report   
 
 ---
 
-## 별건 — 개인정보처리방침 공개 🟡 *(문서·앱 완료 · 보존 작업 대기)*
+## 별건 — 개인정보처리방침 공개 ✅ *(해결됨)*
 
 ### 배경
 
@@ -1499,9 +1519,10 @@ EULA 14조는 "계정을 삭제하면 게시글·댓글·채팅·신고·차단 
 신고 기록을 지우면 신고당한 뒤 탈퇴·재가입으로 이력을 세탁할 수 있으므로 **남기는 쪽**을 택하고,
 보존 기간을 **3년**으로 정해 EULA 14조와 방침 제3조·제4조에 같은 값을 적었다.
 
-### 대기 중 — 3년 경과분 자동 삭제
+### 3년 경과분 자동 삭제 ✅ *(등록됨)*
 
 방침에 보존 기간을 적었으므로 실제로 지워져야 한다. Supabase SQL 에디터에서 한 번 실행한다.
+**2026-09-11 확인 — `cron.job` 에 `purge-old-reports` 가 등록돼 있다.**
 
 ```sql
 -- Dashboard → Database → Extensions 에서 pg_cron 을 켠 뒤 실행한다.
@@ -1523,11 +1544,13 @@ select jobid, jobname, schedule, active from cron.job;
 
 ---
 
-## 별건 — 차단 해제 · 본인 콘텐츠 삭제 · 신고 알림 🟡 *(앱 완료 · SQL 적용 대기)*
+## 별건 — 차단 해제 · 본인 콘텐츠 삭제 · 신고 알림 ✅ *(해결됨)*
 
 앱에 있다고 약속해 놓고 실제로는 없던 세 가지를 채웠다.
 **아래 SQL 을 적용하기 전에는 세 기능 모두 조용히 실패한다.** (repository 가 예외를 삼키고
 빈 목록 / `false` 를 돌려주는 규칙이라 화면이 죽지는 않는다)
+
+> 1·2 번은 그 전에, 3·4 번은 **2026-09-11** 에 적용됐다.
 
 ### 1. 차단 해제 — `block_user.blocked_user_name`
 
@@ -1668,9 +1691,31 @@ where policyname in ('comment_delete_own', 'chat_delete_own', 'block_delete_own'
 select blocked_uid, blocked_user_name from public.block_user limit 5;
 ```
 
+신고 알림은 **배포와 웹훅이 둘 다 있어야** 동작한다. 함수만 배포하고 웹훅을 만들지
+않으면 신고 행은 들어가지만 아무 일도 일어나지 않는다 — 오류도 로그도 없다.
+실제로 이 상태로 한 번 헛돌았다. 웹훅은 `report` 에 **트리거로** 붙으므로 그것으로 확인한다.
+
+```sql
+-- 웹훅이 걸렸는지. report_set_names 만 보이면 웹훅이 없는 것이다.
+select tgname from pg_trigger
+where tgrelid = 'public.report'::regclass and not tgisinternal;
+
+-- 웹훅이 받아 온 HTTP 응답. 200 + {"ok":true} 면 메일 발송까지 성공.
+-- 401 이면 x-webhook-secret 불일치, 502 면 Resend 가 거절한 것이다.
+select status_code, left(content, 60), created
+from net._http_response order by id desc limit 3;
+```
+
+> `net` 스키마는 **Webhooks 기능을 한 번 켜야** 생긴다. `pg_net 없음` 이면
+> 훅을 만들기 전이라는 뜻이다.
+>
+> 도메인 인증 없이 쓰는 기본 발신 주소(`onboarding@resend.dev`)는 **Resend 계정
+> 소유자 본인에게만** 배달된다. `REPORT_ALERT_TO` 를 다른 주소로 두면 Resend 가
+> 거절해 함수가 `send_failed` 를 돌려준다.
+
 ---
 
-## 별건 — 닉네임 중복 방지 🟡 *(앱 완료 · SQL 적용 대기)*
+## 별건 — 닉네임 중복 방지 ✅ *(해결됨)*
 
 `profile.user_name` 에는 길이 CHECK(2~12)만 있고 **유니크 제약이 없었다.**
 EULA 2조가 "타인을 사칭하는 닉네임을 사용할 수 없다" 고 하는데 막는 장치가 없었다.
@@ -1748,7 +1793,7 @@ grant execute on function public.is_user_name_taken(text) to anon, authenticated
 
 ---
 
-## 별건 — 게시판 기능 확장 🟡 *(앱 완료 · SQL 적용 대기)*
+## 별건 — 게시판 기능 확장 ✅ *(해결됨)*
 
 게시글 수정 · 좋아요 · 검색 · "내가 쓴 글/댓글" · 댓글 수를 붙였다.
 검색과 "내가 쓴 글" 은 기존 컬럼만 쓰므로 인덱스 외에는 DDL 이 없다.
@@ -1827,6 +1872,11 @@ create index board_content_trgm on public.board using gin (content gin_trgm_ops)
 **별칭이 반드시 있어야 한다.** 별칭 없이 `comment(count)` 를 쓰면 상세 조회의
 `comment(*)` 와 **같은 `comment` 키**로 내려와서, `BoardModel` 이 댓글 목록으로
 파싱하려다 실패한다.
+
+> **임베드 대상 테이블이 없으면 목록 전체가 실패한다.** PostgREST 는 관계를 찾지
+> 못하면 `PGRST200` 을 내는데, 이 select 절은 목록 · 검색 · "내가 쓴 글" 이 공유하므로
+> 세 화면이 한꺼번에 "못 불러옴" 이 된다. `board_like` 를 만들기 전 실제로 그랬다.
+> 스키마가 필요한 기능은 **SQL 을 먼저 적용하고 앱을 내보낸다.**
 
 ---
 
