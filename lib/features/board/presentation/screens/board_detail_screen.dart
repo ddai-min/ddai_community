@@ -4,6 +4,7 @@ import 'package:ddai_community/core/widgets/default_circular_progress_indicator.
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_list_placeholder.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
+import 'package:ddai_community/core/widgets/text_field_dialog.dart';
 import 'package:ddai_community/features/board/domain/comment_model.dart';
 import 'package:ddai_community/features/board/domain/comment_parameter.dart';
 import 'package:ddai_community/features/board/presentation/providers/board_provider.dart';
@@ -63,6 +64,19 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
     final board = ref.watch(getBoardProvider(widget.id));
     final commentList = ref.watch(commentListProvider(widget.id));
 
+    // 이 화면을 여는 순간 조회가 먼저 기록되어 조회수가 1 오른다. 목록은 상세를 여닫는
+    // 동안 살아 있어 다시 조회하지 않으므로, 읽어 온 최신 값을 목록 쪽으로 흘려보낸다.
+    // (build 중에는 다른 provider 를 고칠 수 없어 watch 가 아니라 listen 으로 받는다)
+    ref.listen(getBoardProvider(widget.id), (_, next) {
+      final data = next.value;
+
+      if (data == null) {
+        return;
+      }
+
+      ref.read(viewedBoardProvider.notifier).record(data);
+    });
+
     return board.when(
       loading: () => const DefaultLayout(
         title: '',
@@ -97,6 +111,7 @@ class _BoardDetailScreenState extends ConsumerState<BoardDetailScreen> {
                 title: data.title,
                 userName: data.userName,
                 content: data.content,
+                viewCount: data.viewCount,
               ),
             ),
             Padding(
@@ -190,10 +205,15 @@ class _Writing extends StatelessWidget {
   final String userName;
   final String content;
 
+  /// 이 글을 본 사람 수. 여는 순간 내 조회가 먼저 기록되므로 나도 포함된 값이다.
+  /// (`BoardRepository.getBoard` 가 읽기 직전에 넣는다)
+  final int? viewCount;
+
   const _Writing({
     required this.title,
     required this.userName,
     required this.content,
+    this.viewCount,
   });
 
   @override
@@ -208,11 +228,27 @@ class _Writing extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          '작성자: $userName',
-          style: TextStyle(
-            color: Colors.grey[700],
-          ),
+        Row(
+          children: [
+            // 긴 닉네임이 조회수를 밀어내지 않도록 이름 쪽만 줄인다.
+            Expanded(
+              child: Text(
+                '작성자: $userName',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.grey[700],
+                ),
+              ),
+            ),
+            if (viewCount != null)
+              Text(
+                '조회 $viewCount',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 16.0),
         const Divider(),
@@ -312,6 +348,17 @@ class _CommentList extends ConsumerWidget {
       actions: isMine
           ? [
               ContentAction(
+                label: '수정',
+                icon: Icons.edit_outlined,
+                onPressed: () {
+                  _editComment(
+                    context: context,
+                    ref: ref,
+                    comment: comment,
+                  );
+                },
+              ),
+              ContentAction(
                 label: '삭제',
                 icon: Icons.delete_outline,
                 isDestructive: true,
@@ -388,6 +435,83 @@ class _CommentList extends ConsumerWidget {
     );
   }
 
+  /// 내 댓글 내용을 고친다.
+  ///
+  /// 값을 꺼내 두고 다이얼로그를 **먼저 닫는다.** 컨트롤러가 다이얼로그와 함께
+  /// 사라져서 닫힌 뒤에는 읽을 수 없다. (`showReportDialog` 와 같은 모양)
+  void _editComment({
+    required BuildContext context,
+    required WidgetRef ref,
+    required CommentModel comment,
+  }) async {
+    final commentTextController = TextEditingController(text: comment.content);
+    String? content;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return TextFieldDialog(
+          textController: commentTextController,
+          contentText: '댓글을 수정합니다.',
+          hintText: '댓글 내용',
+          buttonText: '저장',
+          // DB 의 CHECK 제약과 같은 값이어야 한다. 어긋나면 저장만 조용히 실패한다.
+          maxLength: 100,
+          onPressed: () {
+            content = commentTextController.text.trim();
+
+            dialogContext.pop();
+          },
+        );
+      },
+    );
+
+    commentTextController.dispose();
+
+    // 저장을 누르지 않고 닫았으면(바깥 탭 등) 아무 일도 하지 않는다.
+    if (content == null || !context.mounted) {
+      return;
+    }
+
+    if (content!.isEmpty) {
+      // 빈 댓글은 만들 수 없다. 지우려는 것이면 삭제를 쓰게 둔다.
+      _notify(
+        context: context,
+        message: '댓글 내용을 입력해주세요.',
+      );
+
+      return;
+    }
+
+    if (content == comment.content) {
+      return;
+    }
+
+    final isUpdate = await ref.read(
+      updateCommentProvider(
+        UpdateCommentParams(
+          searchId: comment.id,
+          content: content!,
+        ),
+      ).future,
+    );
+
+    if (isUpdate) {
+      ref.read(commentListProvider(boardId).notifier).refresh();
+
+      return;
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
+    _notify(
+      context: context,
+      message: '댓글을 수정하지 못했습니다.\n잠시 후 다시 시도해주세요.',
+    );
+  }
+
   void _deleteComment({
     required BuildContext context,
     required WidgetRef ref,
@@ -403,11 +527,22 @@ class _CommentList extends ConsumerWidget {
       return;
     }
 
+    _notify(
+      context: context,
+      message: '댓글을 삭제하지 못했습니다.\n잠시 후 다시 시도해주세요.',
+    );
+  }
+
+  /// 확인 버튼 하나짜리 안내 다이얼로그.
+  void _notify({
+    required BuildContext context,
+    required String message,
+  }) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return DefaultDialog(
-          contentText: '댓글을 삭제하지 못했습니다.\n잠시 후 다시 시도해주세요.',
+          contentText: message,
           buttonText: '확인',
           onPressed: () {
             dialogContext.pop();

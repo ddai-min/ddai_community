@@ -86,6 +86,26 @@ mixin PaginationMixin<T extends ModelWithId> on $Notifier<PaginationModel<T>> {
     );
   }
 
+  /// 목록 안의 [id] 항목 하나만 [update] 결과로 갈아 끼운다.
+  ///
+  /// 그 항목이 목록에 없으면 아무 일도 하지 않는다. (아직 안 불러온 페이지에 있거나,
+  /// 애초에 이 목록의 대상이 아닌 경우다)
+  ///
+  /// 서버 값 하나가 바뀐 것을 화면에 바로 비출 때 [refresh] 대신 쓴다. refresh 는
+  /// **첫 페이지로 되감기 때문에** 스크롤로 쌓아 둔 페이지와 그 위치가 통째로 날아간다.
+  void updateItem(String id, T Function(T item) update) {
+    final index = state.items.indexWhere((item) => item.id == id);
+
+    if (index == -1) {
+      return;
+    }
+
+    final items = [...state.items];
+    items[index] = update(items[index]);
+
+    state = state.copyWith(items: items);
+  }
+
   /// 목록을 초기 상태로 되돌린 뒤 첫 페이지를 다시 조회한다.
   ///
   /// 당겨서 새로고침, 글/댓글 작성·삭제 후 목록 갱신 등에 사용한다.

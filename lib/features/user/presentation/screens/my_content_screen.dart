@@ -145,6 +145,7 @@ class _MyBoardListState extends ConsumerState<_MyBoardList> {
           date: board.date,
           commentCount: board.commentCount,
           likeCount: board.likeCount,
+          viewCount: board.viewCount,
           onTap: () {
             context.pushNamed(
               BoardDetailScreen.routeName,

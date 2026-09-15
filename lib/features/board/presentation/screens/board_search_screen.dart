@@ -156,6 +156,7 @@ class _SearchResultState extends ConsumerState<_SearchResult> {
           date: board.date,
           commentCount: board.commentCount,
           likeCount: board.likeCount,
+          viewCount: board.viewCount,
           onTap: () {
             context.pushNamed(
               BoardDetailScreen.routeName,

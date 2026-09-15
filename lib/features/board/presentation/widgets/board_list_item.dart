@@ -19,6 +19,10 @@ class BoardListItem extends StatelessWidget {
   /// 좋아요 수. 목록 조회에서만 실리므로 없을 수 있다.
   final int? likeCount;
 
+  /// 이 글을 본 사람 수. 좋아요·댓글과 달리 0 이어도 그대로 보여준다 —
+  /// 작성 시각과 같은 성격의 정보라 "아무도 안 읽음" 도 알려줄 값이다.
+  final int? viewCount;
+
   final GestureTapCallback onTap;
 
   const BoardListItem({
@@ -30,6 +34,7 @@ class BoardListItem extends StatelessWidget {
     required this.onTap,
     this.commentCount,
     this.likeCount,
+    this.viewCount,
   });
 
   @override
@@ -98,6 +103,11 @@ class BoardListItem extends StatelessWidget {
                   ' · ${DataUtils.formatRelativeDate(date)}',
                   style: metaTextStyle,
                 ),
+                if (viewCount != null)
+                  Text(
+                    ' · 조회 $viewCount',
+                    style: metaTextStyle,
+                  ),
               ],
             ),
           ],

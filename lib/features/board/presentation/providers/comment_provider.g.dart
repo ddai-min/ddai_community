@@ -336,6 +336,84 @@ final class AddCommentFamily extends $Family
   String toString() => r'addCommentProvider';
 }
 
+/// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+
+@ProviderFor(updateComment)
+final updateCommentProvider = UpdateCommentFamily._();
+
+/// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+
+final class UpdateCommentProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+  UpdateCommentProvider._({
+    required UpdateCommentFamily super.from,
+    required UpdateCommentParams super.argument,
+  }) : super(
+         retry: null,
+         name: r'updateCommentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateCommentHash();
+
+  @override
+  String toString() {
+    return r'updateCommentProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    final argument = this.argument as UpdateCommentParams;
+    return updateComment(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is UpdateCommentProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$updateCommentHash() => r'2eb76a985da2f53ec2370f5fc572f64fb7ac6707';
+
+/// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+
+final class UpdateCommentFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<bool>, UpdateCommentParams> {
+  UpdateCommentFamily._()
+    : super(
+        retry: null,
+        name: r'updateCommentProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+
+  UpdateCommentProvider call(UpdateCommentParams params) =>
+      UpdateCommentProvider._(argument: params, from: this);
+
+  @override
+  String toString() => r'updateCommentProvider';
+}
+
 /// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
 
 @ProviderFor(deleteComment)

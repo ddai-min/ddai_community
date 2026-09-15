@@ -55,6 +55,96 @@ final class BoardRepositoryProvider
 
 String _$boardRepositoryHash() => r'e27df42d66fb62e9863ceb046515043f7b079cbf';
 
+/// 상세 화면이 방금 읽어 온 게시글. 목록들이 이 신호를 듣고 자기 항목만 갈아 끼운다.
+///
+/// 상세를 열면 조회가 **먼저** 기록되어 `view_count` 가 1 오르는데, 목록은 상세를
+/// 여닫는 동안 살아 있어서 다시 조회하지 않는다. 이 신호가 없으면 방금 오른 조회수가
+/// 목록에서는 옛날 값으로 남는다.
+///
+/// 캐시가 아니라 **신호**다. 목록은 이걸 받아 자기 상태를 고칠 뿐이라, 나중에 목록을
+/// 새로 받으면 서버 값이 자연스럽게 이긴다. (값을 따로 들고 있으면 남이 본 조회까지
+/// 반영된 새 값을 옛날 값이 덮어쓰게 된다)
+
+@ProviderFor(ViewedBoard)
+final viewedBoardProvider = ViewedBoardProvider._();
+
+/// 상세 화면이 방금 읽어 온 게시글. 목록들이 이 신호를 듣고 자기 항목만 갈아 끼운다.
+///
+/// 상세를 열면 조회가 **먼저** 기록되어 `view_count` 가 1 오르는데, 목록은 상세를
+/// 여닫는 동안 살아 있어서 다시 조회하지 않는다. 이 신호가 없으면 방금 오른 조회수가
+/// 목록에서는 옛날 값으로 남는다.
+///
+/// 캐시가 아니라 **신호**다. 목록은 이걸 받아 자기 상태를 고칠 뿐이라, 나중에 목록을
+/// 새로 받으면 서버 값이 자연스럽게 이긴다. (값을 따로 들고 있으면 남이 본 조회까지
+/// 반영된 새 값을 옛날 값이 덮어쓰게 된다)
+final class ViewedBoardProvider
+    extends $NotifierProvider<ViewedBoard, BoardModel?> {
+  /// 상세 화면이 방금 읽어 온 게시글. 목록들이 이 신호를 듣고 자기 항목만 갈아 끼운다.
+  ///
+  /// 상세를 열면 조회가 **먼저** 기록되어 `view_count` 가 1 오르는데, 목록은 상세를
+  /// 여닫는 동안 살아 있어서 다시 조회하지 않는다. 이 신호가 없으면 방금 오른 조회수가
+  /// 목록에서는 옛날 값으로 남는다.
+  ///
+  /// 캐시가 아니라 **신호**다. 목록은 이걸 받아 자기 상태를 고칠 뿐이라, 나중에 목록을
+  /// 새로 받으면 서버 값이 자연스럽게 이긴다. (값을 따로 들고 있으면 남이 본 조회까지
+  /// 반영된 새 값을 옛날 값이 덮어쓰게 된다)
+  ViewedBoardProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewedBoardProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewedBoardHash();
+
+  @$internal
+  @override
+  ViewedBoard create() => ViewedBoard();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BoardModel? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BoardModel?>(value),
+    );
+  }
+}
+
+String _$viewedBoardHash() => r'64ac3a93baeb2cef82f2f6d2d2d33d14f9fa7cc1';
+
+/// 상세 화면이 방금 읽어 온 게시글. 목록들이 이 신호를 듣고 자기 항목만 갈아 끼운다.
+///
+/// 상세를 열면 조회가 **먼저** 기록되어 `view_count` 가 1 오르는데, 목록은 상세를
+/// 여닫는 동안 살아 있어서 다시 조회하지 않는다. 이 신호가 없으면 방금 오른 조회수가
+/// 목록에서는 옛날 값으로 남는다.
+///
+/// 캐시가 아니라 **신호**다. 목록은 이걸 받아 자기 상태를 고칠 뿐이라, 나중에 목록을
+/// 새로 받으면 서버 값이 자연스럽게 이긴다. (값을 따로 들고 있으면 남이 본 조회까지
+/// 반영된 새 값을 옛날 값이 덮어쓰게 된다)
+
+abstract class _$ViewedBoard extends $Notifier<BoardModel?> {
+  BoardModel? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<BoardModel?, BoardModel?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<BoardModel?, BoardModel?>,
+              BoardModel?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// 게시글 목록(페이지네이션) Notifier.
 
 @ProviderFor(BoardList)
@@ -91,7 +181,7 @@ final class BoardListProvider
   }
 }
 
-String _$boardListHash() => r'7acc66d82b2354707901cc7c6f3a57c839cb0464';
+String _$boardListHash() => r'9a81a7c15728dc6599990f76419f6b8494e04247';
 
 /// 게시글 목록(페이지네이션) Notifier.
 
@@ -180,7 +270,7 @@ final class BoardSearchListProvider
   }
 }
 
-String _$boardSearchListHash() => r'1623d822525e6dc00b2d9a469a249081855ba25c';
+String _$boardSearchListHash() => r'88d41caf4488ead9da6a5e6a98db098a84dc768b';
 
 /// 게시글 검색 목록. 검색어별로 생성된다.
 ///
@@ -285,7 +375,7 @@ final class MyBoardListProvider
   }
 }
 
-String _$myBoardListHash() => r'c556f6a6d0b56a261b1d7d6bfac2c84183d4892c';
+String _$myBoardListHash() => r'7ee43b429384c253874eb29ed46fbe95f3d92c1b';
 
 /// 내가 쓴 게시글 목록.
 

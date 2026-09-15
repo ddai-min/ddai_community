@@ -16,6 +16,12 @@ class TextFieldDialog extends StatelessWidget {
   final String? hintText;
   final bool obscureText;
 
+  /// 입력 가능한 최대 글자 수.
+  ///
+  /// **DB 의 CHECK 제약과 같은 값을 넘겨야 한다.** 어긋나면 입력은 되는데 저장만
+  /// 실패해서 원인을 찾기 어렵다. 기본값은 [DefaultTextField] 의 기본값과 같다.
+  final int maxLength;
+
   const TextFieldDialog({
     super.key,
     required this.contentText,
@@ -28,6 +34,7 @@ class TextFieldDialog extends StatelessWidget {
     this.textController,
     this.hintText,
     this.obscureText = false,
+    this.maxLength = 500,
   });
 
   @override
@@ -52,6 +59,7 @@ class TextFieldDialog extends StatelessWidget {
                   controller: textController,
                   hintText: hintText,
                   obscureText: obscureText,
+                  maxLength: maxLength,
                   padding: 0,
                 ),
                 const SizedBox(height: 20),

@@ -36,6 +36,34 @@ class CommentRepository extends PaginationRepository<CommentModel> {
     }
   }
 
+  /// 댓글 내용을 수정한다. 성공 여부를 bool 로 반환한다.
+  ///
+  /// 바뀐 행을 되받아 실제로 수정됐는지 확인한다. RLS(`comment_update_own`)가 막으면
+  /// 오류 없이 0행이 바뀌므로, 이 확인이 없으면 실패를 성공으로 보고하게 된다.
+  ///
+  /// 작성자 이름은 건드리지 않는다. `set_author_name` 트리거는 INSERT 전용이라
+  /// UPDATE 에 걸리지 않고, DB 도 `content` 컬럼에만 UPDATE 를 허용한다.
+  /// (게시글 수정과 같은 구조다 — [BoardRepository.updateBoard] 참고)
+  static Future<bool> updateComment({
+    required UpdateCommentParams updateCommentParams,
+  }) async {
+    try {
+      final updatedRows = await supabase
+          .from('comment')
+          .update({
+            'content': updateCommentParams.content,
+          })
+          .eq('id', updateCommentParams.searchId)
+          .select('id');
+
+      return updatedRows.isNotEmpty;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
+    }
+  }
+
   /// 댓글을 삭제한다. 성공 여부를 bool 로 반환한다.
   ///
   /// 지워진 행을 되받아 실제로 지워졌는지 확인한다. RLS(`comment_delete_own`)가 막으면

@@ -16,8 +16,9 @@ BoardModel _$BoardModelFromJson(Map<String, dynamic> json) => BoardModel(
   commentList: (json['comment'] as List<dynamic>?)
       ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
       .toList(),
-  commentCount: (_readCommentCount(json, 'comment_count') as num?)?.toInt(),
-  likeCount: (_readCommentCount(json, 'like_count') as num?)?.toInt(),
+  commentCount: (_readCount(json, 'comment_count') as num?)?.toInt(),
+  likeCount: (_readCount(json, 'like_count') as num?)?.toInt(),
+  viewCount: (json['view_count'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$BoardModelToJson(BoardModel instance) =>
@@ -29,4 +30,5 @@ Map<String, dynamic> _$BoardModelToJson(BoardModel instance) =>
       'user_uid': instance.userUid,
       'created_at': instance.date.toIso8601String(),
       'comment': instance.commentList,
+      'view_count': instance.viewCount,
     };

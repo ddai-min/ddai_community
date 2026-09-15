@@ -15,6 +15,7 @@ class BoardRepository extends PaginationRepository<BoardModel> {
         table: TablePath.board,
         fromJson: (data) => BoardModel.fromJson(data),
         // 별칭을 붙여야 상세의 `comment(*)` 와 키가 겹치지 않는다.
+        // 조회수는 `board.view_count` 컬럼이라 `*` 에 이미 들어 있다.
         selectColumns:
             '*, comment_count:comment(count), like_count:board_like(count)',
         searchColumns: const ['title', 'content'],
@@ -25,10 +26,18 @@ class BoardRepository extends PaginationRepository<BoardModel> {
   /// FK 임베딩(`comment(*)`)으로 **한 번에** 가져온다. (Firestore 때는 두 번 조회했다)
   /// 게시글이 없거나 차단한 유저의 글이면 RLS 로 0행이 되어 `single()` 이 예외를 던지고,
   /// 그 경우 null 을 반환한다.
+  ///
+  /// **읽기 전에 [viewBoard] 로 조회를 먼저 기록한다.** 순서를 뒤집으면 이 글을 처음
+  /// 여는 사람에게 자기를 뺀 수("조회 0")가 보인다. 중복은 서버가 무시하므로
+  /// 왕복 한 번(약 30ms)이 더해질 뿐이다.
+  /// 게시글 수정 화면도 이 메서드로 원글을 읽어 조회가 함께 기록되는데, 내 글이고
+  /// 한 번만 세므로 그냥 읽었을 때와 결과가 같다.
   static Future<BoardModel?> getBoard({
     required String searchId,
   }) async {
     try {
+      await viewBoard(searchId: searchId);
+
       final row = await supabase
           .from('board')
           .select('*, comment(*)')
@@ -141,6 +150,34 @@ class BoardRepository extends PaginationRepository<BoardModel> {
           .delete()
           .eq('board_id', searchId)
           .eq('user_uid', user.id);
+
+      return true;
+    } catch (error) {
+      logger.e(error);
+
+      return false;
+    }
+  }
+
+  /// 이 유저가 게시글을 봤다는 사실을 기록한다. 성공 여부를 bool 로 반환한다.
+  ///
+  /// **테이블을 직접 건드리지 않고 RPC 를 부른다.** 중복 판정 원장인 `board_view` 는
+  /// 앱에 권한이 아예 없다 — 읽을 수 있으면 "누가 어떤 글을 읽었는지" 가 통째로
+  /// 노출되기 때문이다. 서버의 `increment_board_view` 가 원장에 한 번만 넣고
+  /// `board.view_count` 를 올린다.
+  ///
+  /// 그래서 한 사람이 몇 번을 다시 열어도 1 이고, 클라이언트가 카운터에 아무 값이나
+  /// 써넣을 수도 없다. (`board` 의 UPDATE 는 `title`·`content` 컬럼에만 열려 있다)
+  static Future<bool> viewBoard({
+    required String searchId,
+  }) async {
+    try {
+      await supabase.rpc(
+        'increment_board_view',
+        params: {
+          'target_id': searchId,
+        },
+      );
 
       return true;
     } catch (error) {

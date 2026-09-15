@@ -57,6 +57,11 @@ class MyCommentList extends _$MyCommentList with PaginationMixin<CommentModel> {
 Future<bool> addComment(Ref ref, AddCommentParams params) =>
     CommentRepository.addComment(addCommentParams: params);
 
+/// 댓글 수정. 결과로 성공 여부(bool)를 반환한다.
+@riverpod
+Future<bool> updateComment(Ref ref, UpdateCommentParams params) =>
+    CommentRepository.updateComment(updateCommentParams: params);
+
 /// 댓글 삭제. 결과로 성공 여부(bool)를 반환한다.
 @riverpod
 Future<bool> deleteComment(Ref ref, String searchId) =>
