@@ -4,7 +4,7 @@ Firebase(Auth · Firestore · Remote Config) → **Supabase**(Auth · Postgres �
 
 > **Phase 0~6 완료, Phase 7 은 앱 코드까지 완료.** 앱은 Supabase 위에서 빌드·실행된다.
 > 남은 것은 Supabase 대시보드의 CAPTCHA 스위치를 켜고 실측하는 일뿐이다. (§Phase 7)
-> **별건 항목의 SQL 은 인앱 알림까지 전부 적용됐다.** (§별건 SQL 적용 이력)
+> **별건 항목의 SQL 은 2026-09-15 조회수 재설계까지 모두 적용됐다.** (§별건 SQL 적용 이력)
 > 이 문서는 이제 계획서가 아니라 **스키마 · RLS 정책의 단일 출처이자 전환 기록**이다.
 > 스키마를 다시 세우거나 새 환경을 만들 때는 §1(DDL)과 §2(RLS)를 그대로 실행하면 된다.
 
@@ -42,12 +42,19 @@ REST · `package:supabase` 스크립트로 이미 확인했다.
 | 2026-09-11 | 닉네임 유니크 인덱스 · CHECK · `is_user_name_taken` | RPC 가 `PGRST202`(함수 없음) → `false` 응답 |
 | 2026-09-11 | `notify-report` 배포 + Database Webhook | 신고 insert → 운영자 메일 수신 확인 |
 | 2026-09-14 | 인앱 알림 일체 — `notification` 테이블 · 정책 · 트리거 · Realtime | 두 계정으로 댓글·좋아요 → 배지·목록·읽음 처리 동작 확인 |
+| 2026-09-14 | 댓글 수정 권한(`comment.content`) | `column_privileges` 에 `content` 만 |
+| 2026-09-15 | 조회수 재설계 — `board.view_count` · `increment_board_view` RPC · `board_view` 권한 회수 | anon 호출이 `PGRST202`(함수 없음) → `42501`(롤 제한) · 원장 행수 = 카운터 합 |
 
 > **앱 코드와 SQL 은 함께 나가야 한다.** 이번에 실제로 겪었다 — `board_like` 가 없는
 > 동안 게시판 목록 select 절의 `like_count:board_like(count)` 가 관계를 찾지 못해
 > **목록 · 검색 · "내가 쓴 글" 조회가 전부 실패**하고 있었고, `report_content_type` 이
 > 없는 동안 **신고도 전부 실패**했다. 둘 다 repository 가 예외를 삼키는 자리라
 > 화면에는 "못 불러옴" 으로만 보여서 알아차리기 어려웠다.
+>
+> **조회수는 반대 사례다.** RPC 가 없는 하루 동안 `BoardRepository.viewBoard` 만
+> `PGRST202` 로 실패해 로그에 쌓였고 나머지 화면은 멀쩡했다. 집계 임베드를 쓰지 않고
+> `board` 의 컬럼으로 둔 덕이다 — **깨지는 범위는 SQL 의 유무가 아니라 앱이 무엇에
+> 기대고 있는지가 정한다.**
 
 ---
 
@@ -898,9 +905,13 @@ Firestore 는 권한이 없으면 예외를 던졌지만, PostgREST 는 RLS(`boa
 | 항목 | 값 |
 | --- | --- |
 | 제공자 | Cloudflare Turnstile (무료·무제한, 대부분 무마찰) |
-| 패키지 | `cloudflare_turnstile` ^3.8.1 |
-| 모드 | invisible (`CloudflareTurnstile.invisible()` → `getToken()`) |
-| 발급 위치 | `core/data/captcha_repository.dart` — headless WebView, 화면 불필요 |
+| 패키지 | `webview_flutter` ^4.14.1 — Turnstile 연동은 **직접 구현** |
+| 모드 | invisible (`turnstile.render(..., callback)` 을 JS 채널로 수신) |
+| 발급 위치 | `core/widgets/captcha_overlay.dart` — 보이지 않는 1×1 `OverlayEntry` |
+
+> **2026-09-15 에 `cloudflare_turnstile` 패키지를 걷어내고 직접 구현으로 바꿨다.**
+> 그 패키지가 끌어오는 `flutter_inappwebview` 가 SPM 을 지원하지 않아 iOS 가 CocoaPods 를
+> 놓지 못했기 때문이다. 아래 «iOS 의존성» 참고.
 
 hCaptcha 도 지원되지만 퍼즐 노출 빈도가 높아 모바일 UX 에 불리하다.
 
@@ -910,32 +921,43 @@ hCaptcha 도 지원되지만 퍼즐 노출 빈도가 높아 모바일 UX 에 불
 서버는 그것을 무시한다 — **앱 배포 시점과 서버 활성화 시점을 분리하기 위한 장치다.**
 
 ```dart
-// core/data/captcha_repository.dart
-static Future<String?> issueToken() async {
+// core/widgets/captcha_overlay.dart
+Future<String?> issueCaptchaToken(BuildContext context) async {
   if (!isCaptchaEnabled) return null;
 
-  CloudflareTurnstile? turnstile;
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return null;
+
+  final completer = Completer<String?>();
+  final entry = OverlayEntry(
+    // 크기가 0 이면 플랫폼 뷰가 안 만들어져 스크립트가 아예 안 돈다.
+    builder: (_) => Positioned(width: 1, height: 1, child: IgnorePointer(...)),
+  );
+  overlay.insert(entry);
+
   try {
-    turnstile = CloudflareTurnstile.invisible(
-      siteKey: turnstileSiteKey,
-      baseUrl: turnstileBaseUrl,
-    );
-    return await turnstile.getToken().timeout(_timeout);
+    return await completer.future.timeout(_timeout);
   } catch (error) {
     logger.e(error);
     return null;                 // 막을지 말지는 서버가 정한다
   } finally {
-    await turnstile?.dispose();
+    entry.remove();              // 실패해도 웹뷰는 떠 있다
   }
 }
 ```
 
-`AuthRepository` 의 세 경로가 이걸 호출한다.
+웹뷰 안에서는 `render=explicit` 로 스크립트를 올리고, 준비되면 `turnstile.render()` 를
+직접 부른다. 토큰·오류는 JS 채널(`TurnstileBridge.postMessage`)로 돌아온다.
+**채널은 `loadHtmlString` 보다 먼저 등록해야 한다** — 다음 로드부터 붙기 때문이다.
+
+발급은 화면에서 하고, 토큰은 **인자로** 내려간다. (data 계층은 웹뷰를 띄울 수 없다)
 
 ```dart
-await supabase.auth.signUp(..., captchaToken: await CaptchaRepository.issueToken());
-await supabase.auth.signInWithPassword(..., captchaToken: await CaptchaRepository.issueToken());
-await supabase.auth.signInAnonymously(captchaToken: await CaptchaRepository.issueToken());
+final captchaToken = await issueCaptchaToken(context);   // 로딩 오버레이 아래에서
+
+await AuthRepository.login(..., captchaToken: captchaToken);
+await AuthRepository.loginAnonymous(captchaToken: captchaToken);
+SignUpWithEmailParams(..., captchaToken: captchaToken);  // 가입은 파라미터에 실어 보낸다
 ```
 
 gotrue 는 `captchaToken` 이 `null` 이어도 `gotrue_meta_security` 를 항상 실어 보내므로,
@@ -946,8 +968,9 @@ CAPTCHA 를 안 쓰는 지금과 **전송 형태가 동일하다.** 즉 이 커�
 | 판단 | 이유 |
 | --- | --- |
 | **발급 실패 시 막지 않고 `null`** | 앱이 미리 막으면 서버 설정과 어긋나는 순간 멀쩡한 로그인까지 불가능해진다. 거절은 서버가 `captcha_failed` 로 한다 |
-| **호출마다 인스턴스 새로 생성** | Turnstile 토큰은 1회용. 재사용하면 `timeout-or-duplicate` 인데, 화면에는 "비밀번호가 맞는데 안 됨" 으로 보여 원인 추적이 어렵다 |
-| **`getToken()` 을 `.timeout()` 으로 감쌈** | 패키지의 `getToken()` 은 **스스로 끝나지 않는다.** 8초 뒤 `onTimeout` 콜백만 부르고 Future 는 매달려 있어서, 안 감싸면 로딩 오버레이가 영영 안 걷힌다 |
+| **요청 직전에 매번 새로 발급** | Turnstile 토큰은 1회용. 재사용하면 `timeout-or-duplicate` 인데, 화면에는 "비밀번호가 맞는데 안 됨" 으로 보여 원인 추적이 어렵다 |
+| **`.timeout()` 으로 감쌈** | Turnstile 콜백은 스크립트가 막히면 **끝내 오지 않는다.** 안 감싸면 로딩 오버레이가 영영 안 걷힌다 (15초) |
+| **웹뷰를 1×1 로 띄움** | 위젯 트리에 붙지 않은 웹뷰는 플랫폼 뷰가 만들어지지 않아 스크립트가 시작되지 않는다. 0 도 같은 이유로 안 된다 |
 
 #### 함께 고친 것
 
@@ -958,23 +981,39 @@ CAPTCHA 를 안 쓰는 지금과 **전송 형태가 동일하다.** 즉 이 커�
 - **Edge Function `delete-account`** — §4 참고. anon 키로 `signInWithPassword` 를 부르던 것을
   secret 키로 바꿨다. 안 바꿨으면 CAPTCHA 를 켜는 순간 탈퇴가 통째로 막혔다.
 
-#### iOS 의존성 — CocoaPods 복귀
+#### iOS 의존성 — CocoaPods 복귀(2026-09-14) → 제거(2026-09-15)
 
 `cloudflare_turnstile` → `flutter_inappwebview` → **`flutter_inappwebview_ios` 는 podspec 만
-제공한다.** SPM 지원은 업스트림에 [열린 이슈](https://github.com/pichillilorenzo/flutter_inappwebview/issues/2842).
-그래서 빌드하면 Flutter 가 `Podfile` 을 다시 만들고, `6292137` 에서 걷어낸 CocoaPods 가
-iOS 에 돌아온다.
+제공한다.** SPM 지원은 업스트림에 [열린 이슈](https://github.com/pichillilorenzo/flutter_inappwebview/issues/2842)
+(2026-05-23 오픈, 응답·PR 없음). 그래서 CAPTCHA 를 넣자 `6292137` 에서 걷어냈던 CocoaPods 가
+iOS 에 돌아왔고, 빌드마다
+`The following plugins do not support Swift Package Manager for ios` 경고가 붙었다.
 
-검토한 대안과 기각 사유:
+처음에는 그 하이브리드를 받아들였다. **하루 뒤 뒤집었다.** 이유:
 
-| 대안 | 기각 사유 |
+- 경고가 **매 빌드마다** 뜨고 "will become an error in a future version of Flutter" 를 달고 있다.
+- **SPM 을 꺼도 사라지지 않는다.** 경고를 찍는 `_printCocoapodOnlyPluginsWarning` 은
+  SPM 사용 여부와 무관하게 iOS 빌드 경로에서 불린다. (`flutter_tools` 3.44.9 소스 확인)
+  `enable-swift-package-manager: false` 는 경고를 그대로 둔 채 나머지 플러그인만 팟으로 되돌린다.
+- 업스트림이 멈춰 있다 — iOS 구현 패키지의 마지막 stable 1.1.2 는 2년 전, prerelease
+  1.2.0-beta.3 에도 SPM 이 없다.
+- Flutter 3.44 부터 SPM 이 기본이고, **CocoaPods 레지스트리는 2026-12-02 에 read-only** 가 된다.
+
+그래서 전날 기각했던 «`webview_flutter` 로 직접 구현» 을 채택했다. 기각 사유였던
+"headless 동작 미검증" 은 **사실로 드러났고**(webview_flutter 에는 headless 모드가 없다),
+그래서 위젯 트리에 **보이지 않는 1×1 오버레이**로 띄우는 설계로 바꿨다. 나머지 부담(토큰
+만료·재시도)은 애초에 1회용 토큰을 요청 직전에 만들어 쓰므로 실제로 떠안을 것이 없었다.
+
+| 대안 | 판정 |
 | --- | --- |
-| `cloudflare_turnstile` 2.1.5 (webview_flutter 기반) | `getToken()` 이 없다. invisible 이 위젯 모드일 뿐이라 화면 3곳에 위젯을 심고 토큰 수명을 직접 관리해야 한다. 18개월 전 버전 |
-| `webview_flutter` 로 직접 구현 | 토큰 만료·재시도·에러코드·챌린지 폴백을 전부 떠안는다. headless 동작도 미검증 |
+| `cloudflare_turnstile` 2.1.5 (webview_flutter 기반) | 기각 — 화면에 위젯을 심어야 하는 건 직접 구현과 같은데, 19개월 전 비공식 패키지에 묶인다 |
+| `webview_flutter` 로 직접 구현 | **채택** (2026-09-15) |
+| 플러그인을 포크해 `Package.swift` 추가 | 보류 — 포크 유지 비용이 계속 남는다 |
 
-**결론: 하이브리드를 받아들였다.** 예전엔 팟이 `Flutter` 하나뿐이라 순수 오버헤드였지만
-지금은 실제 의존성이 있다. 측정값 — `pod install` 692~735ms, 시뮬레이터 클린 빌드 42초.
-`Podfile` 은 Flutter 가 만든 **표준 템플릿 그대로 두어야** "non-standard Podfile" 경고를 피한다.
+제거 절차 — `ios` 에서 `pod deintegrate`, `Podfile`·`Podfile.lock` 삭제,
+`Flutter/{Debug,Release,Profile}.xcconfig` 의 `#include? ".../Pods-Runner.<mode>.xcconfig"` 줄 삭제.
+**팟만 남겨 두면 안 된다** — 플러그인이 전부 SPM 인데 `Podfile` 이 있으면 Flutter 가 이번에는
+"CocoaPods integration 을 제거하라" 는 경고를 매 빌드마다 찍는다. 경고가 바뀔 뿐이다.
 
 #### 검증한 것
 
@@ -991,6 +1030,39 @@ iOS 에 돌아온다.
 
 **약 1.8초**가 로그인·가입·익명 3경로에 더해진다. 기존 로딩 오버레이 안에 들어가므로
 화면이 멈춘 것처럼 보이지는 않는다.
+
+#### 재구현 후 검증 (2026-09-15)
+
+`cloudflare_turnstile` · `flutter_inappwebview` 를 걷어내고 `webview_flutter` 로 옮긴 뒤.
+
+| 항목 | 결과 |
+| --- | --- |
+| `flutter analyze` | 0 issue |
+| iOS 시뮬레이터 빌드 | ✅ 28.4s — **경고 없음** (SPM 경고도, 팟 제거 안내도 나오지 않는다) |
+| Android APK(debug) 빌드 | ✅ 60.5s |
+| 토큰 발급 (iOS 시뮬레이터 iPhone 17) | ✅ 3회 연속 `XXXX.DUMMY.TOKEN.XXXX` — 2602 · 2126 · 2399ms |
+| 토큰 발급 (Android 에뮬레이터 Pixel 8 / API 36) | ✅ 3회 연속 `XXXX.DUMMY.TOKEN.XXXX` — 4236 · 1696 · 1728ms |
+
+더미 sitekey `1x00000000000000000000AA`(Cloudflare 테스트 키, 항상 통과) 로
+발급만 떼어 낸 임시 하네스를 시뮬레이터에 띄워 실측했다.
+
+- **3회를 연달아 받아도 매번 성공한다.** 1회용 토큰이라 이 확인이 중요하다 —
+  오버레이를 제대로 걷지 못하거나 웹뷰를 재사용하면 두 번째부터 막힌다.
+- 소요는 iOS **2.1~2.6초**, Android **1.7초**(첫 회만 4.2초)로 패키지를 쓰던
+  때(1.8~2.7초)와 같은 범위다. 기존 로딩 오버레이 안에 들어가므로 체감 흐름은 그대로다.
+  Android 첫 회가 느린 것은 WebView 프로세스와 스크립트를 처음 올리기 때문이고,
+  2회차부터는 iOS 보다 빠르다.
+
+> **Android 에뮬레이터에 debug APK(177MB)가 설치되지 않을 수 있다.** `/data` 여유가
+> 파티션의 5%(임계치) 아래로 내려가는 설치는 거부된다 —
+> `java.io.IOException: Requested internal only, but not enough space`.
+> 이때는 `--release --target-platform android-arm64` 로 40MB 짜리를 만들어 넣고
+> `adb logcat -d | grep ...` 로 읽으면 된다. 릴리즈에서도 `debugPrint` 는 logcat 에 남는다.
+
+> **하네스로 재확인하는 법.** 앱 전체를 띄우면 로그인 화면까지 들어가야 해서 느리다.
+> `.env` 에 더미 sitekey 를 넣고 발급만 부르는 `main` 을 하나 만들어
+> `fvm flutter run -t <그 파일>` 로 띄우면 몇 초 만에 끝난다.
+> (이번에 쓴 하네스는 검증 후 지웠다 — `lib/` 에 `main_*.dart` 가 남아 있으면 안 된다)
 
 #### 아직 검증 못 한 것
 
@@ -2098,6 +2170,236 @@ select 'realtime', tablename from pg_publication_tables
 - **원본이 지워져도 알림은 남는다.** 댓글을 지워도 "댓글을 남겼습니다" 는 그대로고,
   좋아요를 취소해도 마찬가지다. 알림은 "그 시점에 일어난 일" 의 기록이다.
   (게시글이 지워지면 `board_id` CASCADE 로 함께 사라진다)
+
+---
+
+## 별건 — 댓글 수정 · 조회수 ✅ *(해결됨)*
+
+게시글은 수정되는데 **댓글은 삭제만** 됐고, 목록에 조회수가 없었다.
+
+> **SQL 없이 앱만 나가도 기존 화면은 깨지지 않는다.** 목록 select 절이 그대로라
+> `PGRST200` 위험이 없고, `view_count` 컬럼이 없으면 값이 null 이 되어 화면이 조용히
+> 감춘다. RPC 가 없으면 조회 기록만 실패하고 로그에 남는다.
+> (초안은 그렇지 않았다 — §"왜 집계를 쓰지 않았나" 참고)
+>
+> **실제로 그렇게 나갔다.** 앱 코드가 2026-09-14 에 먼저 들어가고 SQL 은 2026-09-15 에
+> 적용됐다. 그 사이 증상은 게시글을 열 때마다 로그에 찍히는 `PGRST202` 한 줄뿐이었다.
+
+### 1. 댓글 수정 — 컬럼 단위 UPDATE
+
+```sql
+create policy comment_update_own on public.comment
+  for update to authenticated
+  using (user_uid = auth.uid())
+  with check (user_uid = auth.uid());
+
+-- 내용만 고칠 수 있다. 테이블 전체에 UPDATE 를 주면 안 된다.
+grant update (content) on public.comment to authenticated;
+```
+
+> **게시글 수정과 같은 이유로 컬럼 단위다.** `private.set_author_name` 은
+> `BEFORE INSERT` 전용이라 UPDATE 에는 걸리지 않는다. 테이블 전체에 UPDATE 를 주면
+> 자기 댓글의 작성자 이름을 아무 값으로나 바꿀 수 있다.
+>
+> `created_at` 이 막히는 것도 중요하다. 열려 있으면 커서 페이지네이션의 정렬 기준을
+> 흔들어 남의 댓글 사이에 끼워 넣을 수 있다.
+
+### 2. 조회수 — `board.view_count` + `increment_board_view` RPC
+
+카운터는 `board` 의 컬럼으로 두고, **중복 판정 원장(`board_view`)은 앱이 아예 못 만지게**
+막은 뒤 SECURITY DEFINER 함수 하나만 열어 준다.
+
+```sql
+alter table public.board add column view_count integer not null default 0;
+
+-- 중복 판정 원장. 앱에는 정책도 권한도 주지 않는다 — 함수만 이 테이블을 만진다.
+create table public.board_view (
+  board_id   uuid not null references public.board(id)   on delete cascade,
+  user_uid   uuid not null references public.profile(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (board_id, user_uid)
+);
+
+alter table public.board_view enable row level security;
+revoke all on public.board_view from anon, authenticated;
+
+-- 조회를 한 번만 세고 카운터를 올린다.
+create or replace function public.increment_board_view(target_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  -- 토큰에 sub 가 없으면 조용히 아무 일도 하지 않는다. (NOT NULL 위반 대신)
+  if auth.uid() is null then
+    return;
+  end if;
+
+  insert into public.board_view (board_id, user_uid)
+  values (target_id, auth.uid())
+  on conflict do nothing;
+
+  -- 처음 본 사람일 때만 올린다. ON CONFLICT DO NOTHING 이면 FOUND 가 false 다.
+  if found then
+    update public.board set view_count = view_count + 1 where id = target_id;
+  end if;
+end;
+$$;
+
+revoke all on function public.increment_board_view(uuid) from public;
+grant execute on function public.increment_board_view(uuid) to authenticated;
+```
+
+> **이 함수는 `is_user_name_taken` 과 같은 이유로 `private` 이 아니라 `public` 에 둔다.**
+> 다른 SECURITY DEFINER 헬퍼를 `private` 에 두는 것은 PostgREST 노출을 막기 위해서인데,
+> 이 함수는 노출이 목적이다.
+>
+> **카운터를 `board` 컬럼으로 두면서도 위조를 막을 수 있는 이유**는 `board` 의 UPDATE 가
+> `title`·`content` **컬럼 단위 grant** 이기 때문이다. `view_count` 는 앱이 쓸 수 없고,
+> SECURITY DEFINER 함수만 소유자 권한으로 올린다.
+>
+> 탈퇴로 `board_view` 행이 CASCADE 되어도 카운터는 줄지 않아 시간이 지나면 미세하게
+> 어긋난다. 표시용 숫자라 감수한다. 다시 맞추려면 §"카운터 재계산" 을 돌린다.
+
+#### 초안(집계 방식)을 이미 적용했다면
+
+2026-09-14 에 먼저 적용한 초안에서 넘어오는 경로다. **앱 코드를 먼저 띄우고 SQL 을 나중에**
+적용한다 — 새 코드는 `view_count` 컬럼도 RPC 도 없는 상태를 견디지만, 구버전 코드는
+select 절에 `view_count:board_view(count)` 가 있어서 권한을 걷는 순간 목록이 죽는다.
+
+**이 저장소가 실제로 걸어간 경로다** (2026-09-15 적용). `board_view` 는 초안 때 이미
+만들어져 있었고, 집계 select 절(`view_count:board_view(count)`)은 **커밋된 적이 없어서**
+원장 읽기에 기대는 배포 빌드가 없었다 — 그래서 권한 회수가 안전했다.
+
+```sql
+alter table public.board add column if not exists view_count integer not null default 0;
+
+-- 이미 쌓인 조회 기록을 카운터로 옮긴다.
+update public.board b
+set view_count = coalesce(v.cnt, 0)
+from (
+  select board_id, count(*) as cnt from public.board_view group by board_id
+) v
+where v.board_id = b.id;
+
+-- 앱이 원장을 직접 만지던 경로를 전부 닫는다.
+drop policy if exists board_view_select     on public.board_view;
+drop policy if exists board_view_insert_own on public.board_view;
+revoke all on public.board_view from anon, authenticated;
+
+-- 그다음 위의 increment_board_view 함수를 만들고 execute 를 준다.
+```
+
+#### 왜 집계(`board_view(count)`)를 쓰지 않았나 — 실제로 겪은 것
+
+처음에는 `board_like` 와 같은 모양으로 만들고 목록 select 절에
+`view_count:board_view(count)` 를 넣었다. **두 가지가 잘못됐다.**
+
+1. 정책이 `using (true)` 라 테이블 전체에 SELECT 를 주면
+   `/rest/v1/board_view?select=*` 한 번으로 **"누가 어떤 글을 읽었는지" 가 전부 노출된다.**
+   좋아요는 공개적으로 누르는 행동이고 앱도 `user_uid` 를 읽어야 해서 `board_like` 는
+   그대로 열려 있지만, 열람 기록은 성격이 다르다.
+2. 그래서 `grant select (board_id)` 로 컬럼 단위 SELECT 만 줬더니
+   **목록 조회가 통째로 `42501` 로 막혔다.** PostgreSQL 자체는 컬럼 하나에만 SELECT 가
+   있어도 `count(*)` 를 허용하지만, PostgREST 가 임베드 집계를 만들 때 전체 행을
+   참조한다. `grant select on public.board_view to authenticated` 로 되돌려야 동작했다.
+
+RPC 방식은 둘 다 없앤다. 원장에 SELECT 를 주지 않으므로 노출될 것이 없고, 목록 select 절에
+임베드가 없으므로 **`PGRST200` 으로 세 화면이 한꺼번에 죽는 사고**도 구조적으로 생기지 않는다.
+
+> 진단에 쓸 수 있는 사실 하나 — **PostgREST 는 임베드를 권한 검사보다 먼저 해석한다.**
+> 없는 관계는 `PGRST200`(400), 있는 관계인데 권한이 없으면 `42501`(401)이다.
+> 목록이 안 뜰 때 이 둘을 구분하면 "테이블이 없다" 와 "권한이 없다" 를 바로 가른다.
+
+#### 카운터 재계산
+
+원장과 카운터가 어긋났을 때(대량 탈퇴 후 등) 다시 맞춘다.
+
+```sql
+update public.board b
+set view_count = coalesce(v.cnt, 0)
+from (
+  select board_id, count(*) as cnt from public.board_view group by board_id
+) v
+where v.board_id = b.id;
+```
+
+### 3. 목록·상세가 쓰는 select 절
+
+```text
+목록·검색·내가 쓴 글 : *, comment_count:comment(count), like_count:board_like(count)
+게시글 상세          : *, comment(*)
+```
+
+**조회수 때문에 바뀐 것이 없다.** `view_count` 는 `board` 의 컬럼이라 `*` 에 이미 들어 있다.
+남은 두 집계의 별칭은 그대로 두어야 한다 — 별칭 없는 `comment(count)` 는 상세의
+`comment(*)` 와 같은 키로 내려와 `BoardModel` 이 댓글 목록으로 파싱하려다 실패한다.
+
+### 적용 확인
+
+```sql
+select 'policy' as kind, policyname as name from pg_policies
+  where tablename in ('board_view', 'comment')
+union all
+select 'grant', column_name from information_schema.column_privileges
+  where table_name = 'comment' and privilege_type = 'UPDATE' and grantee = 'authenticated';
+```
+
+```sql
+-- board_view 에는 authenticated 권한이 한 줄도 없어야 한다.
+select grantee, privilege_type from information_schema.role_table_grants
+where table_name = 'board_view' and grantee in ('anon', 'authenticated');
+```
+
+```sql
+-- 함수 실행 권한. anon 은 false, authenticated 는 true 여야 한다.
+select
+  has_function_privilege('anon',          'public.increment_board_view(uuid)', 'execute') as anon,
+  has_function_privilege('authenticated', 'public.increment_board_view(uuid)', 'execute') as authenticated;
+```
+
+`comment` 의 UPDATE 는 `content` **한 컬럼만** 나오고, `board_view` 쪽은 **0행**이어야 한다.
+
+> **`create function` 은 PUBLIC 에 EXECUTE 를 기본으로 붙인다.** 함수만 만들고
+> `revoke all on function ... from public` 을 빠뜨리면 **anon 도 이 RPC 를 부를 수 있다.**
+> 2026-09-15 적용 직후 실제로 그 상태였다 — publishable 키로 불렀더니 `204` 가 떨어졌다.
+> 같은 날 회수해 `anon=false` · `authenticated=true` 로 맞췄다.
+> 함수 첫 줄의 `if auth.uid() is null then return` 덕에 세어지는 값은 없지만, 문은 두 겹으로
+> 닫아 둔다.
+>
+> **회수와 부여는 한 짝이되 롤은 함수마다 다르다.** 이 RPC 는 게시글을 읽을 수 있는
+> 사람만 부르면 되므로 `authenticated` 뿐이고, `is_user_name_taken` 은 **가입 화면이
+> 로그인 전에 부르므로** `anon, authenticated` 다. (§별건 — 닉네임 중복 방지)
+
+바깥에서 상태를 가르는 법 — **publishable 키만으로** 확인할 수 있다.
+
+| 호출 | 응답 | 뜻 |
+| --- | --- | --- |
+| `POST /rest/v1/rpc/increment_board_view` | `PGRST202`(404) | 함수가 없다 (SQL 미적용) |
+| | `42501`(401) | 함수는 있고 anon 에 EXECUTE 가 없다 — 정상 |
+| | `204` | 함수가 있는데 **anon 에도 열려 있다** |
+| `GET /rest/v1/board_view` | `PGRST205`(404) | 테이블이 없다 |
+| | `42501`(401) | 테이블은 있고 권한이 없다 — 정상 |
+
+앱 로그의 `PGRST202` 는 이 표의 첫 줄과 같은 뜻이다. 테이블 쪽 두 줄을 함께 보면
+"아무것도 안 들어갔다" 와 "초안까지만 들어갔다" 를 바로 가를 수 있다.
+
+앱에서는 ① 내 댓글의 오른쪽 메뉴에 «수정» 이 뜨고 저장이 반영되는지, ② 게시글을 열었다
+나와서 목록의 `조회 N` 이 1 올라가는지, ③ **같은 글을 다시 열어도 더 오르지 않는지** 를 본다.
+
+### 앱 쪽 동작
+
+- 댓글 수정은 `TextFieldDialog` 로 받는다. `maxLength: 100` 은 DB CHECK 와 같은 값이다.
+  빈 내용이면 안내만 하고 저장하지 않는다 — 지우려는 것이면 «삭제» 를 쓰게 둔다.
+- 조회 기록은 `BoardRepository.getBoard` 가 **읽기 직전에** RPC 로 넣는다. 순서를
+  뒤집으면 글을 처음 여는 사람에게 자기를 뺀 수("조회 0")가 보인다.
+- **목록으로 돌아왔을 때의 숫자는 앱이 따로 맞춘다.** 목록은 상세를 여닫는 동안 살아 있어
+  다시 조회하지 않으므로, 상세가 읽어 온 값을 `viewedBoardProvider` 신호로 흘려보내고
+  각 목록이 `PaginationMixin.updateItem` 으로 자기 항목 한 줄만 고친다. 전체 `refresh()`
+  를 걸면 첫 페이지로 되감겨 스크롤로 쌓아 둔 페이지가 날아간다.
+- 그래서 게시글 **수정 화면**도 원글을 읽으며 조회를 기록하는데, 내 글이고 한 번만
+  세므로 그냥 읽었을 때와 결과가 같다.
+- RPC 가 실패해도 화면은 그대로 뜬다. repository 가 예외를 삼키고 `false` 를 돌려준다.
 
 ---
 

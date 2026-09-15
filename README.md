@@ -295,9 +295,10 @@ Dart 쪽 스플래시 화면은 없다 — 네트워크 확인이 끝날 때까�
 - **버전**: `pubspec.yaml` 이 단일 출처다. iOS `project.pbxproj` 나 Android `build.gradle` 에
   버전을 적지 않는다. Xcode General 탭에서 버전을 고치면 `MARKETING_VERSION` 이 기록되어
   pubspec 이 무시되므로 주의한다.
-- **iOS 의존성**: Swift Package Manager 와 CocoaPods 를 함께 쓴다. 대부분의 플러그인은
-  Swift Package 로 공급되지만 `flutter_inappwebview_ios`(CAPTCHA) 는 podspec 만 제공한다.
-  빌드 시 `plugins do not support Swift Package Manager` 경고가 뜨는 것은 정상이다.
+- **iOS 의존성**: Swift Package Manager 만 쓴다. `Podfile` · `Pods/` 가 **없는 것이 정상이다.**
+  podspec 만 제공하는(= `Package.swift` 가 없는) 플러그인을 추가하면 CocoaPods 가 돌아오고
+  빌드마다 `plugins do not support Swift Package Manager` 경고가 붙으므로,
+  새 플러그인은 SPM 지원 여부를 먼저 확인하고 고른다.
 - **Android Studio**: Flutter 프로젝트는 루트를 열어야 한다.
   `android/` 만 따로 열면 Gradle/JDK 설정이 프로젝트와 어긋난다.
 

@@ -52,14 +52,15 @@ lib/
 │
 ├── core/                      # 기능에 종속되지 않는 공통 자산
 │   ├── constants/             #   colors · supabase_env · turnstile_env · app_links
-│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository · AppConfigRepository
-│   │                          #   · CaptchaRepository · SecureLocalStorage
+│   ├── data/                  #   supabase_client(전역 getter) · PaginationRepository
+│   │                          #   · AppConfigRepository · SecureLocalStorage
 │   ├── models/                #   ModelWithId · PaginationModel · PaginationCursor
 │   ├── providers/             #   PaginationMixin · sessionUidProvider
 │   ├── router/                #   go_router 라우트 정의
 │   ├── theme/                 #   AppTheme
 │   ├── utils/                 #   DataUtils · RegUtils · LinkUtils · logger
 │   └── widgets/               #   DefaultLayout · Default* 공통 위젯 · ContentActionSheet
+│                              #   · captcha_overlay(Turnstile 토큰 발급)
 │
 └── features/                  # 기능(도메인) 모듈
     ├── auth/                  #   로그인 · 회원가입 · EULA · 차단
@@ -267,6 +268,8 @@ features/<feature>/
   `profile.user_name` 2~12 · `report.report_reason` 500. **UI 의 `maxLength` 와 같은 값이므로
   UI 를 바꾸면 CHECK 제약도 같이 바꿔야 한다.** 어긋나면 입력은 되는데 저장만 실패해서
   원인을 찾기 어렵다.
+  같은 내용을 두 곳에서 입력받는 것이 있다 — 댓글은 `CommentTextField`(작성)와
+  댓글 수정 다이얼로그(`TextFieldDialog` 의 `maxLength`) **양쪽 다** 100 이어야 한다.
 - **신고·차단 진입점은 세 곳이다**: 게시글 상세 AppBar, 채팅 말풍선 길게 누르기,
   댓글 오른쪽 메뉴. 셋 다 `showReportDialog` · `showBlockDialog`(`features/user/
   presentation/widgets/report_block_actions.dart`) 한 구현을 쓴다.
@@ -279,11 +282,57 @@ features/<feature>/
   `*, comment_count:comment(count), like_count:board_like(count)` 로 조회한다.
   별칭 없이 `comment(count)` 를 쓰면 상세의 `comment(*)` 와 **같은 `comment` 키**로
   내려와 `BoardModel` 이 댓글 목록으로 파싱하려다 실패한다.
-- **`board` 의 UPDATE 는 컬럼 단위 grant 다**: `title`·`content` 에만 준다.
+  두 집계 모두 `BoardModel` 의 `_readCount` 가 `[{"count": n}]` 에서 꺼낸다.
+  (조회수는 여기 없다 — `board.view_count` 컬럼이라 `*` 에 이미 들어 있다)
+  - **이 select 절은 목록·검색·"내가 쓴 글" 세 화면이 공유한다.** 임베드 대상 테이블이
+    없거나 권한이 없으면 세 화면이 한꺼번에 "못 불러옴" 이 된다. 그래서
+    **집계를 새로 추가할 때는 SQL 을 먼저 적용하고 앱을 내보낸다.** 반대로 컬럼을
+    읽는 것으로 끝나면 순서가 자유롭다 — 조회수를 그렇게 바꾼 이유 중 하나다.
+- **`board`·`comment` 의 UPDATE 는 컬럼 단위 grant 다**: `board` 는 `title`·`content`,
+  `comment` 는 `content` 에만 준다.
   `set_author_name` 트리거는 `BEFORE INSERT` 전용이라 UPDATE 에 걸리지 않아서,
   테이블 전체에 UPDATE 를 주면 자기 글의 작성자 이름을 아무 값으로나 바꿀 수 있다.
+  `created_at` 이 막히는 것도 중요하다 — 열려 있으면 커서 페이지네이션의 정렬 기준을
+  흔들어 남의 글 사이에 끼워 넣을 수 있다.
 - **`board_like` 의 `ignoreDuplicates: true` 를 빼지 말 것**: `block_user` 와 같은 이유다.
   UPDATE 정책이 없어서 기본 upsert(`ON CONFLICT DO UPDATE`)로 나가면 연타 시 403 이 된다.
+- **조회수는 `board.view_count` 컬럼이고, 앱은 `increment_board_view` RPC 로만 올린다**:
+  중복 판정 원장인 `board_view` 테이블에는 **앱 권한이 한 줄도 없다.**
+  - **원장을 열지 않는 것이 핵심이다.** 읽을 수 있으면 `/rest/v1/board_view?select=*`
+    한 번으로 "누가 어떤 글을 읽었는지" 가 통째로 노출된다. (`board_like` 는 앱이
+    "내가 눌렀는지" 를 알아야 해서 열려 있고, 좋아요는 공개적으로 누르는 행동이라
+    성격도 다르다)
+  - 카운터가 `board` 컬럼인데도 위조되지 않는 이유는 **`board` 의 UPDATE 가 컬럼 단위**라
+    `view_count` 에 앱이 쓸 수 없기 때문이다. SECURITY DEFINER 함수만 올린다.
+  - **함수는 `public` 에 두고 롤로 좁힌다.** 앱이 직접 부르는 RPC 라 노출이 목적이다.
+    다만 `create function` 이 PUBLIC 에 EXECUTE 를 기본으로 붙이므로
+    `revoke all on function ... from public` 과 `grant execute ... to authenticated` 가 한 짝이다.
+    회수를 빠뜨리면 anon 도 부를 수 있다 — 함수 첫 줄이 `auth.uid() is null` 이면 바로
+    빠져나와 세어지진 않지만, 열어 둘 이유가 없다.
+  - 원장이 `(board_id, user_uid)` 복합 PK 라 **한 사람이 몇 번을 열어도 1** 이다.
+    값의 뜻이 "조회수" 가 아니라 **본 사람 수**다.
+  - 기록은 `BoardRepository.getBoard` 가 **읽기 직전에** 넣는다. 순서를 뒤집으면 글을
+    처음 여는 사람에게 자기를 뺀 수("조회 0")가 보인다. 그래서 게시글 수정 화면도 원글을
+    읽으며 조회를 기록하는데, 내 글이고 한 번만 세므로 결과는 같다.
+  - **목록의 숫자는 상세를 닫아도 저절로 갱신되지 않는다.** 목록은 상세를 여닫는 동안
+    그대로 살아 있어서 다시 조회하지 않기 때문이다. 그래서 상세가 읽어 온 게시글을
+    `viewedBoardProvider`(신호)에 기록하고, 목록 셋(`BoardList`·`BoardSearchList`·
+    `MyBoardList`)이 `ViewedBoardSync` 로 그 신호를 받아 **자기 항목 한 줄만** 고친다.
+    - `refresh()` 를 쓰지 않는 이유는 **첫 페이지로 되감기** 때문이다. 스크롤로 쌓아 둔
+      페이지와 그 위치가 통째로 날아간다. 한 줄만 고치는 것이 `PaginationMixin.updateItem` 이다.
+    - 신호는 값을 들고 있는 **캐시가 아니다.** 목록을 새로 받으면 서버 값이 이겨야 하는데,
+      캐시로 두면 남이 본 조회까지 반영된 새 값을 옛날 값이 덮어쓴다.
+    - 구독은 `build()` 에서 `listen` 으로 한다. `watch` 로 받으면 신호가 올 때마다 목록
+      자체가 다시 만들어져 같은 사고가 난다.
+    - 좋아요·댓글 수는 아직 이 동기화를 하지 않는다. 상세에서 하트를 눌러도 목록의
+      숫자는 다음 새로고침까지 그대로다. 붙이려면 같은 신호에 얹으면 된다.
+  - **한 번 틀렸던 설계다.** 처음에는 `board_like` 처럼 만들고 목록 select 절에
+    `view_count:board_view(count)` 를 넣었는데, ① 원장 전체가 노출되고
+    ② 막으려고 컬럼 단위 SELECT 만 줬더니 PostgREST 의 임베드 집계가 전체 행을 참조해
+    **목록이 통째로 `42501` 로 죽었다.** 전문은 `docs/supabase-migration.md`.
+  - 진단에 쓸 수 있는 사실 — **PostgREST 는 임베드를 권한 검사보다 먼저 해석한다.**
+    없는 관계는 `PGRST200`(400), 있는데 권한이 없으면 `42501`(401)이다. 목록이 안 뜰 때
+    이 둘을 구분하면 "테이블이 없다" 와 "권한이 없다" 를 바로 가른다.
 - **`report` 는 SELECT 정책이 없다**: 그래서 insert 뒤에 `.select()` 를 붙이면
   `INSERT ... RETURNING` 이 403 으로 막힌다. 지금처럼 `.select()` 없이 넣어야 한다.
   - 앱에서 신고를 **읽을 수 없는 것은 의도된 설계다.** 대신 Database Webhook 이
@@ -355,6 +404,9 @@ features/<feature>/
     회수하면 게시판·채팅·댓글 조회가 통째로 `permission denied for function is_blocked` 로 죽는다.
   - 정책·트리거는 함수를 이름이 아니라 **OID** 로 붙들고 있어 스키마를 옮겨도 그대로 동작한다.
     `private` 에 usage 를 주지 않아도 정책 평가는 된다 (이름 해석을 하지 않으므로).
+  - **예외는 앱이 직접 부르는 RPC 다.** `increment_board_view` · `is_user_name_taken` 은
+    노출이 목적이라 `public` 에 둔다. 대신 EXECUTE 를 PUBLIC 에서 회수하고 **필요한 롤에만**
+    준다 — 앞은 `authenticated`, 뒤는 가입 화면이 로그인 전에 부르므로 `anon` 까지다.
 - **익명 로그인 경고는 의도된 것**: Advisor 의 `auth_allow_anonymous_sign_ins` 는 익명 유저가
   영구 유저와 같은 `authenticated` 롤을 쓴다는 사실을 잡는다. 익명 로그인이 이 앱의 기능이므로
   정책에 `is_anonymous` 조건을 넣으면 안 된다. dismiss 대상이다.
@@ -406,39 +458,58 @@ features/<feature>/
     **켜는 순서는 "앱 배포 → 확산 → 서버 스위치"** 다. 순서를 뒤집으면 토큰을 안 보내는
     기존 빌드의 가입·로그인이 전부 막힌다. (이미 로그인된 세션은 갱신이 captcha 대상이
     아니라서 무사하다) 필요하면 `app_config.version_name` 강제 업데이트로 확산을 강제한다.
-  - 토큰 발급은 headless WebView 라 **1.8~2.7초** 걸린다(시뮬레이터 debug 기준).
+  - **토큰 발급은 화면(presentation)에서 한다.** `issueCaptchaToken(context)`
+    (`core/widgets/captcha_overlay.dart`)가 보이지 않는 1×1 `OverlayEntry` 에 웹뷰를 잠깐
+    띄워 Turnstile 을 돌리고, 받은 토큰을 `AuthRepository` 의 세 경로에 **인자로** 넘긴다.
+    (`login`·`loginAnonymous` 는 named 인자, 가입은 `SignUpWithEmailParams.captchaToken`)
+    - `AuthRepository` 가 직접 만들 수 없는 이유는 **웹뷰가 필요해서**다. 예전에는
+      `cloudflare_turnstile` 의 headless 모드로 data 계층에서 만들었지만, 그 패키지가
+      끌어오는 `flutter_inappwebview` 가 SPM 을 지원하지 않아 걷어냈다. (아래 iOS 항목)
+    - **크기를 0 으로 만들지 말 것.** 플랫폼 뷰가 만들어지지 않아 스크립트가 아예 안 돈다.
+      1×1 로 띄우고 `IgnorePointer` 로 터치를 통과시킨다.
+    - **`addJavaScriptChannel` 을 `loadHtmlString` 보다 먼저** 불러야 한다. 채널은 **다음
+      로드부터** 붙으므로 순서를 뒤집으면 결과가 영영 돌아오지 않는다.
+    - `TURNSTILE_BASE_URL` 이 그 문서의 출처(origin)가 된다. Cloudflare 대시보드의
+      Widget Domains 와 다르면 `110200 Domain not allowed` 로 실패한다.
+  - 토큰 발급에 **1.8~2.7초** 걸린다(시뮬레이터 debug 기준).
     로그인·가입·익명 3개 경로가 그만큼 느려지지만 기존 로딩 오버레이 안에 들어간다.
-  - **토큰은 1회용이다.** `CaptchaRepository` 가 호출마다 인스턴스를 새로 만드는 이유다.
+  - **토큰은 1회용이다.** 요청 **직전에** 새로 발급하는 이유다.
     재사용하면 두 번째 요청이 `timeout-or-duplicate` 로 거절되는데, 화면에는
     "비밀번호가 맞는데 로그인이 안 됨" 으로 보여서 원인을 찾기 어렵다.
-  - 패키지의 `getToken()` 은 **스스로 타임아웃하지 않는다.** 감싸지 않으면 로딩 오버레이가
-    영영 안 걷힌다. `CaptchaRepository._timeout` 이 그 방어막이다.
+  - **Turnstile 콜백은 안 올 수도 있다.** 스크립트가 막히면 영영 안 오므로
+    `captcha_overlay.dart` 의 `_timeout`(15초)이 방어막이다. 없으면 로딩 오버레이가
+    영영 안 걷힌다.
   - Edge Function `delete-account` 도 영향을 받는다 — 위 "계정 삭제" 항목 참고.
-- **iOS 는 SPM + CocoaPods 하이브리드다.** 대부분의 플러그인과 Flutter 프레임워크는
-  Swift Package 로 공급되지만, `flutter_inappwebview_ios`(CAPTCHA 용) 는 podspec 만 제공해서
-  CocoaPods 도 함께 쓴다. `Podfile` · `Podfile.lock` · `Pods/` 가 있는 것이 정상이다.
-  - 빌드할 때마다 `The following plugins do not support Swift Package Manager for ios`
-    경고가 뜨는데 **정상이다.** 업스트림(플러그인 저자)이 SPM 을 채택해야 사라진다.
-  - `Podfile` 은 **`platform` 줄만 열어 두었다**(`platform :ios, '15.6'`). 그 외에는
-    Flutter 가 만든 템플릿 그대로 둔다 — 더 손대면 Flutter 가 바이트 단위 비교로
-    "non-standard Podfile" 이라 판단해 수동 마이그레이션을 안내한다.
-    이 값은 Runner **타깃**의 `IPHONEOS_DEPLOYMENT_TARGET`(15.6)과 같은 값이어야 한다.
-    앱의 배포 타깃은 여전히 `project.pbxproj` 가 정하고, `Podfile` 의 값은 **팟**이
-    무엇에 대고 빌드되는지를 정한다. 어긋나면 팟만 다른 배포 타깃으로 빌드된다.
-    (`project.pbxproj` 의 **프로젝트** 수준 값은 템플릿 기본인 13.0 그대로이고,
-    타깃 값이 이를 덮으므로 실제 배포 타깃은 15.6 이다)
+- **iOS 는 SPM 전용이다. CocoaPods 를 쓰지 않는다.** 모든 플러그인과 Flutter 프레임워크가
+  Swift Package 로 공급된다. `Podfile` · `Podfile.lock` · `Pods/` 가 **없는 것이 정상이다.**
+  - 2026-09-15 에 걷어냈다. 유일한 podspec-only 플러그인이던 `flutter_inappwebview_ios`
+    (CAPTCHA 패키지 `cloudflare_turnstile` 이 끌어오던 것)를 `webview_flutter` 로 갈아치우고
+    `ios` 에서 `pod deintegrate` 했다. 그전에는 빌드마다
+    `The following plugins do not support Swift Package Manager for ios` 경고가 떴다.
+  - **podspec-only 플러그인을 다시 들이면 CocoaPods 가 통째로 돌아온다.** Flutter 가
+    `Podfile` 을 새로 만들고 위 경고도 같이 돌아온다. 새 플러그인을 고를 때
+    `Package.swift` 유무를 먼저 본다. (`flutter_inappwebview` 의 SPM 지원 요청
+    `pichillilorenzo/flutter_inappwebview#2842` 는 2026-05-23부터 응답 없이 열려 있고,
+    iOS 구현 패키지의 마지막 stable 1.1.2 는 2년 전이다)
+  - **그 경고는 SPM 을 꺼도 사라지지 않는다.** 경고를 찍는 `flutter_tools` 의
+    `darwin_dependency_management.dart` `_printCocoapodOnlyPluginsWarning` 은 SPM 사용
+    여부와 무관하게 iOS 빌드마다 불린다. (3.44.9 소스에서 확인) `pubspec.yaml` 에
+    `flutter: config: enable-swift-package-manager: false` 를 **넣지 말 것** — 경고는
+    그대로고 나머지 플러그인만 팟으로 되돌아온다.
+  - 팟을 남겨 두는 것도 답이 아니다. 플러그인이 전부 SPM 인데 `Podfile` 이 있으면 Flutter 가
+    이번에는 **"CocoaPods integration 을 제거하라"** 는 다른 경고를 매 빌드마다 찍는다.
+    경고를 바꿔 달 뿐이라 `Podfile`·`Podfile.lock` 을 지우고 세 xcconfig 의
+    `#include? ".../Pods-Runner.<mode>.xcconfig"` 줄도 함께 걷어냈다.
   - **`ios/Flutter/Profile.xcconfig` 는 우리가 만든 파일이다. 템플릿과 다르다고 되돌리지 말 것.**
-    Flutter 템플릿은 Profile 구성의 base config 를 `Release.xcconfig` 로 두는데,
-    Flutter 툴은 `Debug`·`Release` 에만 `#include? ".../Pods-Runner.<mode>.xcconfig"` 를
-    넣어 준다. 그래서 **Profile 만 팟 설정을 물지 못하고**, `pod install` 이
-    `did not set the base configuration ... Pods-Runner.profile.xcconfig` 경고를 낸다.
-    (CocoaPods 는 base config 가 사용자 지정이면 덮어쓰지 않고 경고만 낸다)
-    Debug·Release 와 같은 모양의 파일을 만들고 Runner 타깃 Profile 의
-    `baseConfigurationReference` 를 그쪽으로 돌려서 해결했다.
-    지금은 `Pods-Runner.release.xcconfig` 와 `.profile.xcconfig` 의 내용이 같아 빌드 결과가
-    같지만, 팟이 구성별로 다른 설정을 갖게 되면 **프로파일 빌드만 조용히 틀어진다.**
-  - 한때 CocoaPods 를 완전히 걷어냈던 적이 있다(`6292137`). 그때는 팟이 `Flutter` 하나뿐이라
-    순수 오버헤드였지만, 지금은 실제 의존성이 있어 되돌렸다.
+    원래는 Profile 구성만 팟 xcconfig 를 물지 못해 만든 파일이고(그때 `pod install` 이
+    `did not set the base configuration` 경고를 냈다), 팟이 사라진 지금은 내용이
+    `#include "Generated.xcconfig"` 한 줄로 Debug·Release 와 같다. 되돌리려면 pbxproj 의
+    `baseConfigurationReference` 를 손대야 하는데 얻는 것이 없어 그대로 둔다.
+  - 배포 타깃은 `project.pbxproj` 의 **타깃** 값(15.6)이 정한다. 프로젝트 수준 값은 템플릿
+    기본인 13.0 그대로이고 타깃 값이 이를 덮는다. (`Podfile` 의 `platform` 줄과 값을
+    맞춰야 했던 제약은 팟과 함께 사라졌다)
+  - CocoaPods 를 걷어낸 것은 두 번째다. 처음은 `6292137`(팟이 `Flutter` 하나뿐이던 시절),
+    CAPTCHA 때문에 한 번 돌아왔다가, 웹뷰를 갈아치우며 다시 나갔다.
 - **Android Studio**: Flutter 프로젝트는 **루트를 열어야 한다.** `android/` 만 따로 열면
   `android/.idea/` 설정이 프로젝트와 따로 놀며 Gradle/JDK 불일치 오류가 난다.
 - **스플래시는 네이티브뿐이다.** Dart 쪽에 스플래시 화면도, `/splash` 라우트도 없다.
@@ -465,7 +536,7 @@ features/<feature>/
 | `lib/core/providers/session_provider.dart` | 세션 uid — 목록 재생성 트리거 |
 | `lib/features/auth/data/auth_repository.dart` | 회원가입/로그인/로그아웃/탈퇴/차단 · `AuthExceptionCode` |
 | `lib/core/data/app_config_repository.dart` | `app_config` 조회 (강제 업데이트) |
-| `lib/core/data/captcha_repository.dart` | Turnstile CAPTCHA 토큰 발급 |
+| `lib/core/widgets/captcha_overlay.dart` | Turnstile CAPTCHA 토큰 발급 (보이지 않는 웹뷰 오버레이) |
 | `lib/core/data/secure_local_storage.dart` | 세션 저장소 — Keychain/Keystore + 구버전 이전 |
 | `lib/core/constants/turnstile_env.dart` | Turnstile sitekey · baseUrl (선택 설정) |
 | `lib/core/constants/app_links.dart` | 개인정보처리방침 공개 주소 |
