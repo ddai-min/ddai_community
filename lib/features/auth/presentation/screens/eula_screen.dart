@@ -1,4 +1,5 @@
 import 'package:ddai_community/core/constants/colors.dart';
+import 'package:ddai_community/core/widgets/captcha_overlay.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
@@ -55,7 +56,12 @@ class _EulaScreenState extends ConsumerState<EulaScreen> {
     if (widget.isAnonymous) {
       DefaultLoadingOverlay.showLoading(context);
 
-      final result = await AuthRepository.loginAnonymous();
+      // 토큰은 1회용이라 요청 직전에 받는다. (꺼져 있거나 실패하면 null)
+      final captchaToken = await issueCaptchaToken(context);
+
+      final result = await AuthRepository.loginAnonymous(
+        captchaToken: captchaToken,
+      );
 
       if (result.isSuccess) {
         ref.read(userMeProvider.notifier).update((user) => result.user!);

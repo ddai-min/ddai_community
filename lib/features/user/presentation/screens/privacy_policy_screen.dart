@@ -5,7 +5,7 @@ import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_text_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 /// 개인정보처리방침 화면.
 ///
@@ -27,7 +27,7 @@ class PrivacyPolicyScreen extends StatefulWidget {
 }
 
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
-  InAppWebViewController? _controller;
+  late final WebViewController _controller;
 
   /// 로드가 끝나기 전까지 인디케이터로 빈 웹뷰를 가린다.
   bool _isLoading = true;
@@ -35,9 +35,74 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   /// 본문 로드 실패 여부.
   ///
   /// 실패해도 웹뷰는 그대로 두고 안내만 그 위에 덮는다.
-  /// "다시 시도" 가 [InAppWebViewController.reload] 를 불러야 하는데,
+  /// "다시 시도" 가 [WebViewController.reload] 를 불러야 하는데,
   /// 웹뷰를 걷어내면 컨트롤러도 함께 사라지기 때문이다.
   bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = WebViewController()
+      // 정적 문서라 스크립트가 필요 없다. 꺼 두면 바깥 문서를 그대로 띄우는
+      // 이 화면의 공격 면이 줄어든다. (기본값이지만 의도를 남긴다)
+      ..setJavaScriptMode(JavaScriptMode.disabled)
+      // 법적 고지 문서라 확대해서 읽을 수 있어야 한다.
+      // Android 의 빌트인 줌 컨트롤(+/- 버튼은 숨김)은 플러그인이 기본으로 켜 두므로
+      // 이 한 줄이면 핀치 줌까지 동작한다.
+      ..enableZoom(true)
+      ..setNavigationDelegate(_navigationDelegate())
+      ..loadRequest(Uri.parse(privacyPolicyUrl));
+  }
+
+  /// 로드 상태와 바깥 링크 처리를 담는다. [WebViewController.loadRequest] **전에**
+  /// 붙여야 첫 로드부터 콜백을 받는다.
+  NavigationDelegate _navigationDelegate() {
+    return NavigationDelegate(
+      onPageStarted: (_) {
+        _setState(isLoading: true, hasError: false);
+      },
+      onPageFinished: (_) {
+        _setState(isLoading: false);
+      },
+      onWebResourceError: (error) {
+        // 하위 리소스(이미지 등) 실패로 전체를 오류 처리하지 않는다.
+        // 값이 null 인 플랫폼도 있어 `== false` 일 때만 넘긴다.
+        if (error.isForMainFrame == false) {
+          return;
+        }
+
+        _setState(isLoading: false, hasError: true);
+      },
+      onHttpError: (error) {
+        // 주소가 바뀌었거나 Pages 배포가 깨지면 404 가 온다.
+        // 이때 웹뷰는 성공으로 치고 오류 페이지를 그리므로 여기서 잡아야 한다.
+        final url = error.request?.uri.toString();
+
+        // 문서 자신이 아닌 요청(하위 리소스)은 무시한다.
+        if (url != null && !url.startsWith(privacyPolicyUrl)) {
+          return;
+        }
+
+        if ((error.response?.statusCode ?? 0) >= 400) {
+          _setState(isLoading: false, hasError: true);
+        }
+      },
+      onNavigationRequest: (request) async {
+        // 목차 앵커(#a1)까지 포함해 방침 문서 자신만 웹뷰 안에서 연다.
+        if (request.url.startsWith(privacyPolicyUrl)) {
+          return NavigationDecision.navigate;
+        }
+
+        // 수탁자 방침·분쟁조정위 같은 바깥 링크와 mailto: 는 기본 앱으로 넘긴다.
+        // 웹뷰 안에서 허용하면 이용자가 방침 화면인 줄 알고 아무 데나 돌아다니게 되고,
+        // 뒤로 갈 방법도 AppBar 뒤로 가기(=화면 종료)뿐이다.
+        await LinkUtils.open(request.url);
+
+        return NavigationDecision.prevent;
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,65 +115,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
       isScrollable: false,
       child: Stack(
         children: [
-          InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri(privacyPolicyUrl)),
-            initialSettings: InAppWebViewSettings(
-              // 정적 문서라 스크립트가 필요 없다. 꺼 두면 바깥 문서를 그대로 띄우는
-              // 이 화면의 공격 면이 줄어든다.
-              javaScriptEnabled: false,
-              // 법적 고지 문서라 확대해서 읽을 수 있어야 한다.
-              // Android 는 builtInZoomControls 없이는 핀치 줌이 먹지 않고,
-              // displayZoomControls 를 켜면 화면에 +/- 버튼이 떠 버린다.
-              supportZoom: true,
-              builtInZoomControls: true,
-              displayZoomControls: false,
-              // false 면 [shouldOverrideUrlLoading] 이 아예 호출되지 않는다.
-              useShouldOverrideUrlLoading: true,
-            ),
-            onWebViewCreated: (controller) {
-              _controller = controller;
-            },
-            onLoadStart: (_, _) {
-              _setState(isLoading: true, hasError: false);
-            },
-            onLoadStop: (_, _) {
-              _setState(isLoading: false);
-            },
-            onReceivedError: (_, request, _) {
-              // 하위 리소스(이미지 등) 실패로 전체를 오류 처리하지 않는다.
-              // 값이 null 인 플랫폼도 있어 `== false` 일 때만 넘긴다.
-              if (request.isForMainFrame == false) {
-                return;
-              }
-
-              _setState(isLoading: false, hasError: true);
-            },
-            onReceivedHttpError: (_, request, response) {
-              if (request.isForMainFrame == false) {
-                return;
-              }
-
-              // 주소가 바뀌었거나 Pages 배포가 깨지면 404 가 온다.
-              // 이때 웹뷰는 성공으로 치고 오류 페이지를 그리므로 여기서 잡아야 한다.
-              if ((response.statusCode ?? 0) >= 400) {
-                _setState(isLoading: false, hasError: true);
-              }
-            },
-            shouldOverrideUrlLoading: (_, action) async {
-              final url = action.request.url.toString();
-
-              // 목차 앵커(#a1)까지 포함해 방침 문서 자신만 웹뷰 안에서 연다.
-              if (url.startsWith(privacyPolicyUrl)) {
-                return NavigationActionPolicy.ALLOW;
-              }
-
-              // 수탁자 방침·분쟁조정위 같은 바깥 링크와 mailto: 는 기본 앱으로 넘긴다.
-              // 웹뷰 안에서 허용하면 이용자가 방침 화면인 줄 알고 아무 데나 돌아다니게 되고,
-              // 뒤로 갈 방법도 AppBar 뒤로 가기(=화면 종료)뿐이다.
-              await LinkUtils.open(url);
-
-              return NavigationActionPolicy.CANCEL;
-            },
+          WebViewWidget(
+            controller: _controller,
           ),
           if (_isLoading)
             const Positioned.fill(
@@ -123,7 +131,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             Positioned.fill(
               child: _Error(
                 onRetry: () {
-                  _controller?.reload();
+                  _controller.reload();
                 },
                 onOpenBrowser: () {
                   LinkUtils.open(privacyPolicyUrl);

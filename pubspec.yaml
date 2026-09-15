@@ -60,17 +60,16 @@ dependencies:
 
   # 네이티브 스플래시 생성 + 유지/해제 런타임 API
   flutter_native_splash: ^2.4.8
-  cloudflare_turnstile: ^3.8.1
-
   # 세션(refresh token) 보관 — iOS Keychain · Android Keystore
   flutter_secure_storage: ^11.0.0
 
-  # 개인정보처리방침을 앱 안에서 띄우는 웹뷰
-  # (cloudflare_turnstile 이 이미 끌어오던 패키지라 네이티브 구성은 그대로다)
-  flutter_inappwebview: ^6.1.5
-
   # 방침 문서 안의 바깥 링크(수탁자 방침 · mailto)를 기본 앱으로 넘길 때 쓴다
   url_launcher: ^6.3.2
+
+  # 웹뷰 — 개인정보처리방침 화면과 CAPTCHA(Turnstile) 토큰 발급 양쪽에서 쓴다.
+  # flutter_inappwebview 를 쓰지 않는 이유는 CLAUDE.md 의 iOS 항목 참고
+  # (SPM 미지원이라 CocoaPods 를 붙들고 있었다)
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

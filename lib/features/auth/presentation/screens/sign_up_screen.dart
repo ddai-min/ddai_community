@@ -1,4 +1,5 @@
 import 'package:ddai_community/core/utils/reg_utils.dart';
+import 'package:ddai_community/core/widgets/captcha_overlay.dart';
 import 'package:ddai_community/core/widgets/default_dialog.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
@@ -137,12 +138,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
 
+    // 토큰은 1회용이라 요청 직전에 받는다. (꺼져 있거나 실패하면 null)
+    final captchaToken = await issueCaptchaToken(context);
+
     final result = await ref.read(
       signUpWithEmailProvider(
         SignUpWithEmailParams(
           email: emailTextController.text,
           password: passwordTextController.text,
           userName: nicknameTextController.text,
+          captchaToken: captchaToken,
         ),
       ).future,
     );

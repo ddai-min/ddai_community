@@ -1,4 +1,3 @@
-import 'package:ddai_community/core/data/captcha_repository.dart';
 import 'package:ddai_community/core/data/supabase_client.dart';
 import 'package:ddai_community/core/utils/data_utils.dart';
 import 'package:ddai_community/core/utils/logger.dart';
@@ -61,9 +60,11 @@ class AuthResult {
 
 /// Supabase 인증 및 계정 관련 연산.
 ///
-/// 가입·로그인·익명 로그인 세 경로는 [CaptchaRepository] 로 받은 CAPTCHA 토큰을
-/// 함께 보낸다. 토큰은 발급 시점부터 유효기간이 짧고 1회용이라 호출 직전에 만들며,
-/// CAPTCHA 를 안 쓰는 설정에서는 `null` 이 실려 서버가 무시한다.
+/// 가입·로그인·익명 로그인 세 경로는 CAPTCHA 토큰을 함께 보낸다. **토큰은 화면이
+/// 만들어 넘긴다** — 발급에 웹뷰가 필요해 여기(data 계층)에서는 만들 수 없다.
+/// (`core/widgets/captcha_overlay.dart` 의 `issueCaptchaToken`)
+/// 토큰은 유효기간이 짧고 1회용이라 요청 직전에 만들며, CAPTCHA 를 안 쓰는
+/// 설정에서는 `null` 이 실려 서버가 무시한다.
 class AuthRepository {
   /// Supabase 의 `User` 를 앱 모델로 변환한다.
   ///
@@ -104,7 +105,7 @@ class AuthRepository {
         data: {
           'user_name': signUpWithEmailParams.userName,
         },
-        captchaToken: await CaptchaRepository.issueToken(),
+        captchaToken: signUpWithEmailParams.captchaToken,
       );
 
       final user = response.user;
@@ -139,12 +140,13 @@ class AuthRepository {
   static Future<AuthResult> login({
     required String email,
     required String password,
+    String? captchaToken,
   }) async {
     try {
       final response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
-        captchaToken: await CaptchaRepository.issueToken(),
+        captchaToken: captchaToken,
       );
 
       final user = response.user;
@@ -171,10 +173,12 @@ class AuthRepository {
   ///
   /// 익명 가입은 기본적으로 IP 당 시간당 30회로 제한되며, 초과 시
   /// [AuthExceptionCode.tooManyRequests] 를 반환한다.
-  static Future<AuthResult> loginAnonymous() async {
+  static Future<AuthResult> loginAnonymous({
+    String? captchaToken,
+  }) async {
     try {
       final response = await supabase.auth.signInAnonymously(
-        captchaToken: await CaptchaRepository.issueToken(),
+        captchaToken: captchaToken,
       );
 
       final user = response.user;

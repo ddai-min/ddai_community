@@ -1,3 +1,4 @@
+import 'package:ddai_community/core/widgets/captcha_overlay.dart';
 import 'package:ddai_community/core/widgets/default_elevated_button.dart';
 import 'package:ddai_community/core/widgets/default_layout.dart';
 import 'package:ddai_community/core/widgets/default_loading_overlay.dart';
@@ -91,9 +92,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     DefaultLoadingOverlay.showLoading(context);
 
+    // 토큰은 1회용이라 요청 직전에 받는다. 로딩 오버레이 아래에서 발급되므로
+    // 사용자에게는 로딩만 보인다. (꺼져 있거나 실패하면 null 이고 서버가 판단한다)
+    final captchaToken = await issueCaptchaToken(context);
+
     final result = await AuthRepository.login(
       email: idTextController.text,
       password: passwordTextController.text,
+      captchaToken: captchaToken,
     );
 
     DefaultLoadingOverlay.hideLoading(context);
